@@ -1,0 +1,45 @@
+/* ATHENDAT design tokens — extracted from the ATHENDAT design system.
+   Font-face declarations intentionally removed: Helvetica Neue LT Std is a
+   commercial font and must not be shipped. Use the system stack below. */
+:root{
+  --font-sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, "Roboto Mono", monospace;
+
+  --fs-12: .75rem;  --fs-14: .875rem; --fs-16: 1rem;  --fs-18: 1.125rem; --fs-20: 1.25rem;
+  --fs-24: 1.5rem;  --fs-32: 2rem;    --fs-40: 2.5rem; --fs-56: 3.5rem;
+
+  --lh-tight: 1.05; --lh-snug: 1.2; --lh-normal: 1.4; --lh-relaxed: 1.6;
+  --tr-tight: -.02em; --tr-snug: -.01em; --tr-normal: 0; --tr-wide: .04em;
+  --fw-regular: 400; --fw-medium: 500; --fw-bold: 700; --fw-black: 900;
+
+  --gem-50:  #F3F1FF; --gem-100: #E9E6FF; --gem-200: #D5D0FF; --gem-300: #B7ABFF; --gem-400: #947BFF;
+  --gem-500: #7346FF; --gem-600: #6221FF; --gem-700: #540FF2; --gem-800: #450CCB; --gem-900: #3A0CA3;
+
+  --picton-400: #4BC2EF; --picton-500: #19A7DE; --picton-700: #0B6C99;
+  --rose-500: #F72585;
+
+  --gray-50:  #F9FAFB; --gray-100: #F3F4F6; --gray-200: #E5E7EB; --gray-300: #D1D5DB; --gray-400: #9CA3AF;
+  --gray-500: #6B7280; --gray-600: #4B5563; --gray-700: #374151; --gray-800: #1F2937; --gray-900: #111827;
+  --white: #FFFFFF;
+
+  --success-bg: #D1FAE5; --success-fg: #065F46;
+  --warning-bg: #FEF3C7; --warning-fg: #92400E;
+  --danger-bg:  #FEE2E2; --danger-fg:  #991B1B;
+  --info-bg:    #E2F3FC; --info-fg:    var(--picton-700);
+
+  --fg-1: var(--gray-900); --fg-2: var(--gray-700); --fg-3: var(--gray-500); --fg-4: var(--gray-400);
+  --fg-on-brand: #FFFFFF; --fg-link: var(--gem-800); --fg-link-hover: var(--gem-900);
+  --bg-0: #FFFFFF; --bg-1: var(--gray-50); --bg-2: var(--gray-100); --bg-brand: var(--gem-900);
+  --border-1: var(--gray-200); --border-2: var(--gray-300); --border-focus: var(--gem-600);
+  --focus-ring: 0 0 0 2px rgba(58,12,163,.25);
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
+
+  --radius-xs: 2px; --radius-sm: 4px; --radius-lg: 12px; --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px 0 rgba(17,24,39,.08), 0 1px 2px 0 rgba(17,24,39,.04);
+  --shadow-md: 0 4px 12px -2px rgba(17,24,39,.10), 0 2px 4px -2px rgba(17,24,39,.06);
+
+  --ease-standard: cubic-bezier(.2,.8,.2,1);
+  --dur-1: 120ms; --dur-2: 180ms; --dur-3: 260ms;
+}

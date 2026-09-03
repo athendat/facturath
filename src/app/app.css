@@ -1,0 +1,24 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.wordmark {
+  font-weight: var(--fw-black);
+  font-size: var(--fs-18);
+  letter-spacing: var(--tr-snug);
+  color: var(--gem-900);
+}
+
+.app-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--sp-4) var(--sp-3);
+}

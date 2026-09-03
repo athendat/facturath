@@ -1,1 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
+@import "./styles/tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--gray-100);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--fg-link);
+}
+
+a:hover {
+  color: var(--fg-link-hover);
+}
