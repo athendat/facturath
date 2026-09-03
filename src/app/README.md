@@ -31,3 +31,12 @@ state only through stores in `core` or through `domain` types.
 Tiny presentational components with no business logic: inline input,
 drawer, dialog, toast host, icon buttons. They receive data through
 `input()` and report through `output()`; they do not inject stores.
+
+## Prerender and hydration
+
+The single `/` route is prerendered at build time and hydrated in the
+browser (`provideClientHydration()` is on). The prerendered HTML must never
+diverge from the first client render, so any code that touches `window`,
+`document`, `localStorage`, or `indexedDB` must run inside `afterNextRender`
+(or an equivalent browser-only hook), never in constructors, field
+initializers, or the template of the first render.

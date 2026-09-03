@@ -2,7 +2,7 @@
    Font-face declarations intentionally removed: Helvetica Neue LT Std is a
    commercial font and must not be shipped. Use the system stack below. */
 :root{
-  --font-sans: "Helvetica Neue", Helvetica, Arial, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, "Roboto Mono", monospace;
 
   --fs-12: .75rem;  --fs-14: .875rem; --fs-16: 1rem;  --fs-18: 1.125rem; --fs-20: 1.25rem;
@@ -25,7 +25,7 @@
   --success-bg: #D1FAE5; --success-fg: #065F46;
   --warning-bg: #FEF3C7; --warning-fg: #92400E;
   --danger-bg:  #FEE2E2; --danger-fg:  #991B1B;
-  --info-bg:    #E2F3FC; --info-fg:    #0B6C99;
+  --info-bg:    #E2F3FC; --info-fg:    var(--picton-700);
 
   --fg-1: var(--gray-900); --fg-2: var(--gray-700); --fg-3: var(--gray-500); --fg-4: var(--gray-400);
   --fg-on-brand: #FFFFFF; --fg-link: var(--gem-800); --fg-link-hover: var(--gem-900);
