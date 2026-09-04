@@ -1,12 +1,16 @@
-.app-header {
+/* Header plus the toast banner stick together so a toast is visible wherever the user is. */
+.app-top {
   position: sticky;
   top: 0;
   z-index: 10;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+}
+
+.app-header {
   display: flex;
   align-items: center;
   padding: var(--sp-3) var(--sp-4);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border-1);
 }
 
