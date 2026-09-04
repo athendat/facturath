@@ -1,0 +1,89 @@
+<table class="lines">
+  <thead>
+    <tr>
+      <th class="product">Código · producto · U/M</th>
+      <th class="qty-price">Cant. × precio</th>
+      <th class="amount">Importe</th>
+      <th class="actions"><span class="sr-only">Acciones</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (line of store.invoice().lines; track $index) {
+      <tr>
+        <td class="product">
+          <div class="product-main">
+            <app-inline-input
+              class="code muted"
+              label="Código"
+              placeholder="Código"
+              [value]="line.code"
+              (valueChange)="store.updateLine($index, 'code', $event)"
+            />
+            <app-inline-input
+              class="description"
+              label="Descripción"
+              placeholder="Descripción del producto o servicio"
+              [value]="line.description"
+              (valueChange)="store.updateLine($index, 'description', $event)"
+            />
+            <app-inline-input
+              class="unit muted"
+              label="Unidad de medida"
+              placeholder="U/M"
+              [value]="line.unit"
+              (valueChange)="store.updateLine($index, 'unit', $event)"
+            />
+          </div>
+          <app-inline-input
+            class="detail muted"
+            label="Detalle"
+            placeholder="Detalle opcional"
+            [value]="line.detail"
+            (valueChange)="store.updateLine($index, 'detail', $event)"
+          />
+        </td>
+        <td class="qty-price">
+          <app-inline-input
+            class="qty right"
+            label="Cantidad"
+            placeholder="0"
+            inputMode="decimal"
+            [value]="line.quantity"
+            (valueChange)="store.updateLine($index, 'quantity', $event)"
+          />
+          <span class="times" aria-hidden="true">×</span>
+          <app-inline-input
+            class="price right"
+            label="Precio unitario"
+            placeholder="0.00"
+            inputMode="decimal"
+            [value]="line.unitPrice"
+            (valueChange)="store.updateLine($index, 'unitPrice', $event)"
+          />
+        </td>
+        <td class="amount">{{ store.lineAmounts()[$index] }}</td>
+        <td class="actions">
+          <button
+            type="button"
+            class="delete"
+            [attr.aria-label]="'Eliminar línea ' + ($index + 1)"
+            (click)="store.removeLine($index)"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+              <path
+                d="M6 2h4l.5 1H13v1.5H3V3h2.5L6 2zm-2 3.5h8L11.4 14H4.6L4 5.5zm2.5 1.5v5.5h1V7h-1zm2 0v5.5h1V7h-1z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
+<button type="button" class="add" aria-label="Agregar línea" (click)="store.addLine()">
+  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+    <path d="M7.25 2h1.5v5.25H14v1.5H8.75V14h-1.5V8.75H2v-1.5h5.25V2z" fill="currentColor" />
+  </svg>
+  Agregar línea
+</button>

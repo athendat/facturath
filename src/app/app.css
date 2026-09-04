@@ -17,6 +17,15 @@
   color: var(--gem-900);
 }
 
+.reference {
+  margin-left: var(--sp-3);
+  padding-left: var(--sp-3);
+  border-left: 1px solid var(--border-1);
+  color: var(--fg-3);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium);
+}
+
 .app-main {
   max-width: 960px;
   margin: 0 auto;
