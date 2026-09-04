@@ -5,6 +5,11 @@ export type Currency = (typeof CURRENCIES)[number];
 
 export const SCHEMA_VERSION = 1;
 
+/** An exchange rate to CUP is only meaningful when the invoice is in another currency. */
+export function needsExchangeRate(currency: Currency): boolean {
+  return currency !== 'CUP';
+}
+
 export interface LineItem {
   code: string;
   description: string;

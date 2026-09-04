@@ -81,4 +81,46 @@ describe('InvoiceStore', () => {
       expect(totals.total).toBe('3.00');
     });
   });
+
+  describe('currency', () => {
+    it('needs an exchange rate and shows the CUP equivalent only when the currency is not CUP', () => {
+      store.updateLine(0, 'quantity', '1');
+      store.updateLine(0, 'unitPrice', '10');
+
+      expect(store.needsExchangeRate()).toBe(false);
+      expect(store.totals().cupEquivalent).toBeNull();
+
+      store.setField('currency', 'USD');
+      store.setField('exchangeRate', '120');
+      expect(store.needsExchangeRate()).toBe(true);
+      expect(store.totals().cupEquivalent).toBe('1,200.00');
+
+      store.setField('currency', 'CUP');
+      expect(store.needsExchangeRate()).toBe(false);
+      expect(store.totals().cupEquivalent).toBeNull();
+    });
+
+    it('rounds the CUP equivalent once from the total', () => {
+      store.updateLine(0, 'quantity', '1');
+      store.updateLine(0, 'unitPrice', '0.01');
+      store.setField('currency', 'EUR');
+      store.setField('exchangeRate', '120,5');
+
+      expect(store.totals().cupEquivalent).toBe('1.21');
+    });
+  });
+
+  describe('header reference', () => {
+    it('combines series, number and the formatted total with its currency', () => {
+      store.updateLine(0, 'quantity', '1');
+      store.updateLine(0, 'unitPrice', '1234.5');
+
+      expect(store.headerReference()).toBe('A-0001 · 1,234.50 CUP');
+
+      store.setField('series', 'B');
+      store.setField('number', '0042');
+      store.setField('currency', 'MLC');
+      expect(store.headerReference()).toBe('B-0042 · 1,234.50 MLC');
+    });
+  });
 });

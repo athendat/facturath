@@ -14,3 +14,13 @@ export function formatAmount(cents: number): string {
 export function formatMoney(cents: number, currency: Currency): string {
   return `${formatAmount(cents)} ${currency}`;
 }
+
+/** The reference shown in the app header, e.g. `A-0001 · 1,234.50 CUP`. */
+export function formatHeaderReference(
+  series: string,
+  number: string,
+  totalCents: number,
+  currency: Currency,
+): string {
+  return `${series}-${number} · ${formatMoney(totalCents, currency)}`;
+}

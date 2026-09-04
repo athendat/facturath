@@ -1,4 +1,4 @@
-import type { Invoice } from './invoice';
+import { needsExchangeRate, type Invoice } from './invoice';
 import { lineAmountCents, multiplyCents, parseCents, parseNumber, percentOfCents } from './money';
 
 /** Invoice totals in integer cents. `cupEquivalent` is null when the invoice is already in CUP. */
@@ -26,7 +26,9 @@ export function computeTotals(invoice: Invoice): InvoiceTotals {
   const base = Math.max(subtotal - discount, 0);
   const tax = percentOfCents(base, invoice.tax.percent);
   const total = base + tax + shipping;
-  const cupEquivalent = invoice.currency === 'CUP' ? null : multiplyCents(total, invoice.exchangeRate);
+  const cupEquivalent = needsExchangeRate(invoice.currency)
+    ? multiplyCents(total, invoice.exchangeRate)
+    : null;
 
   return {
     lineAmounts,
