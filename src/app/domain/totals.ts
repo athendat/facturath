@@ -1,5 +1,11 @@
 import { needsExchangeRate, type Invoice } from './invoice';
-import { isPositiveNumber, lineAmountCents, multiplyCents, parseCents, percentOfCents } from './money';
+import {
+  isPositiveNumber,
+  lineAmountCents,
+  multiplyCents,
+  parseCents,
+  percentOfCents,
+} from './money';
 
 /** Invoice totals in integer cents. `cupEquivalent` is null unless the invoice is in another currency with a positive rate. */
 export interface InvoiceTotals {
