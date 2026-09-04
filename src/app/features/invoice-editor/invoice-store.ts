@@ -1,61 +1,49 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { formatAmount, formatHeaderReference } from '../../domain/format';
+import { Service, computed, signal } from '@angular/core';
+import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
   createEmptyLine,
   createInvoice,
   needsExchangeRate,
   type Invoice,
   type LineItem,
+  type Tax,
 } from '../../domain/invoice';
 import { computeTotals } from '../../domain/totals';
 
-/** Totals as the editor displays them: formatted amounts plus the parsed tax percent. */
-export interface FormattedTotals {
-  subtotal: string;
-  discount: string;
-  shipping: string;
-  taxPercent: number;
-  tax: string;
-  total: string;
-  cupEquivalent: string | null;
-}
-
 /** Holds the open invoice and derives everything the editor displays from it. */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class InvoiceStore {
+  // randomUUID exists in Node (prerender) and browsers alike, and the id is never rendered,
+  // so it cannot cause a hydration mismatch. Draft persistence (a later ticket) owns ids for real.
   private readonly state = signal<Invoice>(createInvoice(crypto.randomUUID()));
 
-  private readonly cents = computed(() => computeTotals(this.state()));
+  private readonly rawTotals = computed(() => computeTotals(this.state()));
 
   readonly invoice = this.state.asReadonly();
 
   /** Formatted amount of each line, in the same order as `invoice().lines`. */
-  readonly lineAmounts = computed(() => this.cents().lineAmounts.map(formatAmount));
+  readonly lineAmounts = computed(() => this.rawTotals().lineAmounts.map(formatAmount));
 
-  readonly totals = computed<FormattedTotals>(() => {
-    const totals = this.cents();
-    return {
-      subtotal: formatAmount(totals.subtotal),
-      discount: formatAmount(totals.discount),
-      shipping: formatAmount(totals.shipping),
-      taxPercent: totals.taxPercent,
-      tax: formatAmount(totals.tax),
-      total: formatAmount(totals.total),
-      cupEquivalent: totals.cupEquivalent === null ? null : formatAmount(totals.cupEquivalent),
-    };
-  });
+  readonly totals = computed(() => formatTotals(this.rawTotals(), this.state().currency));
 
-  /** Whether the exchange rate field and the CUP equivalent are shown. */
+  /** Whether the exchange rate field is shown. */
   readonly needsExchangeRate = computed(() => needsExchangeRate(this.state().currency));
+
+  /** Whether the CUP equivalent line is shown: a non-CUP currency with a positive rate typed. */
+  readonly showsCupEquivalent = computed(() => this.rawTotals().cupEquivalent !== null);
 
   /** `A-0001 · 1,234.50 CUP`, shown next to the wordmark. */
   readonly headerReference = computed(() => {
     const { series, number, currency } = this.state();
-    return formatHeaderReference(series, number, this.cents().total, currency);
+    return formatHeaderReference(series, number, this.rawTotals().total, currency);
   });
 
   setField<K extends keyof Invoice>(field: K, value: Invoice[K]): void {
     this.state.update((invoice) => ({ ...invoice, [field]: value }));
+  }
+
+  updateTax(field: keyof Tax, value: string): void {
+    this.state.update((invoice) => ({ ...invoice, tax: { ...invoice.tax, [field]: value } }));
   }
 
   updateLine(index: number, field: keyof LineItem, value: string): void {

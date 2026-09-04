@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CURRENCIES, type Currency } from '../../domain/invoice';
+import { CURRENCIES, isCurrency } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
 import { InvoiceStore } from './invoice-store';
 
@@ -116,6 +116,9 @@ export class DocumentMeta {
   protected readonly currencies = CURRENCIES;
 
   protected onCurrencyChange(event: Event): void {
-    this.store.setField('currency', (event.target as HTMLSelectElement).value as Currency);
+    const value = (event.target as HTMLSelectElement).value;
+    if (isCurrency(value)) {
+      this.store.setField('currency', value);
+    }
   }
 }

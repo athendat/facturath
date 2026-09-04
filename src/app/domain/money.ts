@@ -50,15 +50,14 @@ function fromCents(cents: number): Decimal {
   return { mantissa: BigInt(cents), scale: 2 };
 }
 
+/** Whether the user typed a number greater than zero. */
+export function isPositiveNumber(text: string): boolean {
+  return parseDecimal(text).mantissa > 0n;
+}
+
 /** Parses a plain amount typed by the user into cents, rounding half up once. */
 export function parseCents(text: string): number {
   return Number(toScaledInteger(parseDecimal(text), 2));
-}
-
-/** Parses a number typed by the user (a quantity, a percent, a rate) for display purposes. */
-export function parseNumber(text: string): number {
-  const value = parseDecimal(text);
-  return Number(value.mantissa) / 10 ** value.scale;
 }
 
 /** Line amount: quantity x unit price, rounded to cents once. */

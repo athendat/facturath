@@ -41,6 +41,13 @@ describe('InvoiceStore', () => {
       expect(store.lineAmounts()[0]).toBe('0.00');
     });
 
+    it('does not accept thousands separators', () => {
+      store.updateLine(0, 'quantity', '1');
+      store.updateLine(0, 'unitPrice', '1,000.50');
+
+      expect(store.lineAmounts()[0]).toBe('0.00');
+    });
+
     it('rounds half up to cents once per line', () => {
       store.updateLine(0, 'quantity', '1');
       store.updateLine(0, 'unitPrice', '1.005');
@@ -55,17 +62,26 @@ describe('InvoiceStore', () => {
       store.updateLine(0, 'unitPrice', '10');
       store.setField('discount', '5');
       store.setField('shipping', '3');
-      store.setField('tax', { name: 'Impuesto', percent: '10' });
+      store.updateTax('name', 'Impuesto');
+      store.updateTax('percent', '10');
 
       expect(store.totals()).toEqual({
         subtotal: '20.00',
         discount: '5.00',
         shipping: '3.00',
-        taxPercent: 10,
         tax: '1.50',
-        total: '19.50',
+        total: '19.50 CUP',
         cupEquivalent: null,
       });
+    });
+
+    it('accepts a decimal tax percent', () => {
+      store.updateLine(0, 'quantity', '2');
+      store.updateLine(0, 'unitPrice', '10');
+      store.updateTax('percent', '10,5');
+
+      expect(store.totals().tax).toBe('2.10');
+      expect(store.totals().total).toBe('22.10 CUP');
     });
 
     it('caps the discount so the taxable base is never negative', () => {
@@ -73,30 +89,45 @@ describe('InvoiceStore', () => {
       store.updateLine(0, 'unitPrice', '10');
       store.setField('discount', '30');
       store.setField('shipping', '3');
-      store.setField('tax', { name: 'Impuesto', percent: '10' });
+      store.updateTax('percent', '10');
 
       const totals = store.totals();
       expect(totals.subtotal).toBe('20.00');
       expect(totals.tax).toBe('0.00');
-      expect(totals.total).toBe('3.00');
+      expect(totals.total).toBe('3.00 CUP');
     });
   });
 
   describe('currency', () => {
-    it('needs an exchange rate and shows the CUP equivalent only when the currency is not CUP', () => {
-      store.updateLine(0, 'quantity', '1');
-      store.updateLine(0, 'unitPrice', '10');
-
+    it('needs an exchange rate only when the currency is not CUP', () => {
       expect(store.needsExchangeRate()).toBe(false);
-      expect(store.totals().cupEquivalent).toBeNull();
 
       store.setField('currency', 'USD');
-      store.setField('exchangeRate', '120');
       expect(store.needsExchangeRate()).toBe(true);
-      expect(store.totals().cupEquivalent).toBe('1,200.00');
 
       store.setField('currency', 'CUP');
       expect(store.needsExchangeRate()).toBe(false);
+    });
+
+    it('shows the CUP equivalent only once a positive exchange rate is typed', () => {
+      store.updateLine(0, 'quantity', '1');
+      store.updateLine(0, 'unitPrice', '10');
+      store.setField('currency', 'USD');
+
+      expect(store.invoice().exchangeRate).toBe('');
+      expect(store.showsCupEquivalent()).toBe(false);
+      expect(store.totals().cupEquivalent).toBeNull();
+
+      store.setField('exchangeRate', '0');
+      expect(store.showsCupEquivalent()).toBe(false);
+      expect(store.totals().cupEquivalent).toBeNull();
+
+      store.setField('exchangeRate', '120');
+      expect(store.showsCupEquivalent()).toBe(true);
+      expect(store.totals().cupEquivalent).toBe('1,200.00 CUP');
+
+      store.setField('currency', 'CUP');
+      expect(store.showsCupEquivalent()).toBe(false);
       expect(store.totals().cupEquivalent).toBeNull();
     });
 
@@ -106,7 +137,7 @@ describe('InvoiceStore', () => {
       store.setField('currency', 'EUR');
       store.setField('exchangeRate', '120,5');
 
-      expect(store.totals().cupEquivalent).toBe('1.21');
+      expect(store.totals().cupEquivalent).toBe('1.21 CUP');
     });
   });
 

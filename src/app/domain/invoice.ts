@@ -5,6 +5,10 @@ export type Currency = (typeof CURRENCIES)[number];
 
 export const SCHEMA_VERSION = 1;
 
+export function isCurrency(value: string): value is Currency {
+  return (CURRENCIES as readonly string[]).includes(value);
+}
+
 /** An exchange rate to CUP is only meaningful when the invoice is in another currency. */
 export function needsExchangeRate(currency: Currency): boolean {
   return currency !== 'CUP';
@@ -97,7 +101,7 @@ export function createInvoice(id: string): Invoice {
     number: '0001',
     issueDate: '',
     currency: 'CUP',
-    exchangeRate: '120',
+    exchangeRate: '',
     concept: '',
     seller: createEmptyParty(),
     buyer: createEmptyParty(),

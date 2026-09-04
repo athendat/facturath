@@ -38,7 +38,7 @@ import { InvoiceStore } from './invoice-store';
         label="Nombre del impuesto"
         placeholder="Impuesto"
         [value]="store.invoice().tax.name"
-        (valueChange)="setTax('name', $event)"
+        (valueChange)="store.updateTax('name', $event)"
       />
       <app-inline-input
         class="tax-percent"
@@ -46,18 +46,18 @@ import { InvoiceStore } from './invoice-store';
         placeholder="0"
         inputMode="decimal"
         [value]="store.invoice().tax.percent"
-        (valueChange)="setTax('percent', $event)"
+        (valueChange)="store.updateTax('percent', $event)"
       />
       <span class="percent">%</span>
       <span class="value">{{ store.totals().tax }}</span>
     </div>
     <div class="row total">
       <span class="total-label">Importe total</span>
-      <span class="total-value">{{ store.totals().total }} {{ store.invoice().currency }}</span>
+      <span class="total-value">{{ store.totals().total }}</span>
     </div>
-    @if (store.needsExchangeRate()) {
+    @if (store.showsCupEquivalent()) {
       <p class="equivalent">
-        Equivalente {{ store.totals().cupEquivalent }} CUP · tasa {{ store.invoice().exchangeRate }}
+        Equivalente {{ store.totals().cupEquivalent }} · tasa {{ store.invoice().exchangeRate }}
       </p>
     }
   `,
@@ -136,8 +136,4 @@ import { InvoiceStore } from './invoice-store';
 })
 export class TotalsPanel {
   protected readonly store = inject(InvoiceStore);
-
-  protected setTax(field: 'name' | 'percent', value: string): void {
-    this.store.setField('tax', { ...this.store.invoice().tax, [field]: value });
-  }
 }
