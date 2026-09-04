@@ -1,7 +1,14 @@
-<header class="app-header">
-  <span class="wordmark">FACTURATH</span>
-  <span class="reference">{{ store.headerReference() }}</span>
-</header>
+<div class="app-top">
+  <header class="app-header">
+    <span class="wordmark">FACTURATH</span>
+    <span class="reference">{{ store.headerReference() }}</span>
+  </header>
+  <app-toast-host
+    [toast]="toasts.current()"
+    (actionClicked)="toasts.runAction()"
+    (dismissed)="toasts.dismiss()"
+  />
+</div>
 <main class="app-main">
   <app-invoice-editor />
 </main>
