@@ -48,4 +48,37 @@ describe('InvoiceStore', () => {
       expect(store.lineAmounts()[0]).toBe('1.01');
     });
   });
+
+  describe('totals', () => {
+    it('applies the discount, taxes the base only and adds shipping after tax', () => {
+      store.updateLine(0, 'quantity', '2');
+      store.updateLine(0, 'unitPrice', '10');
+      store.setField('discount', '5');
+      store.setField('shipping', '3');
+      store.setField('tax', { name: 'Impuesto', percent: '10' });
+
+      expect(store.totals()).toEqual({
+        subtotal: '20.00',
+        discount: '5.00',
+        shipping: '3.00',
+        taxPercent: 10,
+        tax: '1.50',
+        total: '19.50',
+        cupEquivalent: null,
+      });
+    });
+
+    it('caps the discount so the taxable base is never negative', () => {
+      store.updateLine(0, 'quantity', '2');
+      store.updateLine(0, 'unitPrice', '10');
+      store.setField('discount', '30');
+      store.setField('shipping', '3');
+      store.setField('tax', { name: 'Impuesto', percent: '10' });
+
+      const totals = store.totals();
+      expect(totals.subtotal).toBe('20.00');
+      expect(totals.tax).toBe('0.00');
+      expect(totals.total).toBe('3.00');
+    });
+  });
 });
