@@ -1,0 +1,150 @@
+:host {
+  display: block;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.lines {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th {
+  padding: 5px 6px;
+  background: var(--gray-100);
+  color: var(--fg-3);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  text-align: left;
+}
+
+th.qty-price,
+th.amount {
+  text-align: right;
+}
+
+th.qty-price {
+  width: 132px;
+}
+
+th.amount {
+  width: 96px;
+}
+
+th.actions {
+  width: 30px;
+}
+
+td {
+  padding: 4px 6px;
+  border-top: 1px solid var(--border-1);
+  vertical-align: top;
+}
+
+.product-main {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.code {
+  width: 56px;
+}
+
+.description {
+  flex: 1;
+  font-weight: var(--fw-medium);
+}
+
+.unit {
+  width: 36px;
+}
+
+.muted {
+  color: var(--fg-3);
+}
+
+.detail {
+  font-size: 10px;
+}
+
+td.qty-price {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.qty {
+  width: 40px;
+}
+
+.price {
+  width: 66px;
+}
+
+.right {
+  text-align: right;
+}
+
+.times {
+  color: var(--fg-4);
+}
+
+td.amount {
+  padding-top: 7px;
+  font-weight: var(--fw-bold);
+  text-align: right;
+}
+
+td.actions {
+  padding: 4px 0;
+  text-align: center;
+}
+
+.delete,
+.add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.delete {
+  padding: 4px;
+  color: var(--fg-4);
+}
+
+.delete:hover {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+.add {
+  width: 100%;
+  justify-content: center;
+  padding: 6px;
+  border-top: 1px solid var(--border-1);
+  border-radius: 0;
+  background: var(--gray-50);
+  color: var(--gem-900);
+  font-weight: var(--fw-medium);
+}
+
+.add:hover {
+  background: var(--gem-50);
+}
+
+.delete:focus-visible,
+.add:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
