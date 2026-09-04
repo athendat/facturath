@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { findButton } from '../../core/testing/dom';
 import { ToastHost } from './toast-host';
 
 describe('ToastHost', () => {
@@ -16,12 +17,6 @@ describe('ToastHost', () => {
     return element.querySelector<HTMLElement>('[role="status"]');
   }
 
-  function button(label: string): HTMLButtonElement | null {
-    return Array.from(element.querySelectorAll('button')).find(
-      (candidate) => candidate.textContent?.trim() === label || candidate.ariaLabel === label,
-    ) as HTMLButtonElement | null;
-  }
-
   it('keeps an empty polite live region when there is no toast', () => {
     expect(status()).not.toBeNull();
     expect(status()?.getAttribute('aria-live')).toBe('polite');
@@ -36,18 +31,18 @@ describe('ToastHost', () => {
     expect(status()?.textContent).toContain('Factura guardada.');
   });
 
-  it('renders the action button and emits action when it is clicked', async () => {
-    const action = vi.fn();
+  it('renders the action button and emits actionClicked when it is clicked', async () => {
+    const actionClicked = vi.fn();
     fixture.componentRef.setInput('toast', {
       message: 'Hay una versión nueva de FACTURATH.',
       action: { label: 'Actualizar', run: () => undefined },
     });
-    fixture.componentInstance.action.subscribe(action);
+    fixture.componentInstance.actionClicked.subscribe(actionClicked);
     await fixture.whenStable();
 
-    button('Actualizar')?.click();
+    findButton(element, 'Actualizar')?.click();
 
-    expect(action).toHaveBeenCalledOnce();
+    expect(actionClicked).toHaveBeenCalledOnce();
   });
 
   it('offers a dismiss button for toasts with an action and emits dismissed', async () => {
@@ -59,7 +54,7 @@ describe('ToastHost', () => {
     fixture.componentInstance.dismissed.subscribe(dismissed);
     await fixture.whenStable();
 
-    button('Cerrar')?.click();
+    findButton(element, 'Cerrar')?.click();
 
     expect(dismissed).toHaveBeenCalledOnce();
   });

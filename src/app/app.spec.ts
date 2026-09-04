@@ -1,14 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SwUpdate, type VersionEvent } from '@angular/service-worker';
-import { Subject } from 'rxjs';
+import { SwUpdate } from '@angular/service-worker';
 import { App } from './app';
 import { PageReloader } from './core/page-reloader';
+import { findButton } from './core/testing/dom';
+import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
-
-class FakeSwUpdate {
-  isEnabled = true;
-  readonly versionUpdates = new Subject<VersionEvent>();
-}
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -31,10 +27,8 @@ describe('App', () => {
     await fixture.whenStable();
   });
 
-  function actionButton(label: string): HTMLButtonElement | undefined {
-    return Array.from(compiled.querySelectorAll('button')).find(
-      (button) => button.textContent?.trim() === label,
-    );
+  function statusText(): string | undefined {
+    return compiled.querySelector('[role="status"]')?.textContent?.trim();
   }
 
   it('renders the FACTURATH wordmark in the header', () => {
@@ -45,41 +39,31 @@ describe('App', () => {
     TestBed.inject(ToastService).show('Factura guardada.');
     await fixture.whenStable();
 
-    expect(compiled.querySelector('[role="status"]')?.textContent).toContain('Factura guardada.');
+    expect(statusText()).toContain('Factura guardada.');
   });
 
   it('offers to reload when a new version is ready and reloads only on click', async () => {
-    swUpdate.versionUpdates.next({
-      type: 'VERSION_READY',
-      currentVersion: { hash: 'a' },
-      latestVersion: { hash: 'b' },
-    });
+    swUpdate.versionUpdates.next(versionReady);
     await fixture.whenStable();
 
-    expect(compiled.querySelector('[role="status"]')?.textContent).toContain(
-      'Hay una versión nueva de FACTURATH.',
-    );
+    expect(statusText()).toContain('Hay una versión nueva de FACTURATH.');
     expect(reload).not.toHaveBeenCalled();
 
-    actionButton('Actualizar')?.click();
+    findButton(compiled, 'Actualizar')?.click();
     await fixture.whenStable();
 
     expect(reload).toHaveBeenCalledOnce();
-    expect(compiled.querySelector('[role="status"]')?.textContent?.trim()).toBe('');
+    expect(statusText()).toBe('');
   });
 
   it('dismisses the update toast without reloading', async () => {
-    swUpdate.versionUpdates.next({
-      type: 'VERSION_READY',
-      currentVersion: { hash: 'a' },
-      latestVersion: { hash: 'b' },
-    });
+    swUpdate.versionUpdates.next(versionReady);
     await fixture.whenStable();
 
-    actionButton('Cerrar')?.click();
+    findButton(compiled, 'Cerrar')?.click();
     await fixture.whenStable();
 
     expect(reload).not.toHaveBeenCalled();
-    expect(compiled.querySelector('[role="status"]')?.textContent?.trim()).toBe('');
+    expect(statusText()).toBe('');
   });
 });

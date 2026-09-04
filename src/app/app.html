@@ -5,7 +5,7 @@
   </header>
   <app-toast-host
     [toast]="toasts.current()"
-    (action)="toasts.runAction()"
+    (actionClicked)="toasts.runAction()"
     (dismissed)="toasts.dismiss()"
   />
 </div>

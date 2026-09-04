@@ -12,11 +12,10 @@ export interface Toast {
 
 export interface ToastOptions {
   readonly action?: ToastAction;
-  /** Milliseconds before a toast without an action auto-dismisses. */
-  readonly duration?: number;
 }
 
-const DEFAULT_DURATION_MS = 2600;
+/** Milliseconds before a toast without an action auto-dismisses. */
+const AUTO_DISMISS_MS = 2600;
 
 /**
  * Holds the toast currently shown to the user; the newest toast replaces the
@@ -30,11 +29,11 @@ export class ToastService {
 
   readonly current = this.toast.asReadonly();
 
-  show(message: string, { action, duration = DEFAULT_DURATION_MS }: ToastOptions = {}): void {
+  show(message: string, { action }: ToastOptions = {}): void {
     this.clearTimer();
     this.toast.set({ message, action });
     if (!action) {
-      this.timer = setTimeout(() => this.dismiss(), duration);
+      this.timer = setTimeout(() => this.dismiss(), AUTO_DISMISS_MS);
     }
   }
 

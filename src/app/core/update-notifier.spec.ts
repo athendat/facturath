@@ -1,20 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { SwUpdate, type VersionEvent } from '@angular/service-worker';
-import { Subject } from 'rxjs';
+import { SwUpdate } from '@angular/service-worker';
 import { PageReloader } from './page-reloader';
+import { FakeSwUpdate, versionReady } from './testing/fake-sw-update';
 import { ToastService } from './toast';
 import { UpdateNotifier } from './update-notifier';
-
-class FakeSwUpdate {
-  isEnabled = true;
-  readonly versionUpdates = new Subject<VersionEvent>();
-}
-
-const versionReady: VersionEvent = {
-  type: 'VERSION_READY',
-  currentVersion: { hash: 'a' },
-  latestVersion: { hash: 'b' },
-};
 
 describe('UpdateNotifier', () => {
   let swUpdate: FakeSwUpdate;

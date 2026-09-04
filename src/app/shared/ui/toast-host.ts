@@ -12,9 +12,9 @@ import type { Toast } from '../../core/toast';
     <div class="toast" role="status" aria-live="polite" [class.visible]="toast() !== null">
       @if (toast(); as current) {
         <span>{{ current.message }}</span>
-        @if (current.action; as toastAction) {
-          <button type="button" class="action" (click)="action.emit()">
-            {{ toastAction.label }}
+        @if (current.action; as action) {
+          <button type="button" class="action" (click)="actionClicked.emit()">
+            {{ action.label }}
           </button>
           <button type="button" class="dismiss" (click)="dismissed.emit()">Cerrar</button>
         }
@@ -45,9 +45,12 @@ import type { Toast } from '../../core/toast';
       animation: fade-in var(--dur-2) var(--ease-standard);
     }
 
+    /* 24x24 minimum target (WCAG 2.2 AA 2.5.8). */
     button {
+      min-width: 24px;
+      min-height: 24px;
       margin: 0;
-      padding: 2px var(--sp-2);
+      padding: var(--sp-1) var(--sp-2);
       border: 0;
       border-radius: var(--radius-xs);
       background: transparent;
@@ -95,7 +98,7 @@ import type { Toast } from '../../core/toast';
 export class ToastHost {
   readonly toast = input<Toast | null>(null);
   /** The user clicked the action button. */
-  readonly action = output<void>();
+  readonly actionClicked = output<void>();
   /** The user clicked the dismiss button. */
   readonly dismissed = output<void>();
 }
