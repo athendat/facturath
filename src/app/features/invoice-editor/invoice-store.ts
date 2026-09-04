@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { formatAmount, formatHeaderReference } from '../../domain/format';
 import {
+  createEmptyLine,
   createInvoice,
   needsExchangeRate,
   type Invoice,
@@ -62,5 +63,17 @@ export class InvoiceStore {
       ...invoice,
       lines: invoice.lines.map((line, i) => (i === index ? { ...line, [field]: value } : line)),
     }));
+  }
+
+  addLine(): void {
+    this.state.update((invoice) => ({ ...invoice, lines: [...invoice.lines, createEmptyLine()] }));
+  }
+
+  /** Removes the line; the last remaining line is reset to empty so the table never becomes empty. */
+  removeLine(index: number): void {
+    this.state.update((invoice) => {
+      const lines = invoice.lines.filter((_, i) => i !== index);
+      return { ...invoice, lines: lines.length > 0 ? lines : [createEmptyLine()] };
+    });
   }
 }

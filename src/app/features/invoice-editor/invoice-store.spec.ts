@@ -123,4 +123,56 @@ describe('InvoiceStore', () => {
       expect(store.headerReference()).toBe('B-0042 · 1,234.50 MLC');
     });
   });
+
+  describe('lines', () => {
+    it('starts with one empty line', () => {
+      expect(store.invoice().lines).toEqual([
+        { code: '', description: '', detail: '', unit: 'u', quantity: '1', unitPrice: '' },
+      ]);
+    });
+
+    it('appends an empty line', () => {
+      store.updateLine(0, 'description', 'Primera');
+
+      store.addLine();
+
+      expect(store.invoice().lines.map((line) => line.description)).toEqual(['Primera', '']);
+      expect(store.lineAmounts()).toEqual(['0.00', '0.00']);
+    });
+
+    it('removes the line at the given index', () => {
+      store.addLine();
+      store.updateLine(0, 'description', 'Primera');
+      store.updateLine(1, 'description', 'Segunda');
+
+      store.removeLine(0);
+
+      expect(store.invoice().lines.map((line) => line.description)).toEqual(['Segunda']);
+    });
+
+    it('resets the last remaining line to empty instead of removing it', () => {
+      store.updateLine(0, 'description', 'Unica');
+      store.updateLine(0, 'quantity', '3');
+      store.updateLine(0, 'unitPrice', '5');
+
+      store.removeLine(0);
+
+      expect(store.invoice().lines).toEqual([
+        { code: '', description: '', detail: '', unit: 'u', quantity: '1', unitPrice: '' },
+      ]);
+      expect(store.lineAmounts()).toEqual(['0.00']);
+    });
+
+    it('sums the rounded line amounts into the subtotal', () => {
+      store.addLine();
+      store.addLine();
+      for (const index of [0, 1, 2]) {
+        store.updateLine(index, 'quantity', '1');
+        store.updateLine(index, 'unitPrice', '0.005');
+      }
+
+      expect(store.lineAmounts()).toEqual(['0.01', '0.01', '0.01']);
+      expect(store.totals().subtotal).toBe('0.03');
+    });
+  });
 });
