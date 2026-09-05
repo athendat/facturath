@@ -35,6 +35,22 @@ describe('App', () => {
     expect(compiled.querySelector('header')?.textContent).toContain('FACTURATH');
   });
 
+  it('points to BALANC in a single footer line outside the document', () => {
+    const footers = compiled.querySelectorAll('footer');
+    const footer = footers[0];
+    const link = footer?.querySelector<HTMLAnchorElement>('a');
+
+    expect(footers).toHaveLength(1);
+    expect(footer?.closest('main')).toBeNull();
+    expect(footer?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce BALANC.',
+    );
+    expect(link?.textContent?.trim()).toBe('BALANC');
+    expect(link?.href).toBe('https://balanc.athendat.site/');
+    expect(link?.target).toBe('_blank');
+    expect(link?.rel).toContain('noopener');
+  });
+
   it('renders the current toast in a live region', async () => {
     TestBed.inject(ToastService).show('Factura guardada.');
     await fixture.whenStable();

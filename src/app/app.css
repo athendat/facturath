@@ -35,3 +35,17 @@
   margin: 0 auto;
   padding: var(--sp-4) var(--sp-3);
 }
+
+/* One discreet line outside the document; it never prints. */
+.app-footer {
+  padding: var(--sp-2) var(--sp-3) var(--sp-6);
+  color: var(--fg-3);
+  font-size: var(--fs-12);
+  text-align: center;
+}
+
+@media print {
+  .app-footer {
+    display: none;
+  }
+}

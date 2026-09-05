@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { Component, ElementRef, computed, effect, input, model, viewChild } from '@angular/core';
 
 /**
  * A borderless text input that sits inside the document. Font, color and
@@ -9,12 +9,13 @@ import { Component, input, model } from '@angular/core';
   selector: 'app-inline-input',
   template: `
     <input
-      type="text"
-      [value]="value()"
+      #field
+      [type]="type()"
+      [attr.value]="value()"
       (input)="onInput($event)"
       [attr.aria-label]="label()"
       [placeholder]="placeholder()"
-      [attr.inputmode]="inputMode()"
+      [attr.inputmode]="inputModeAttribute()"
       autocomplete="off"
     />
   `,
@@ -58,6 +59,28 @@ export class InlineInput {
   readonly label = input.required<string>();
   readonly placeholder = input('');
   readonly inputMode = input<'text' | 'decimal'>('text');
+  /** A native date input emits ISO `YYYY-MM-DD` on `input`, which is what the model stores. */
+  readonly type = input<'text' | 'date'>('text');
+
+  /** `inputmode` only means something on a text input; a date input has its own editor. */
+  protected readonly inputModeAttribute = computed(() =>
+    this.type() === 'text' ? this.inputMode() : null,
+  );
+
+  private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
+
+  constructor() {
+    // The `value` attribute above only seeds the prerendered markup. Later changes go through
+    // the property, and only when the element does not already hold the value: echoing what
+    // the user just typed back into a date input resets the segments they are still editing.
+    effect(() => {
+      const element = this.field().nativeElement;
+      const value = this.value();
+      if (element.value !== value) {
+        element.value = value;
+      }
+    });
+  }
 
   onInput(event: Event): void {
     this.value.set((event.target as HTMLInputElement).value);

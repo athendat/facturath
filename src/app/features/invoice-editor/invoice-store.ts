@@ -1,11 +1,16 @@
 import { Service, computed, signal } from '@angular/core';
+import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
   createEmptyLine,
   createInvoice,
   needsExchangeRate,
+  type Carrier,
   type Invoice,
   type LineItem,
+  type Party,
+  type PartyRole,
+  type Signatures,
   type Tax,
 } from '../../domain/invoice';
 import { computeTotals } from '../../domain/totals';
@@ -42,8 +47,42 @@ export class InvoiceStore {
     this.state.update((invoice) => ({ ...invoice, [field]: value }));
   }
 
+  /**
+   * Dates an undated invoice with the local calendar day of `date`. Callers pass `new Date()`
+   * from a browser-only hook so the prerendered document stays undated and hydration matches.
+   */
+  setIssueDateIfEmpty(date: Date): void {
+    this.state.update((invoice) =>
+      invoice.issueDate === '' ? { ...invoice, issueDate: formatLocalIsoDate(date) } : invoice,
+    );
+  }
+
+  updateParty(role: PartyRole, field: keyof Party, value: string): void {
+    this.patchSection(role, field, value);
+  }
+
+  updateCarrier(field: keyof Carrier, value: string): void {
+    this.patchSection('carrier', field, value);
+  }
+
+  updateSignature(field: keyof Signatures, value: string): void {
+    this.patchSection('signatures', field, value);
+  }
+
   updateTax(field: keyof Tax, value: string): void {
-    this.state.update((invoice) => ({ ...invoice, tax: { ...invoice.tax, [field]: value } }));
+    this.patchSection('tax', field, value);
+  }
+
+  /** Replaces one string field inside a nested section of the invoice, immutably. */
+  private patchSection<K extends PartyRole | 'carrier' | 'signatures' | 'tax'>(
+    section: K,
+    field: keyof Invoice[K],
+    value: string,
+  ): void {
+    this.state.update((invoice) => ({
+      ...invoice,
+      [section]: { ...invoice[section], [field]: value },
+    }));
   }
 
   updateLine(index: number, field: keyof LineItem, value: string): void {
