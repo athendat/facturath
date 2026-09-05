@@ -1,0 +1,46 @@
+# Cache rules for Cloudflare Workers static assets.
+# Angular copies this file into dist/facturath/browser; Cloudflare parses it
+# there and does not serve it. Patterns must not overlap: when several rules
+# match one request their header values are joined with a comma.
+
+# Entry documents and service-worker files: always revalidate so the service
+# worker sees new versions and the update toast can appear. The service
+# worker requests the .html paths; Cloudflare redirects them to the
+# extensionless paths (/ and /index.csr), so both spellings need a rule.
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/index.csr
+  Cache-Control: no-cache
+
+/index.csr.html
+  Cache-Control: no-cache
+
+/ngsw.json
+  Cache-Control: no-cache
+
+/ngsw-worker.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+# Content-hashed bundles: the file name changes whenever the content does.
+/main-*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/chunk-*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles-*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# Icons are not hashed; a day of caching is enough.
+/favicon.ico
+  Cache-Control: public, max-age=86400
+
+/icons/*
+  Cache-Control: public, max-age=86400
