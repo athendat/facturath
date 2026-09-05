@@ -23,15 +23,19 @@ jobs:
       - run: npm ci
 
       - name: Test
-        run: npx ng test --watch=false
+        run: npm test -- --watch=false
 
       # ng build already exits non-zero on a budget error. The grep also
-      # fails the check on budget warnings and any other build warning.
+      # fails the check on budget warnings and any other warning the
+      # builder reports, which it prints as "[WARNING]". NO_COLOR keeps
+      # that tag free of ANSI codes; Node runtime warnings do not match.
       - name: Build
+        env:
+          NO_COLOR: 1
         run: |
           set -o pipefail
           npm run build 2>&1 | tee build.log
-          if grep -qi 'warning' build.log; then
+          if grep -q '\[WARNING\]' build.log; then
             echo '::error::The production build emitted warnings'
             exit 1
           fi

@@ -4,11 +4,16 @@
 # match one request their header values are joined with a comma.
 
 # Entry documents and service-worker files: always revalidate so the service
-# worker sees new versions and the update toast can appear.
+# worker sees new versions and the update toast can appear. The service
+# worker requests the .html paths; Cloudflare redirects them to the
+# extensionless paths (/ and /index.csr), so both spellings need a rule.
 /
   Cache-Control: no-cache
 
 /index.html
+  Cache-Control: no-cache
+
+/index.csr
   Cache-Control: no-cache
 
 /index.csr.html
@@ -28,9 +33,6 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /chunk-*.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/polyfills-*.js
   Cache-Control: public, max-age=31536000, immutable
 
 /styles-*.css
