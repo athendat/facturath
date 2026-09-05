@@ -91,15 +91,15 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
       class="name"
       [label]="layout().name.label"
       [placeholder]="layout().name.placeholder"
-      [value]="party().name"
-      (valueChange)="store.updateParty(role(), 'name', $event)"
+      [value]="values().name"
+      (valueChange)="store.updateParty(party(), 'name', $event)"
     />
     <app-inline-input
       class="address"
       [label]="layout().address.label"
       [placeholder]="layout().address.placeholder"
-      [value]="party().address"
-      (valueChange)="store.updateParty(role(), 'address', $event)"
+      [value]="values().address"
+      (valueChange)="store.updateParty(party(), 'address', $event)"
     />
     <div class="details">
       @for (detail of layout().details; track detail.field) {
@@ -107,8 +107,8 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
           class="detail"
           [label]="detail.label"
           [placeholder]="detail.placeholder"
-          [value]="party()[detail.field]"
-          (valueChange)="store.updateParty(role(), detail.field, $event)"
+          [value]="values()[detail.field]"
+          (valueChange)="store.updateParty(party(), detail.field, $event)"
         />
       }
     </div>
@@ -155,12 +155,12 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
       font-size: 11px;
     }
   `,
-  host: { '[class.seller]': 'role() === "seller"' },
+  host: { '[class.seller]': 'party() === "seller"' },
 })
 export class PartyBlock {
   protected readonly store = inject(InvoiceStore);
-  readonly role = input.required<PartyRole>();
+  readonly party = input.required<PartyRole>();
 
-  protected readonly layout = computed(() => LAYOUTS[this.role()]);
-  protected readonly party = computed(() => this.store.invoice()[this.role()]);
+  protected readonly layout = computed(() => LAYOUTS[this.party()]);
+  protected readonly values = computed(() => this.store.invoice()[this.party()]);
 }

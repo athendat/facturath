@@ -6,7 +6,7 @@ import { PartyBlock } from './party-block';
 
 @Component({
   imports: [PartyBlock],
-  template: `<app-party-block [role]="role()" />`,
+  template: `<app-party-block [party]="role()" />`,
 })
 class Host {
   readonly role = input.required<PartyRole>();
