@@ -27,6 +27,16 @@ import { InvoiceStore } from './invoice-store';
       />
     </div>
     <div class="row">
+      <span class="label">Fecha de emisión</span>
+      <app-inline-input
+        class="date"
+        label="Fecha de emisión"
+        type="date"
+        [value]="store.invoice().issueDate"
+        (valueChange)="store.setField('issueDate', $event)"
+      />
+    </div>
+    <div class="row">
       <span class="label">Moneda</span>
       <select class="currency" aria-label="Moneda" (change)="onCurrencyChange($event)">
         @for (currency of currencies; track currency) {
@@ -89,6 +99,11 @@ import { InvoiceStore } from './invoice-store';
     .rate {
       width: 56px;
       text-align: right;
+    }
+
+    .date {
+      width: 124px;
+      font-size: 11px;
     }
 
     .currency {
