@@ -67,6 +67,15 @@ describe('App', () => {
     expect(link?.rel).toContain('noopener');
   });
 
+  it('marks the header bar and the footer so print hides them', () => {
+    const top = compiled.querySelector('.app-top');
+    const footer = compiled.querySelector('footer');
+
+    expect(top?.contains(compiled.querySelector('header'))).toBe(true);
+    expect(top?.hasAttribute('data-print-hide')).toBe(true);
+    expect(footer?.hasAttribute('data-print-hide')).toBe(true);
+  });
+
   it('renders the current toast in a live region', async () => {
     TestBed.inject(ToastService).show('Factura guardada.');
     await fixture.whenStable();
