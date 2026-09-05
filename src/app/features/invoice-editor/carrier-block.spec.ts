@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { typeInto } from '../../core/testing/dom';
 import { CarrierBlock } from './carrier-block';
 import { InvoiceStore } from './invoice-store';
 
@@ -14,16 +15,6 @@ describe('CarrierBlock', () => {
     store = TestBed.inject(InvoiceStore);
     await fixture.whenStable();
   });
-
-  async function type(label: string, text: string): Promise<void> {
-    const field = element.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
-    if (!field) {
-      throw new Error(`No input labelled ${label}`);
-    }
-    field.value = text;
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-    await fixture.whenStable();
-  }
 
   it('renders the Transportista eyebrow and five labelled inputs', () => {
     expect(element.querySelector('p')?.textContent?.trim()).toBe('Transportista');
@@ -41,11 +32,12 @@ describe('CarrierBlock', () => {
   });
 
   it('writes each field to the carrier in the store', async () => {
-    await type('Nombre del transportista', 'Luis Gómez');
-    await type('Carné de identidad del transportista', '90020254321');
-    await type('Matrícula del vehículo', 'P123456');
-    await type('Carta de porte', 'CP-0099');
-    await type('Casilla del ferrocarril', 'F-12');
+    typeInto(element, 'Nombre del transportista', 'Luis Gómez');
+    typeInto(element, 'Carné de identidad del transportista', '90020254321');
+    typeInto(element, 'Matrícula del vehículo', 'P123456');
+    typeInto(element, 'Carta de porte', 'CP-0099');
+    typeInto(element, 'Casilla del ferrocarril', 'F-12');
+    await fixture.whenStable();
 
     expect(store.invoice().carrier).toEqual({
       name: 'Luis Gómez',

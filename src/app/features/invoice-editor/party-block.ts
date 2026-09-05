@@ -1,20 +1,15 @@
 import { Component, computed, inject, input } from '@angular/core';
 import type { Party, PartyRole } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
+import type { FieldSpec } from './field-spec';
 import { InvoiceStore } from './invoice-store';
-
-interface PartyField {
-  field: keyof Party;
-  label: string;
-  placeholder: string;
-}
 
 interface PartyLayout {
   /** Section eyebrow; the seller has none because it opens the document. */
   eyebrow: string | null;
-  name: PartyField;
-  address: PartyField;
-  details: PartyField[];
+  name: FieldSpec<Party>;
+  address: FieldSpec<Party>;
+  details: FieldSpec<Party>[];
 }
 
 const LAYOUTS: Record<PartyRole, PartyLayout> = {
@@ -117,15 +112,6 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
     :host {
       display: block;
       min-width: 0;
-    }
-
-    .eyebrow {
-      margin: 0 0 3px;
-      color: var(--fg-3);
-      font-size: 9px;
-      font-weight: var(--fw-bold);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
     }
 
     .name {

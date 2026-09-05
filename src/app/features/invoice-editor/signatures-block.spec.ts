@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { typeInto } from '../../core/testing/dom';
 import { InvoiceStore } from './invoice-store';
 import { SignaturesBlock } from './signatures-block';
 
@@ -14,16 +15,6 @@ describe('SignaturesBlock', () => {
     store = TestBed.inject(InvoiceStore);
     await fixture.whenStable();
   });
-
-  async function type(label: string, text: string): Promise<void> {
-    const field = element.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
-    if (!field) {
-      throw new Error(`No input labelled ${label}`);
-    }
-    field.value = text;
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-    await fixture.whenStable();
-  }
 
   it('renders four signature lines with their captions in order', () => {
     expect(
@@ -42,10 +33,11 @@ describe('SignaturesBlock', () => {
   });
 
   it('writes each line to the signatures in the store', async () => {
-    await type('Firma: entrega', 'Marta');
-    await type('Firma: recibe', 'Ana');
-    await type('Firma: transportador', 'Luis');
-    await type('Firma: contabiliza', 'Pedro');
+    typeInto(element, 'Firma: entrega', 'Marta');
+    typeInto(element, 'Firma: recibe', 'Ana');
+    typeInto(element, 'Firma: transportador', 'Luis');
+    typeInto(element, 'Firma: contabiliza', 'Pedro');
+    await fixture.whenStable();
 
     expect(store.invoice().signatures).toEqual({
       delivers: 'Marta',

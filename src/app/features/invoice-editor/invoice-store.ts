@@ -58,25 +58,31 @@ export class InvoiceStore {
   }
 
   updateParty(role: PartyRole, field: keyof Party, value: string): void {
-    this.state.update((invoice) => ({ ...invoice, [role]: { ...invoice[role], [field]: value } }));
+    this.patchSection(role, field, value);
   }
 
   updateCarrier(field: keyof Carrier, value: string): void {
-    this.state.update((invoice) => ({
-      ...invoice,
-      carrier: { ...invoice.carrier, [field]: value },
-    }));
+    this.patchSection('carrier', field, value);
   }
 
   updateSignature(field: keyof Signatures, value: string): void {
-    this.state.update((invoice) => ({
-      ...invoice,
-      signatures: { ...invoice.signatures, [field]: value },
-    }));
+    this.patchSection('signatures', field, value);
   }
 
   updateTax(field: keyof Tax, value: string): void {
-    this.state.update((invoice) => ({ ...invoice, tax: { ...invoice.tax, [field]: value } }));
+    this.patchSection('tax', field, value);
+  }
+
+  /** Replaces one string field inside a nested section of the invoice, immutably. */
+  private patchSection<K extends PartyRole | 'carrier' | 'signatures' | 'tax'>(
+    section: K,
+    field: keyof Invoice[K],
+    value: string,
+  ): void {
+    this.state.update((invoice) => ({
+      ...invoice,
+      [section]: { ...invoice[section], [field]: value },
+    }));
   }
 
   updateLine(index: number, field: keyof LineItem, value: string): void {

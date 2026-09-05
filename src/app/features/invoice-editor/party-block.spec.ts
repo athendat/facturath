@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { typeInto } from '../../core/testing/dom';
 import type { PartyRole } from '../../domain/invoice';
 import { InvoiceStore } from './invoice-store';
 import { PartyBlock } from './party-block';
@@ -41,9 +42,7 @@ describe('PartyBlock', () => {
   }
 
   async function type(label: string, text: string): Promise<void> {
-    const field = input(label);
-    field.value = text;
-    field.dispatchEvent(new Event('input', { bubbles: true }));
+    typeInto(element, label, text);
     await fixture.whenStable();
   }
 

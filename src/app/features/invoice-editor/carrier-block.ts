@@ -1,15 +1,10 @@
 import { Component, inject } from '@angular/core';
 import type { Carrier } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
+import type { FieldSpec } from './field-spec';
 import { InvoiceStore } from './invoice-store';
 
-interface CarrierField {
-  field: keyof Carrier;
-  label: string;
-  placeholder: string;
-}
-
-const FIELDS: CarrierField[] = [
+const FIELDS: FieldSpec<Carrier>[] = [
   { field: 'name', label: 'Nombre del transportista', placeholder: 'Nombre' },
   {
     field: 'identityCard',
@@ -28,13 +23,13 @@ const FIELDS: CarrierField[] = [
   template: `
     <p class="eyebrow">Transportista</p>
     <div class="fields">
-      @for (item of fields; track item.field) {
+      @for (field of fields; track field.field) {
         <app-inline-input
           class="field"
-          [label]="item.label"
-          [placeholder]="item.placeholder"
-          [value]="store.invoice().carrier[item.field]"
-          (valueChange)="store.updateCarrier(item.field, $event)"
+          [label]="field.label"
+          [placeholder]="field.placeholder"
+          [value]="store.invoice().carrier[field.field]"
+          (valueChange)="store.updateCarrier(field.field, $event)"
         />
       }
     </div>
@@ -42,15 +37,6 @@ const FIELDS: CarrierField[] = [
   styles: `
     :host {
       display: block;
-    }
-
-    .eyebrow {
-      margin: 0 0 3px;
-      color: var(--fg-3);
-      font-size: 9px;
-      font-weight: var(--fw-bold);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
     }
 
     .fields {

@@ -161,6 +161,20 @@ describe('InvoiceStore', () => {
     });
   });
 
+  describe('header', () => {
+    it('starts a new invoice at series A, number 0001, in CUP', () => {
+      const { series, number, currency, exchangeRate } = store.invoice();
+
+      expect({ series, number, currency, exchangeRate }).toEqual({
+        series: 'A',
+        number: '0001',
+        currency: 'CUP',
+        exchangeRate: '',
+      });
+      expect(store.headerReference()).toBe('A-0001 · 0.00 CUP');
+    });
+  });
+
   describe('parties', () => {
     const emptyParty = {
       name: '',

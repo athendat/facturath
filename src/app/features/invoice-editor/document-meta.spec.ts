@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { typeInto } from '../../core/testing/dom';
 import { DocumentMeta } from './document-meta';
 import { InvoiceStore } from './invoice-store';
 
@@ -23,12 +24,6 @@ describe('DocumentMeta', () => {
     return found;
   }
 
-  async function type(field: HTMLInputElement, text: string): Promise<void> {
-    field.value = text;
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-    await fixture.whenStable();
-  }
-
   it('renders the issue date as an empty native date input', () => {
     const date = input('Fecha de emisión');
 
@@ -41,14 +36,16 @@ describe('DocumentMeta', () => {
     await fixture.whenStable();
     expect(input('Fecha de emisión').value).toBe('2026-09-04');
 
-    await type(input('Fecha de emisión'), '2026-10-01');
+    typeInto(element, 'Fecha de emisión', '2026-10-01');
+    await fixture.whenStable();
 
     expect(store.invoice().issueDate).toBe('2026-10-01');
   });
 
   it('updates the header reference when the series or number change', async () => {
-    await type(input('Serie'), 'B');
-    await type(input('Número'), '0042');
+    typeInto(element, 'Serie', 'B');
+    typeInto(element, 'Número', '0042');
+    await fixture.whenStable();
 
     expect(store.headerReference()).toBe('B-0042 · 0.00 CUP');
   });

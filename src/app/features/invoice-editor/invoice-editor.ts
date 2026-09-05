@@ -25,27 +25,27 @@ import { TotalsPanel } from './totals-panel';
   template: `
     <article class="sheet">
       <div class="head">
-        <app-party-block class="seller" [party]="'seller'" />
+        <app-party-block class="seller" party="seller" />
         <app-document-meta class="meta" />
       </div>
       <div class="parties">
-        <app-party-block [party]="'buyer'" />
-        <app-text-block [kind]="'concept'" />
+        <app-party-block party="buyer" />
+        <app-text-block kind="concept" />
       </div>
       <app-line-items-table />
       <div class="summary">
-        <app-text-block class="notes" [kind]="'notes'" />
+        <app-text-block class="notes" kind="notes" />
         <app-totals-panel class="totals" />
       </div>
-      <section class="band">
-        <app-text-block class="terms" [kind]="'terms'" />
-      </section>
-      <section class="band">
+      <div class="band">
+        <app-text-block class="terms" kind="terms" />
+      </div>
+      <div class="band">
         <app-carrier-block />
-      </section>
-      <section class="band">
+      </div>
+      <div class="band">
         <app-signatures-block />
-      </section>
+      </div>
       <app-legal-footer />
     </article>
   `,

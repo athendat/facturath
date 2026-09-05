@@ -50,15 +50,6 @@ const LAYOUTS: Record<TextBlockKind, TextLayout> = {
       min-width: 0;
     }
 
-    .eyebrow {
-      margin: 0 0 3px;
-      color: var(--fg-3);
-      font-size: 9px;
-      font-weight: var(--fw-bold);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
     .text {
       color: var(--fg-2);
       font-size: 11px;

@@ -1,4 +1,4 @@
-@import "./styles/tokens.css";
+@import './styles/tokens.css';
 
 * {
   box-sizing: border-box;
@@ -26,6 +26,16 @@ a {
 
 a:hover {
   color: var(--fg-link-hover);
+}
+
+/* Section title inside the document (Comprador, Notas, Transportista...). */
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--fg-3);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 /* Visually hidden, still read by screen readers. */
