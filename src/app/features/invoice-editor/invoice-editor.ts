@@ -128,6 +128,11 @@ import { TotalsPanel } from './totals-panel';
         border-radius: 0;
         box-shadow: none;
       }
+
+      /* A band whose only block is blank (the carrier) leaves no empty strip on paper. */
+      .band:has(> .blank) {
+        display: none;
+      }
     }
   `,
 })

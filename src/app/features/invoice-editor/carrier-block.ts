@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import type { Carrier } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
 import type { FieldSpec } from './field-spec';
@@ -56,13 +56,20 @@ const FIELDS: FieldSpec<Carrier>[] = [
         break-inside: avoid;
       }
 
-      .field.blank {
+      .field.blank,
+      :host(.blank) {
         display: none;
       }
     }
   `,
+  host: { '[class.blank]': 'blank()' },
 })
 export class CarrierBlock {
   protected readonly store = inject(InvoiceStore);
   protected readonly fields = FIELDS;
+
+  /** No carrier at all: the printed document drops the block instead of showing an empty title. */
+  protected readonly blank = computed(() =>
+    Object.values(this.store.invoice().carrier).every((value) => value === ''),
+  );
 }
