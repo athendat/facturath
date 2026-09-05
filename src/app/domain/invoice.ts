@@ -23,6 +23,9 @@ export interface LineItem {
   unitPrice: string;
 }
 
+/** Which side of the operation a `Party` block describes. */
+export type PartyRole = 'seller' | 'buyer';
+
 export interface Party {
   name: string;
   address: string;

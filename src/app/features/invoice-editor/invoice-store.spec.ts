@@ -161,6 +161,134 @@ describe('InvoiceStore', () => {
     });
   });
 
+  describe('parties', () => {
+    const emptyParty = {
+      name: '',
+      address: '',
+      nit: '',
+      identityCard: '',
+      commercialRegistry: '',
+      bankAccount: '',
+      bankBranch: '',
+    };
+
+    it('starts with an empty seller and buyer', () => {
+      expect(store.invoice().seller).toEqual(emptyParty);
+      expect(store.invoice().buyer).toEqual(emptyParty);
+    });
+
+    it('updates each seller field without touching the buyer', () => {
+      store.updateParty('seller', 'name', 'Taller Rodríguez');
+      store.updateParty('seller', 'address', 'Calle 23 #456, La Habana');
+      store.updateParty('seller', 'nit', '12345678901');
+      store.updateParty('seller', 'commercialRegistry', 'REEUP 123');
+      store.updateParty('seller', 'bankAccount', '0598 1234 5678');
+      store.updateParty('seller', 'bankBranch', 'BANDEC 4321');
+
+      expect(store.invoice().seller).toEqual({
+        name: 'Taller Rodríguez',
+        address: 'Calle 23 #456, La Habana',
+        nit: '12345678901',
+        identityCard: '',
+        commercialRegistry: 'REEUP 123',
+        bankAccount: '0598 1234 5678',
+        bankBranch: 'BANDEC 4321',
+      });
+      expect(store.invoice().buyer).toEqual(emptyParty);
+    });
+
+    it('updates each buyer field without touching the seller', () => {
+      store.updateParty('buyer', 'name', 'Ana Pérez');
+      store.updateParty('buyer', 'address', 'Ave. 51, Marianao');
+      store.updateParty('buyer', 'nit', '98765432109');
+      store.updateParty('buyer', 'identityCard', '85010112345');
+      store.updateParty('buyer', 'commercialRegistry', 'RC 77');
+      store.updateParty('buyer', 'bankAccount', '0300 9876 5432');
+
+      expect(store.invoice().buyer).toEqual({
+        name: 'Ana Pérez',
+        address: 'Ave. 51, Marianao',
+        nit: '98765432109',
+        identityCard: '85010112345',
+        commercialRegistry: 'RC 77',
+        bankAccount: '0300 9876 5432',
+        bankBranch: '',
+      });
+      expect(store.invoice().seller).toEqual(emptyParty);
+    });
+  });
+
+  describe('text blocks', () => {
+    it('start empty', () => {
+      expect(store.invoice().concept).toBe('');
+      expect(store.invoice().notes).toBe('');
+      expect(store.invoice().terms).toBe('');
+    });
+
+    it('hold the concept, notes and terms typed by the user', () => {
+      store.setField('concept', 'Venta de mercancías');
+      store.setField('notes', 'Entrega parcial');
+      store.setField('terms', 'Pago a 30 días');
+
+      expect(store.invoice().concept).toBe('Venta de mercancías');
+      expect(store.invoice().notes).toBe('Entrega parcial');
+      expect(store.invoice().terms).toBe('Pago a 30 días');
+    });
+  });
+
+  describe('carrier', () => {
+    it('starts empty', () => {
+      expect(store.invoice().carrier).toEqual({
+        name: '',
+        identityCard: '',
+        plate: '',
+        waybill: '',
+        railwayBox: '',
+      });
+    });
+
+    it('updates each carrier field', () => {
+      store.updateCarrier('name', 'Luis Gómez');
+      store.updateCarrier('identityCard', '90020254321');
+      store.updateCarrier('plate', 'P123456');
+      store.updateCarrier('waybill', 'CP-0099');
+      store.updateCarrier('railwayBox', 'F-12');
+
+      expect(store.invoice().carrier).toEqual({
+        name: 'Luis Gómez',
+        identityCard: '90020254321',
+        plate: 'P123456',
+        waybill: 'CP-0099',
+        railwayBox: 'F-12',
+      });
+    });
+  });
+
+  describe('signatures', () => {
+    it('start empty', () => {
+      expect(store.invoice().signatures).toEqual({
+        delivers: '',
+        receives: '',
+        carrier: '',
+        books: '',
+      });
+    });
+
+    it('updates each signature line', () => {
+      store.updateSignature('delivers', 'Marta');
+      store.updateSignature('receives', 'Ana');
+      store.updateSignature('carrier', 'Luis');
+      store.updateSignature('books', 'Pedro');
+
+      expect(store.invoice().signatures).toEqual({
+        delivers: 'Marta',
+        receives: 'Ana',
+        carrier: 'Luis',
+        books: 'Pedro',
+      });
+    });
+  });
+
   describe('header reference', () => {
     it('combines series, number and the formatted total with its currency', () => {
       store.updateLine(0, 'quantity', '1');

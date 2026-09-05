@@ -5,8 +5,12 @@ import {
   createEmptyLine,
   createInvoice,
   needsExchangeRate,
+  type Carrier,
   type Invoice,
   type LineItem,
+  type Party,
+  type PartyRole,
+  type Signatures,
   type Tax,
 } from '../../domain/invoice';
 import { computeTotals } from '../../domain/totals';
@@ -51,6 +55,24 @@ export class InvoiceStore {
     this.state.update((invoice) =>
       invoice.issueDate === '' ? { ...invoice, issueDate: formatLocalIsoDate(date) } : invoice,
     );
+  }
+
+  updateParty(role: PartyRole, field: keyof Party, value: string): void {
+    this.state.update((invoice) => ({ ...invoice, [role]: { ...invoice[role], [field]: value } }));
+  }
+
+  updateCarrier(field: keyof Carrier, value: string): void {
+    this.state.update((invoice) => ({
+      ...invoice,
+      carrier: { ...invoice.carrier, [field]: value },
+    }));
+  }
+
+  updateSignature(field: keyof Signatures, value: string): void {
+    this.state.update((invoice) => ({
+      ...invoice,
+      signatures: { ...invoice.signatures, [field]: value },
+    }));
   }
 
   updateTax(field: keyof Tax, value: string): void {
