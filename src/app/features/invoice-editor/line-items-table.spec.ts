@@ -60,6 +60,18 @@ describe('LineItemsTable', () => {
     expect(inputIn(rows()[0], 'Cantidad').value).toBe('5');
   });
 
+  it('marks the editing controls so print hides them', async () => {
+    await click('Agregar línea');
+
+    const hidden = Array.from(element.querySelectorAll('[data-print-hide]'));
+
+    expect(hidden).toHaveLength(4);
+    expect(hidden).toContain(element.querySelector('th.actions'));
+    expect(hidden).toContain(element.querySelector('button[aria-label="Agregar línea"]'));
+    expect(hidden).toContain(element.querySelector('button[aria-label="Eliminar línea 1"]'));
+    expect(hidden).toContain(element.querySelector('button[aria-label="Eliminar línea 2"]'));
+  });
+
   it('leaves one empty row after removing the last row', async () => {
     await type(inputIn(rows()[0], 'Descripción'), 'Servicio');
     await type(inputIn(rows()[0], 'Cantidad'), '3');

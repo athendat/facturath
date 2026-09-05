@@ -53,6 +53,12 @@ const LINES: SignatureLine[] = [
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
+
+    @media print {
+      :host {
+        break-inside: avoid;
+      }
+    }
   `,
 })
 export class SignaturesBlock {

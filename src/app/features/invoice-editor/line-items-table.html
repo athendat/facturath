@@ -4,7 +4,7 @@
       <th class="product">Código · producto · U/M</th>
       <th class="qty-price">Cant. × precio</th>
       <th class="amount">Importe</th>
-      <th class="actions"><span class="sr-only">Acciones</span></th>
+      <th class="actions" data-print-hide><span class="sr-only">Acciones</span></th>
     </tr>
   </thead>
   <tbody>
@@ -66,6 +66,7 @@
           <button
             type="button"
             class="delete"
+            data-print-hide
             [attr.aria-label]="'Eliminar línea ' + ($index + 1)"
             (click)="store.removeLine($index)"
           >
@@ -81,7 +82,13 @@
     }
   </tbody>
 </table>
-<button type="button" class="add" aria-label="Agregar línea" (click)="store.addLine()">
+<button
+  type="button"
+  class="add"
+  aria-label="Agregar línea"
+  data-print-hide
+  (click)="store.addLine()"
+>
   <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
     <path d="M7.25 2h1.5v5.25H14v1.5H8.75V14h-1.5V8.75H2v-1.5h5.25V2z" fill="currentColor" />
   </svg>

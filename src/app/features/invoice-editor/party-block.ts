@@ -140,6 +140,14 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
       min-width: 110px;
       font-size: 11px;
     }
+
+    /* Empty identifiers leave no gap on paper. */
+    @media print {
+      .address.blank,
+      .detail.blank {
+        display: none;
+      }
+    }
   `,
   host: { '[class.seller]': 'party() === "seller"' },
 })

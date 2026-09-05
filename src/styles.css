@@ -38,6 +38,22 @@ a:hover {
   text-transform: uppercase;
 }
 
+/* Print and "save as PDF": the page is the document. Anything marked
+   data-print-hide is an editing control that must not appear on paper. */
+@page {
+  margin: 10mm;
+}
+
+@media print {
+  body {
+    background: var(--bg-0);
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+}
+
 /* Visually hidden, still read by screen readers. */
 .sr-only {
   position: absolute;

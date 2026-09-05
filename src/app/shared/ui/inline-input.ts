@@ -18,9 +18,14 @@ import { Component, ElementRef, computed, effect, input, model, viewChild } from
       [attr.inputmode]="inputModeAttribute()"
       autocomplete="off"
     />
+    @if (type() === 'text') {
+      <span class="print-value">{{ value() }}</span>
+    }
   `,
   styles: `
     :host {
+      --pad-y: 3px;
+
       display: block;
       min-width: 0;
     }
@@ -29,7 +34,7 @@ import { Component, ElementRef, computed, effect, input, model, viewChild } from
       display: block;
       width: 100%;
       margin: 0;
-      padding: 3px 4px;
+      padding: var(--pad-y) 4px;
       border: 0;
       border-radius: var(--radius-xs);
       background: transparent;
@@ -52,7 +57,45 @@ import { Component, ElementRef, computed, effect, input, model, viewChild } from
       background: var(--bg-0);
       box-shadow: var(--focus-ring);
     }
+
+    /* A single-line input cannot wrap, so on paper a text value is shown by this mirror
+       instead: it wraps at the same width and nothing is clipped or ellipsized. */
+    .print-value {
+      display: none;
+    }
+
+    @media print {
+      input[type='text'] {
+        display: none;
+      }
+
+      .print-value {
+        display: block;
+        min-height: calc(1lh + 2 * var(--pad-y));
+        padding: var(--pad-y) 4px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      input,
+      input:hover,
+      input:focus {
+        background: transparent;
+        box-shadow: none;
+      }
+
+      /* Not just invisible: opacity 0 keeps the placeholder text out of the saved PDF. */
+      input::placeholder {
+        opacity: 0;
+      }
+
+      input::-webkit-calendar-picker-indicator {
+        display: none;
+      }
+    }
   `,
+  /* `blank` lets the parent collapse an empty field in print; the parent decides where that is right. */
+  host: { '[class.blank]': 'value() === ""' },
 })
 export class InlineInput {
   readonly value = model('');

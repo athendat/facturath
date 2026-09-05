@@ -120,6 +120,15 @@ import { TotalsPanel } from './totals-panel';
     .terms {
       min-width: 180px;
     }
+
+    @media print {
+      .sheet {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
   `,
 })
 export class InvoiceEditor {
