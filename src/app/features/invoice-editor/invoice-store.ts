@@ -1,4 +1,5 @@
 import { Service, computed, signal } from '@angular/core';
+import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
   createEmptyLine,
@@ -40,6 +41,16 @@ export class InvoiceStore {
 
   setField<K extends keyof Invoice>(field: K, value: Invoice[K]): void {
     this.state.update((invoice) => ({ ...invoice, [field]: value }));
+  }
+
+  /**
+   * Dates an undated invoice with the local calendar day of `date`. Callers pass `new Date()`
+   * from a browser-only hook so the prerendered document stays undated and hydration matches.
+   */
+  setIssueDateIfEmpty(date: Date): void {
+    this.state.update((invoice) =>
+      invoice.issueDate === '' ? { ...invoice, issueDate: formatLocalIsoDate(date) } : invoice,
+    );
   }
 
   updateTax(field: keyof Tax, value: string): void {

@@ -141,6 +141,26 @@ describe('InvoiceStore', () => {
     });
   });
 
+  describe('issue date', () => {
+    it('starts empty so the prerendered document carries no date', () => {
+      expect(store.invoice().issueDate).toBe('');
+    });
+
+    it('dates the invoice with the local ISO day when it has no date yet', () => {
+      store.setIssueDateIfEmpty(new Date(2026, 8, 4, 23, 30));
+
+      expect(store.invoice().issueDate).toBe('2026-09-04');
+    });
+
+    it('does not overwrite a date the user already typed', () => {
+      store.setField('issueDate', '2026-01-15');
+
+      store.setIssueDateIfEmpty(new Date(2026, 8, 4));
+
+      expect(store.invoice().issueDate).toBe('2026-01-15');
+    });
+  });
+
   describe('header reference', () => {
     it('combines series, number and the formatted total with its currency', () => {
       store.updateLine(0, 'quantity', '1');
