@@ -37,4 +37,27 @@ describe('InlineTextarea', () => {
 
     expect(fixture.componentInstance.text()).toBe('Entrega parcial\nGarantía 30 días');
   });
+
+  it('does not write the element back when it already holds what the user typed', async () => {
+    const nativeValueSetter = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value',
+    )!.set!;
+    const setter = vi.spyOn(HTMLTextAreaElement.prototype, 'value', 'set');
+
+    nativeValueSetter.call(textarea, 'Entrega parcial');
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.text()).toBe('Entrega parcial');
+    expect(setter).not.toHaveBeenCalled();
+    setter.mockRestore();
+  });
+
+  it('writes the element when the bound value changes from outside', async () => {
+    fixture.componentInstance.text.set('desde fuera');
+    await fixture.whenStable();
+
+    expect(textarea.value).toBe('desde fuera');
+  });
 });

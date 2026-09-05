@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { Component, ElementRef, effect, input, model, viewChild } from '@angular/core';
 
 /**
  * The multiline sibling of `InlineInput`: a borderless textarea that sits inside
@@ -8,13 +8,13 @@ import { Component, input, model } from '@angular/core';
   selector: 'app-inline-textarea',
   template: `
     <textarea
-      [value]="value()"
+      #field
       (input)="onInput($event)"
       [attr.aria-label]="label()"
       [placeholder]="placeholder()"
       [rows]="rows()"
       autocomplete="off"
-    ></textarea>
+      >{{ value() }}</textarea>
   `,
   styles: `
     :host {
@@ -56,6 +56,20 @@ export class InlineTextarea {
   readonly label = input.required<string>();
   readonly placeholder = input('');
   readonly rows = input(3);
+
+  private readonly field = viewChild.required<ElementRef<HTMLTextAreaElement>>('field');
+
+  constructor() {
+    // The text node above seeds the prerendered markup; later changes go through the property,
+    // and only when the element does not already hold the value, like `InlineInput`.
+    effect(() => {
+      const element = this.field().nativeElement;
+      const value = this.value();
+      if (element.value !== value) {
+        element.value = value;
+      }
+    });
+  }
 
   onInput(event: Event): void {
     this.value.set((event.target as HTMLTextAreaElement).value);
