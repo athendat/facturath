@@ -5,13 +5,42 @@
   z-index: 10;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(8px);
+  /* The border spans the full width while the header content aligns with the document. */
+  border-bottom: 1px solid var(--border-1);
 }
 
 .app-header {
   display: flex;
   align-items: center;
-  padding: var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid var(--border-1);
+  gap: var(--sp-2);
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.primary {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--bg-brand);
+  color: var(--fg-on-brand);
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: var(--gem-800);
+}
+
+.primary:focus-visible {
+  outline: 2px solid var(--gem-900);
+  outline-offset: 2px;
 }
 
 .wordmark {
@@ -22,7 +51,7 @@
 }
 
 .reference {
-  margin-left: var(--sp-3);
+  margin-left: var(--sp-1);
   padding-left: var(--sp-3);
   border-left: 1px solid var(--border-1);
   color: var(--fg-3);

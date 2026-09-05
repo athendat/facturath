@@ -1,4 +1,5 @@
 import { Component, afterNextRender, inject } from '@angular/core';
+import { Printer } from './core/printer';
 import { ToastService } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
 import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
@@ -14,6 +15,7 @@ import { ToastHost } from './shared/ui/toast-host';
 export class App {
   protected readonly store = inject(InvoiceStore);
   protected readonly toasts = inject(ToastService);
+  protected readonly printer = inject(Printer);
   private readonly updateNotifier = inject(UpdateNotifier);
 
   constructor() {

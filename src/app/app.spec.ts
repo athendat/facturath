@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import { App } from './app';
 import { PageReloader } from './core/page-reloader';
+import { Printer } from './core/printer';
 import { findButton } from './core/testing/dom';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
@@ -11,15 +12,18 @@ describe('App', () => {
   let compiled: HTMLElement;
   let swUpdate: FakeSwUpdate;
   let reload: ReturnType<typeof vi.fn>;
+  let print: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     swUpdate = new FakeSwUpdate();
     reload = vi.fn();
+    print = vi.fn();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
         { provide: SwUpdate, useValue: swUpdate },
         { provide: PageReloader, useValue: { reload } },
+        { provide: Printer, useValue: { print } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(App);
@@ -33,6 +37,18 @@ describe('App', () => {
 
   it('renders the FACTURATH wordmark in the header', () => {
     expect(compiled.querySelector('header')?.textContent).toContain('FACTURATH');
+  });
+
+  it('prints from a header button, only when clicked', async () => {
+    const button = findButton(compiled, 'PDF / Imprimir');
+
+    expect(button?.closest('header')).not.toBeNull();
+    expect(print).not.toHaveBeenCalled();
+
+    button?.click();
+    await fixture.whenStable();
+
+    expect(print).toHaveBeenCalledOnce();
   });
 
   it('points to BALANC in a single footer line outside the document', () => {
