@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "facturath",
+  "compatibility_date": "2026-09-01",
+  // Static assets only: no Worker script, no assets binding.
+  // Requests that do not match a file are answered with index.html (200).
+  "assets": {
+    "directory": "./dist/facturath/browser",
+    "not_found_handling": "single-page-application",
+  },
+}
