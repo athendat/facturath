@@ -122,8 +122,11 @@ import { TotalsPanel } from './totals-panel';
     }
 
     @media print {
+      /* Keep an inset even when the dialog margins are "None". The 10-line
+         case leaves ~28px of A4 height with @page 10mm, so vertical padding
+         is --sp-3, not --sp-5 (that would push it to a second page). */
       .sheet {
-        padding: 0;
+        padding: var(--sp-3) var(--sp-5);
         border: 0;
         border-radius: 0;
         box-shadow: none;
