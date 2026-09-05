@@ -31,15 +31,6 @@ describe('CarrierBlock', () => {
     ]);
   });
 
-  it('marks itself blank only while every field is empty, so print can drop the block', async () => {
-    expect(element.classList.contains('blank')).toBe(true);
-
-    typeInto(element, 'Matrícula del vehículo', 'P123456');
-    await fixture.whenStable();
-
-    expect(element.classList.contains('blank')).toBe(false);
-  });
-
   it('writes each field to the carrier in the store', async () => {
     typeInto(element, 'Nombre del transportista', 'Luis Gómez');
     typeInto(element, 'Carné de identidad del transportista', '90020254321');

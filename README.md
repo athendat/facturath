@@ -54,8 +54,9 @@ care about. Fill an invoice with 10 lines, some notes and terms, then:
 
 - Print preview shows only the invoice: no header bar, buttons, empty
   field hints, "Acciones" column or app footer.
-- The document has no border or shadow and fills the page width inside
-  10 mm margins.
+- Leave the dialog margins on "Default" so the 10 mm page margin from the
+  stylesheet applies. The document has no border or shadow and fills the
+  page width inside those margins.
 - The 10-line invoice fits on one A4 page; no row is cut in half.
 - "Save as PDF" produces a file whose text is only the invoice (search
   it for a field hint such as "Tu nombre": nothing should match).
@@ -66,6 +67,8 @@ care about. Fill an invoice with 10 lines, some notes and terms, then:
   height instead of growing with the text (Firefox does not support
   `field-sizing`). Text beyond that height is cut in print; drag the
   corner of the box to enlarge it before printing.
+- "Save to PDF" produces a file whose text is only the invoice (search
+  it for a field hint such as "Tu nombre": nothing should match).
 
 **iOS Safari**
 
