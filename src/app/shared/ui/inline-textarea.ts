@@ -1,22 +1,20 @@
 import { Component, input, model } from '@angular/core';
 
 /**
- * A borderless text input that sits inside the document. Font, color and
- * text alignment are inherited from the host element so the parent decides
- * the look; the parent also decides the width by styling the host.
+ * The multiline sibling of `InlineInput`: a borderless textarea that sits inside
+ * the document and inherits font and color from its host.
  */
 @Component({
-  selector: 'app-inline-input',
+  selector: 'app-inline-textarea',
   template: `
-    <input
-      [type]="type()"
+    <textarea
       [value]="value()"
       (input)="onInput($event)"
       [attr.aria-label]="label()"
       [placeholder]="placeholder()"
-      [attr.inputmode]="inputMode()"
+      [rows]="rows()"
       autocomplete="off"
-    />
+    ></textarea>
   `,
   styles: `
     :host {
@@ -24,7 +22,7 @@ import { Component, input, model } from '@angular/core';
       min-width: 0;
     }
 
-    input {
+    textarea {
       display: block;
       width: 100%;
       margin: 0;
@@ -33,35 +31,33 @@ import { Component, input, model } from '@angular/core';
       border-radius: var(--radius-xs);
       background: transparent;
       font: inherit;
+      line-height: 1.5;
       color: inherit;
-      text-align: inherit;
+      resize: vertical;
       outline: none;
     }
 
-    input::placeholder {
+    textarea::placeholder {
       color: var(--fg-4);
-      font-weight: var(--fw-regular);
     }
 
-    input:hover {
+    textarea:hover {
       background: var(--gray-100);
     }
 
-    input:focus {
+    textarea:focus {
       background: var(--bg-0);
       box-shadow: var(--focus-ring);
     }
   `,
 })
-export class InlineInput {
+export class InlineTextarea {
   readonly value = model('');
   readonly label = input.required<string>();
   readonly placeholder = input('');
-  readonly inputMode = input<'text' | 'decimal'>('text');
-  /** A native date input emits ISO `YYYY-MM-DD` on `input`, which is what the model stores. */
-  readonly type = input<'text' | 'date'>('text');
+  readonly rows = input(3);
 
   onInput(event: Event): void {
-    this.value.set((event.target as HTMLInputElement).value);
+    this.value.set((event.target as HTMLTextAreaElement).value);
   }
 }
