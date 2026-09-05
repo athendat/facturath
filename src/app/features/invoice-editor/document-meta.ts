@@ -124,6 +124,14 @@ import { InvoiceStore } from './invoice-store';
       background: var(--bg-0);
       box-shadow: var(--focus-ring);
     }
+
+    @media print {
+      .currency {
+        appearance: none;
+        background: none;
+        box-shadow: none;
+      }
+    }
   `,
 })
 export class DocumentMeta {

@@ -148,3 +148,15 @@ td.actions {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+@media print {
+  th.actions,
+  td.actions,
+  .detail.blank {
+    display: none;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}

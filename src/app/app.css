@@ -74,7 +74,13 @@
 }
 
 @media print {
+  .app-top,
   .app-footer {
     display: none;
+  }
+
+  .app-main {
+    max-width: none;
+    padding: 0;
   }
 }

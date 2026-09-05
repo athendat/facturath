@@ -50,6 +50,16 @@ const FIELDS: FieldSpec<Carrier>[] = [
       min-width: 110px;
       font-size: 11px;
     }
+
+    @media print {
+      :host {
+        break-inside: avoid;
+      }
+
+      .field.blank {
+        display: none;
+      }
+    }
   `,
 })
 export class CarrierBlock {

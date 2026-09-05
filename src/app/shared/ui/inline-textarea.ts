@@ -13,6 +13,7 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
       [attr.aria-label]="label()"
       [placeholder]="placeholder()"
       [rows]="rows()"
+      [style.--rows]="rows()"
       autocomplete="off"
       >{{ value() }}</textarea>
   `,
@@ -48,6 +49,25 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
     textarea:focus {
       background: var(--bg-0);
       box-shadow: var(--focus-ring);
+    }
+
+    /* Print shows the whole text: the box grows with the content (Chromium) and
+       never shrinks below its on-screen rows. Firefox keeps the rows box. */
+    @media print {
+      textarea,
+      textarea:hover,
+      textarea:focus {
+        min-height: calc(var(--rows) * 1.5em + 6px);
+        background: transparent;
+        box-shadow: none;
+        field-sizing: content;
+        resize: none;
+        overflow: hidden;
+      }
+
+      textarea::placeholder {
+        opacity: 0;
+      }
     }
   `,
 })

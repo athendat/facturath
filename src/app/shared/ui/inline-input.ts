@@ -52,7 +52,28 @@ import { Component, ElementRef, computed, effect, input, model, viewChild } from
       background: var(--bg-0);
       box-shadow: var(--focus-ring);
     }
+
+    @media print {
+      input,
+      input:hover,
+      input:focus {
+        background: transparent;
+        box-shadow: none;
+        text-overflow: ellipsis;
+      }
+
+      /* Not just invisible: opacity 0 keeps the placeholder text out of the saved PDF. */
+      input::placeholder {
+        opacity: 0;
+      }
+
+      input::-webkit-calendar-picker-indicator {
+        display: none;
+      }
+    }
   `,
+  /* `blank` lets the parent collapse an empty field in print; the parent decides where that is right. */
+  host: { '[class.blank]': 'value() === ""' },
 })
 export class InlineInput {
   readonly value = model('');

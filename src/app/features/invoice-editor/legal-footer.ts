@@ -24,6 +24,12 @@ import { Component } from '@angular/core';
       font-size: 9px;
       line-height: var(--lh-relaxed);
     }
+
+    @media print {
+      :host {
+        break-inside: avoid;
+      }
+    }
   `,
 })
 export class LegalFooter {}

@@ -92,5 +92,17 @@ describe('InlineInput', () => {
       expect(input.getAttribute('inputmode')).toBe('decimal');
       expect(input.value).toBe('1');
     });
+
+    it('marks its host as blank only while the value is empty, so print can collapse it', async () => {
+      const host = fixture.nativeElement.querySelector('app-inline-input') as HTMLElement;
+
+      expect(host.classList.contains('blank')).toBe(false);
+
+      nativeValueSetter.call(input, '');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(host.classList.contains('blank')).toBe(true);
+    });
   });
 });
