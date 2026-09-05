@@ -150,7 +150,6 @@ td.actions {
 }
 
 @media print {
-  th.actions,
   td.actions,
   .detail.blank {
     display: none;

@@ -18,11 +18,8 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
-.spacer {
-  flex: 1;
-}
-
 .primary {
+  margin-left: auto;
   min-height: 38px;
   padding: 0 14px;
   border: 0;

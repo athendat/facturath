@@ -24,10 +24,12 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
     }
 
     textarea {
+      --pad-y: 3px;
+
       display: block;
       width: 100%;
       margin: 0;
-      padding: 3px 4px;
+      padding: var(--pad-y) 4px;
       border: 0;
       border-radius: var(--radius-xs);
       background: transparent;
@@ -57,7 +59,7 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
       textarea,
       textarea:hover,
       textarea:focus {
-        min-height: calc(var(--rows) * 1.5em + 6px);
+        min-height: calc(var(--rows) * 1lh + 2 * var(--pad-y));
         background: transparent;
         box-shadow: none;
         field-sizing: content;

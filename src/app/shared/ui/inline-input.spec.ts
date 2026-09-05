@@ -68,6 +68,10 @@ describe('InlineInput', () => {
       setter.mockRestore();
     });
 
+    it('has no print mirror: the date input prints itself', () => {
+      expect(fixture.nativeElement.querySelector('.print-value')).toBeNull();
+    });
+
     it('writes the element when the bound value changes from outside', async () => {
       fixture.componentInstance.date.set('2026-10-01');
       await fixture.whenStable();
@@ -91,6 +95,18 @@ describe('InlineInput', () => {
       expect(input.type).toBe('text');
       expect(input.getAttribute('inputmode')).toBe('decimal');
       expect(input.value).toBe('1');
+    });
+
+    it('mirrors the value in a print-only text node that wraps instead of clipping', async () => {
+      const mirror = fixture.nativeElement.querySelector('.print-value') as HTMLElement;
+
+      expect(mirror.textContent).toBe('1');
+
+      nativeValueSetter.call(input, '250');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(mirror.textContent).toBe('250');
     });
 
     it('marks its host as blank only while the value is empty, so print can collapse it', async () => {
