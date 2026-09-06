@@ -55,6 +55,16 @@ export function applyProfileToInvoice(invoice: Invoice, profile: SellerProfile):
   };
 }
 
+/** Whether `invoice` already points at the same images as `profile`. */
+export function hasSameAssetIds(invoice: AssetIds, profile: AssetIds): boolean {
+  return ASSET_ID_FIELDS.every((field) => invoice[field] === profile[field]);
+}
+
+/** A copy of `invoice` pointing at the images of `profile`; everything else is kept. */
+export function applyAssetIdsToInvoice(invoice: Invoice, profile: AssetIds): Invoice {
+  return { ...invoice, ...pick(profile, ASSET_ID_FIELDS) };
+}
+
 function pick<T, K extends keyof T>(source: T, keys: readonly K[]): Pick<T, K> {
   const picked = {} as Pick<T, K>;
   for (const key of keys) {
