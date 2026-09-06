@@ -1,6 +1,7 @@
 import { ApplicationConfig, isDevMode, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideStorage } from './core/storage/provide-storage';
 
 /**
  * No Router: the app has a single URL and every secondary view (saved
@@ -15,5 +16,6 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
+    provideStorage(),
   ],
 };

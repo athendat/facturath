@@ -9,6 +9,7 @@
     (actionClicked)="toasts.runAction()"
     (dismissed)="toasts.dismiss()"
   />
+  <app-toast-host [toast]="storageNotice()" />
 </div>
 <main class="app-main">
   <app-invoice-editor />
