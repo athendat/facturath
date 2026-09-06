@@ -56,7 +56,14 @@ export interface Tax {
   percent: string;
 }
 
-export interface Invoice {
+/** Ids of the images in the asset store; null when the invoice has none. */
+export interface AssetIds {
+  logoAssetId: string | null;
+  transfermovilQrAssetId: string | null;
+  enzonaQrAssetId: string | null;
+}
+
+export interface Invoice extends AssetIds {
   id: string;
   schemaVersion: number;
   series: string;
@@ -75,9 +82,6 @@ export interface Invoice {
   terms: string;
   carrier: Carrier;
   signatures: Signatures;
-  logoAssetId: string | null;
-  transfermovilQrAssetId: string | null;
-  enzonaQrAssetId: string | null;
 }
 
 export function createEmptyLine(): LineItem {

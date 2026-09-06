@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { InMemoryPreferencesStore } from '../../core/storage/in-memory-preferences-store';
+import { PREFERENCES_STORE } from '../../core/storage/ports';
+import { createEmptyProfile } from '../../domain/seller-profile';
 import { InvoiceEditor } from './invoice-editor';
 import { InvoiceStore } from './invoice-store';
 
@@ -26,14 +29,23 @@ describe('InvoiceEditor', () => {
   let fixture: ComponentFixture<InvoiceEditor>;
   let element: HTMLElement;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [InvoiceEditor] }).compileComponents();
+  async function render(preferences = new InMemoryPreferencesStore()): Promise<void> {
+    await TestBed.configureTestingModule({
+      imports: [InvoiceEditor],
+      providers: [{ provide: PREFERENCES_STORE, useValue: preferences }],
+    }).compileComponents();
     fixture = TestBed.createComponent(InvoiceEditor);
     element = fixture.nativeElement as HTMLElement;
     await fixture.whenStable();
-  });
+  }
 
-  it('composes every block in document order and ends with the legal footer', () => {
+  function sellerNameInput(): HTMLInputElement | null {
+    return element.querySelector('input[aria-label="Nombre o razón social del vendedor"]');
+  }
+
+  it('composes every block in document order and ends with the legal footer', async () => {
+    await render();
+
     expect(Array.from(element.querySelectorAll(BLOCK_SELECTOR)).map(nameOf)).toEqual([
       'app-party-block[seller]',
       'app-document-meta',
@@ -56,7 +68,29 @@ describe('InvoiceEditor', () => {
     );
   });
 
-  it('dates the invoice with today once rendered in the browser', () => {
+  it('dates the invoice with today once rendered in the browser', async () => {
+    await render();
+
     expect(TestBed.inject(InvoiceStore).invoice().issueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('fills the seller block from the remembered profile once rendered in the browser', async () => {
+    const preferences = new InMemoryPreferencesStore();
+    await preferences.saveProfile({
+      ...createEmptyProfile(),
+      name: 'Taller Rodríguez',
+      nit: '12345678901',
+    });
+
+    await render(preferences);
+
+    expect(sellerNameInput()?.value).toBe('Taller Rodríguez');
+    expect(TestBed.inject(InvoiceStore).invoice().seller.nit).toBe('12345678901');
+  });
+
+  it('leaves the seller block empty when nothing was remembered', async () => {
+    await render();
+
+    expect(sellerNameInput()?.value).toBe('');
   });
 });

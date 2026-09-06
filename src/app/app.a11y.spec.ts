@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import axe from 'axe-core';
 import { App } from './app';
+import { StorageStatus } from './core/storage/storage-status';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
 
 describe('App accessibility', () => {
@@ -16,19 +17,28 @@ describe('App accessibility', () => {
     await fixture.whenStable();
   });
 
-  it('passes axe with no violations', async () => {
+  async function violations(): Promise<string[]> {
     // jsdom has no layout engine, so it cannot compute contrast; every other rule runs.
     const results = await axe.run(fixture.nativeElement as HTMLElement, {
       rules: { 'color-contrast': { enabled: false } },
     });
-
-    const summary = results.violations.map(
+    // Guards against a silent no-op: an empty violation list only counts if rules actually ran.
+    expect(results.passes.length).toBeGreaterThan(10);
+    return results.violations.map(
       (violation) =>
         `${violation.id}: ${violation.help}\n` +
         violation.nodes.map((node) => `  ${node.target.join(' ')}`).join('\n'),
     );
-    expect(summary).toEqual([]);
-    // Guards against a silent no-op: an empty violation list only counts if rules actually ran.
-    expect(results.passes.length).toBeGreaterThan(10);
+  }
+
+  it('passes axe with no violations', async () => {
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
+  it('passes axe with the saving-disabled notice shown', async () => {
+    TestBed.inject(StorageStatus).markUnavailable();
+    await fixture.whenStable();
+
+    await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 });
