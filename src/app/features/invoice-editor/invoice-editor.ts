@@ -1,4 +1,5 @@
 import { Component, afterNextRender, inject } from '@angular/core';
+import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
 import { DocumentMeta } from './document-meta';
 import { InvoiceStore } from './invoice-store';
@@ -136,10 +137,14 @@ import { TotalsPanel } from './totals-panel';
 })
 export class InvoiceEditor {
   private readonly store = inject(InvoiceStore);
+  private readonly settings = inject(SettingsStore);
 
   constructor() {
-    // Browser only, after hydration: the prerendered document must stay undated so the
-    // first client render matches it; today is filled in right after.
-    afterNextRender(() => this.store.setIssueDateIfEmpty(new Date()));
+    // Browser only, after hydration: the prerendered document must stay undated and its
+    // seller block empty so the first client render matches it; both are filled right after.
+    afterNextRender(async () => {
+      this.store.setIssueDateIfEmpty(new Date());
+      this.store.applyProfile(await this.settings.load());
+    });
   }
 }
