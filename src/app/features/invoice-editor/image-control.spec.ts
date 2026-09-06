@@ -1,9 +1,10 @@
 import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ImagesStore, type ImageKind } from '../../core/images-store';
+import { ImagesStore } from '../../core/images-store';
 import { ObjectUrls } from '../../core/object-urls';
 import { SettingsStore } from '../../core/settings-store';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { IMAGE_KINDS, type ImageKind } from '../../domain/invoice';
 import { ImageControl } from './image-control';
 
 @Component({
@@ -56,6 +57,15 @@ describe('ImageControl', () => {
     await fixture.whenStable();
   }
 
+  // WCAG 2.5.3 Label in Name: the accessible name of the file control is its visible text.
+  it.each(IMAGE_KINDS)('names the %s file control after the visible upload text', async (kind) => {
+    await render(kind);
+
+    const visible = element.querySelector('.placeholder')?.textContent?.trim();
+    expect(visible).toMatch(/^Subir /);
+    expect(element.querySelector('input[type="file"]')?.getAttribute('aria-label')).toBe(visible);
+  });
+
   describe('logo', () => {
     it('starts as an upload box that never prints', async () => {
       await render('logo');
@@ -95,6 +105,19 @@ describe('ImageControl', () => {
       expect(objectUrls.revoked).toEqual(['blob:fake/1']);
     });
 
+    it('moves focus to the file control when the remove button goes away', async () => {
+      await render('logo');
+      await choose('Subir logo', png);
+      const remove = removeButton('Quitar logo');
+      remove?.focus();
+      expect(document.activeElement).toBe(remove);
+
+      remove?.click();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(fileInput('Subir logo'));
+    });
+
     it('has no caption', async () => {
       await render('logo');
       await choose('Subir logo', png);
@@ -108,7 +131,7 @@ describe('ImageControl', () => {
       await render('transfermovilQr');
       expect(element.textContent).toContain('Subir QR Transfermóvil');
 
-      await choose('Subir QR de Transfermóvil', png);
+      await choose('Subir QR Transfermóvil', png);
 
       expect(element.querySelector('img[alt="QR Transfermóvil"]')).not.toBeNull();
       expect(removeButton('Quitar QR de Transfermóvil')).not.toBeNull();
@@ -120,7 +143,7 @@ describe('ImageControl', () => {
       await render('enzonaQr');
       expect(element.textContent).toContain('Subir QR EnZona');
 
-      await choose('Subir QR de EnZona', png);
+      await choose('Subir QR EnZona', png);
 
       expect(element.querySelector('img[alt="QR EnZona"]')).not.toBeNull();
       expect(removeButton('Quitar QR de EnZona')).not.toBeNull();

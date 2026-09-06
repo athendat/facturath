@@ -1,4 +1,10 @@
-import { SCHEMA_VERSION, type AssetIds, type Invoice, type Party } from './invoice';
+import {
+  ASSET_ID_FIELDS,
+  SCHEMA_VERSION,
+  type AssetIds,
+  type Invoice,
+  type Party,
+} from './invoice';
 
 /** The text fields a seller `Party` and the profile have in common. */
 export const PROFILE_TEXT_FIELDS = [
@@ -11,8 +17,6 @@ export const PROFILE_TEXT_FIELDS = [
 ] as const;
 
 export type ProfileTextField = (typeof PROFILE_TEXT_FIELDS)[number];
-
-const ASSET_ID_FIELDS = ['logoAssetId', 'transfermovilQrAssetId', 'enzonaQrAssetId'] as const;
 
 /**
  * The seller's own data, stored once and copied into every new invoice: the

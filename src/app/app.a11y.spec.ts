@@ -2,11 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import axe from 'axe-core';
 import { App } from './app';
-import { IMAGE_KINDS, ImagesStore } from './core/images-store';
+import { ImagesStore } from './core/images-store';
 import { ObjectUrls } from './core/object-urls';
 import { StorageStatus } from './core/storage/storage-status';
 import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
+import { IMAGE_KINDS } from './domain/invoice';
 
 describe('App accessibility', () => {
   let fixture: ComponentFixture<App>;

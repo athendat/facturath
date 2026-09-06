@@ -9,14 +9,14 @@ export class ObjectUrls {
   private readonly document = inject(DOCUMENT);
 
   create(blob: Blob): string {
-    return this.url().createObjectURL(blob);
+    return this.urlApi().createObjectURL(blob);
   }
 
   revoke(url: string): void {
-    this.url().revokeObjectURL(url);
+    this.urlApi().revokeObjectURL(url);
   }
 
-  private url(): typeof URL {
+  private urlApi(): typeof URL {
     const window = this.document.defaultView;
     if (!window) {
       throw new Error('Object URLs need a window; call after hydration.');

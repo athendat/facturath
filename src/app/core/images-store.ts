@@ -1,29 +1,13 @@
 import { Service, inject, signal, type OnDestroy } from '@angular/core';
-import type { AssetIds } from '../domain/invoice';
+import { IMAGE_ASSET_FIELDS, IMAGE_KINDS, type ImageKind } from '../domain/invoice';
 import { ObjectUrls } from './object-urls';
 import { SettingsStore } from './settings-store';
 import { ASSET_STORE } from './storage/ports';
 import { StorageStatus } from './storage/storage-status';
 
-/** The three images a seller uploads once and sees on every invoice. */
-export type ImageKind = 'logo' | 'transfermovilQr' | 'enzonaQr';
-
-export const IMAGE_KINDS = [
-  'logo',
-  'transfermovilQr',
-  'enzonaQr',
-] as const satisfies readonly ImageKind[];
-
-/** Which profile and invoice field holds the asset id of each image. */
-export const IMAGE_ASSET_FIELDS: Record<ImageKind, keyof AssetIds> = {
-  logo: 'logoAssetId',
-  transfermovilQr: 'transfermovilQrAssetId',
-  enzonaQr: 'enzonaQrAssetId',
-};
-
 export type ImageUrls = Record<ImageKind, string | null>;
 
-const NO_URLS: ImageUrls = { logo: null, transfermovilQr: null, enzonaQr: null };
+const NO_URLS = Object.fromEntries(IMAGE_KINDS.map((kind) => [kind, null])) as ImageUrls;
 
 /**
  * The seller's logo and payment QR codes: their blobs live in the asset store,
@@ -44,14 +28,16 @@ export class ImagesStore implements OnDestroy {
 
   /**
    * Shows the images the profile points at; browser only, after hydration and
-   * once the profile is loaded. A missing blob leaves its placeholder.
+   * once the profile is loaded. A missing blob leaves its placeholder, and an
+   * image chosen while its blob was still loading wins over the remembered one.
    */
   load(): Promise<void> {
     this.loading ??= Promise.all(
       IMAGE_KINDS.map(async (kind) => {
-        const id = this.settings.profile()[IMAGE_ASSET_FIELDS[kind]];
+        const field = IMAGE_ASSET_FIELDS[kind];
+        const id = this.settings.profile()[field];
         const blob = id === null ? null : await this.assets.get(id);
-        if (blob !== null) {
+        if (blob !== null && this.settings.profile()[field] === id) {
           this.show(kind, this.objectUrls.create(blob));
         }
       }),

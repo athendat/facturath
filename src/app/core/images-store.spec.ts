@@ -115,6 +115,18 @@ describe('ImagesStore', () => {
       expect(get).toHaveBeenCalledTimes(2);
     });
 
+    it('keeps an image chosen while the remembered ones are still loading', async () => {
+      await settings.load();
+
+      const loading = images.load();
+      await images.set('logo', png);
+      await loading;
+
+      expect(images.urls().logo).toBe('blob:fake/1');
+      expect(objectUrls.revoked).toEqual([]);
+      expect(images.urls().transfermovilQr).toBe('blob:fake/2');
+    });
+
     it('leaves the placeholder when the profile points at a missing asset', async () => {
       await assets.delete('qr-1');
       await settings.load();

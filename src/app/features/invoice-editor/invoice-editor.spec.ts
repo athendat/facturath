@@ -36,6 +36,18 @@ describe('InvoiceEditor', () => {
   let fixture: ComponentFixture<InvoiceEditor>;
   let element: HTMLElement;
 
+  // The first render of the whole editor tree pays a one-off cost (module evaluation and the
+  // first instantiation of a dozen components) that can exceed the per-test budget on a cold
+  // full run; pay it here so no single spec depends on where it lands in the file.
+  beforeAll(async () => {
+    await TestBed.configureTestingModule({
+      imports: [InvoiceEditor],
+      providers: [{ provide: ObjectUrls, useValue: new FakeObjectUrls() }],
+    }).compileComponents();
+    await TestBed.createComponent(InvoiceEditor).whenStable();
+    TestBed.resetTestingModule();
+  }, 30_000);
+
   async function render(
     preferences = new InMemoryPreferencesStore(),
     assets = new InMemoryAssetStore(),
@@ -71,8 +83,8 @@ describe('InvoiceEditor', () => {
       'app-totals-panel',
       'app-text-block[Términos]',
       'app-payment-qr-controls',
-      'app-image-control[Subir QR de Transfermóvil]',
-      'app-image-control[Subir QR de EnZona]',
+      'app-image-control[Subir QR Transfermóvil]',
+      'app-image-control[Subir QR EnZona]',
       'app-carrier-block',
       'app-signatures-block',
       'app-legal-footer',

@@ -85,7 +85,11 @@ export class InvoiceStore {
     }
   }
 
-  /** Copies the remembered seller data into the open invoice, e.g. once the profile has loaded. */
+  /**
+   * Copies the remembered seller data into the open invoice, e.g. once the profile has loaded.
+   * It copies the asset ids too, which the effect above already mirrors: the effect keeps them
+   * in sync afterwards, while this call also brings in the text fields, which never sync back.
+   */
   applyProfile(profile: SellerProfile): void {
     this.state.update((invoice) => applyProfileToInvoice(invoice, profile));
   }

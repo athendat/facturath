@@ -17,9 +17,4 @@ export class FakeObjectUrls implements Pick<ObjectUrls, 'create' | 'revoke'> {
   revoke(url: string): void {
     this.revoked.push(url);
   }
-
-  /** The URLs created and not revoked yet. */
-  get live(): string[] {
-    return this.created.filter((url) => !this.revoked.includes(url));
-  }
 }

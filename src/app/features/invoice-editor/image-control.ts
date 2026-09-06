@@ -1,13 +1,12 @@
-import { Component, computed, inject, input } from '@angular/core';
-import { ImagesStore, type ImageKind } from '../../core/images-store';
+import { Component, ElementRef, computed, inject, input, viewChild } from '@angular/core';
+import { ImagesStore } from '../../core/images-store';
+import type { ImageKind } from '../../domain/invoice';
 
 interface ImageLayout {
   /** Accessible name of the image once set. */
   name: string;
-  /** Accessible name of the file control. */
+  /** Text of the empty box, which is also the accessible name of the file control (WCAG 2.5.3). */
   upload: string;
-  /** Text of the empty box. */
-  placeholder: string;
   /** Accessible name of the remove button. */
   remove: string;
   /** Printed under the image, or nothing. */
@@ -17,26 +16,17 @@ interface ImageLayout {
 }
 
 const LAYOUTS: Record<ImageKind, ImageLayout> = {
-  logo: {
-    name: 'Logo',
-    upload: 'Subir logo',
-    placeholder: 'Subir logo',
-    remove: 'Quitar logo',
-    caption: null,
-    size: 64,
-  },
+  logo: { name: 'Logo', upload: 'Subir logo', remove: 'Quitar logo', caption: null, size: 64 },
   transfermovilQr: {
     name: 'QR Transfermóvil',
-    upload: 'Subir QR de Transfermóvil',
-    placeholder: 'Subir QR Transfermóvil',
+    upload: 'Subir QR Transfermóvil',
     remove: 'Quitar QR de Transfermóvil',
     caption: 'Transfermóvil',
     size: 72,
   },
   enzonaQr: {
     name: 'QR EnZona',
-    upload: 'Subir QR de EnZona',
-    placeholder: 'Subir QR EnZona',
+    upload: 'Subir QR EnZona',
     remove: 'Quitar QR de EnZona',
     caption: 'EnZona',
     size: 72,
@@ -53,9 +43,10 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
   template: `
     <label class="pick">
       <input
+        #file
         type="file"
         accept="image/*"
-        class="file"
+        class="sr-only"
         [attr.aria-label]="layout().upload"
         (change)="onFileChosen($event)"
       />
@@ -63,7 +54,7 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
         <!-- A user-uploaded blob: URL; NgOptimizedImage is for static, optimizable sources. -->
         <img class="image" [src]="src" [alt]="layout().name" />
       } @else {
-        <span class="placeholder">{{ layout().placeholder }}</span>
+        <span class="placeholder">{{ layout().upload }}</span>
       }
     </label>
     @if (url() !== null) {
@@ -72,7 +63,7 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
         class="remove"
         data-print-hide
         [attr.aria-label]="layout().remove"
-        (click)="images.remove(kind())"
+        (click)="remove()"
       >
         <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
           <path
@@ -104,18 +95,9 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
       cursor: pointer;
     }
 
+    /* The input is visually hidden (global .sr-only); the label is the visible control. */
     .pick:focus-within {
       box-shadow: var(--focus-ring);
-    }
-
-    /* Visually hidden; the label is the visible control. */
-    .file {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
     }
 
     .image {
@@ -186,8 +168,16 @@ export class ImageControl {
   protected readonly images = inject(ImagesStore);
   readonly kind = input.required<ImageKind>();
 
+  private readonly file = viewChild.required<ElementRef<HTMLInputElement>>('file');
+
   protected readonly layout = computed(() => LAYOUTS[this.kind()]);
   protected readonly url = computed(() => this.images.urls()[this.kind()]);
+
+  /** The remove button disappears with the image, so focus moves to the file control. */
+  protected async remove(): Promise<void> {
+    await this.images.remove(this.kind());
+    this.file().nativeElement.focus();
+  }
 
   protected onFileChosen(event: Event): void {
     const input = event.target as HTMLInputElement;

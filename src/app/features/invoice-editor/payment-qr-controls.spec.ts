@@ -22,6 +22,6 @@ describe('PaymentQrControls', () => {
       Array.from(element.querySelectorAll('input[type="file"]')).map((input) =>
         input.getAttribute('aria-label'),
       ),
-    ).toEqual(['Subir QR de Transfermóvil', 'Subir QR de EnZona']);
+    ).toEqual(['Subir QR Transfermóvil', 'Subir QR EnZona']);
   });
 });
