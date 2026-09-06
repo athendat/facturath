@@ -1,6 +1,7 @@
 import { InjectionToken } from '@angular/core';
 import type { Currency, Invoice } from '../../domain/invoice';
 import type { SellerProfile } from '../../domain/seller-profile';
+import { InMemoryAssetStore } from './in-memory-asset-store';
 import { InMemoryInvoiceRepository } from './in-memory-invoice-repository';
 import { InMemoryPreferencesStore } from './in-memory-preferences-store';
 
@@ -49,6 +50,11 @@ export interface PreferencesStore {
 export const INVOICE_REPOSITORY = new InjectionToken<InvoiceRepository>('INVOICE_REPOSITORY', {
   providedIn: 'root',
   factory: () => new InMemoryInvoiceRepository(),
+});
+
+export const ASSET_STORE = new InjectionToken<AssetStore>('ASSET_STORE', {
+  providedIn: 'root',
+  factory: () => new InMemoryAssetStore(),
 });
 
 export const PREFERENCES_STORE = new InjectionToken<PreferencesStore>('PREFERENCES_STORE', {
