@@ -1,5 +1,17 @@
 import { TestBed } from '@angular/core/testing';
+import { SettingsStore } from '../../core/settings-store';
+import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
 import { InvoiceStore } from './invoice-store';
+
+const emptyParty = {
+  name: '',
+  address: '',
+  nit: '',
+  identityCard: '',
+  commercialRegistry: '',
+  bankAccount: '',
+  bankBranch: '',
+};
 
 describe('InvoiceStore', () => {
   let store: InvoiceStore;
@@ -176,16 +188,6 @@ describe('InvoiceStore', () => {
   });
 
   describe('parties', () => {
-    const emptyParty = {
-      name: '',
-      address: '',
-      nit: '',
-      identityCard: '',
-      commercialRegistry: '',
-      bankAccount: '',
-      bankBranch: '',
-    };
-
     it('starts with an empty seller and buyer', () => {
       expect(store.invoice().seller).toEqual(emptyParty);
       expect(store.invoice().buyer).toEqual(emptyParty);
@@ -229,6 +231,61 @@ describe('InvoiceStore', () => {
         bankBranch: '',
       });
       expect(store.invoice().seller).toEqual(emptyParty);
+    });
+  });
+
+  describe('seller profile', () => {
+    let settings: SettingsStore;
+
+    beforeEach(() => {
+      settings = TestBed.inject(SettingsStore);
+    });
+
+    it('remembers the seller text fields in the profile as they are typed', () => {
+      store.updateParty('seller', 'name', 'Taller Rodríguez');
+      store.updateParty('seller', 'address', 'Calle 23 #456, La Habana');
+      store.updateParty('seller', 'nit', '12345678901');
+      store.updateParty('seller', 'commercialRegistry', 'REEUP 123');
+      store.updateParty('seller', 'bankAccount', '0598 1234 5678');
+      store.updateParty('seller', 'bankBranch', 'BANDEC 4321');
+
+      expect(settings.profile()).toEqual({
+        ...createEmptyProfile(),
+        name: 'Taller Rodríguez',
+        address: 'Calle 23 #456, La Habana',
+        nit: '12345678901',
+        commercialRegistry: 'REEUP 123',
+        bankAccount: '0598 1234 5678',
+        bankBranch: 'BANDEC 4321',
+      });
+    });
+
+    it('keeps buyer data out of the profile', () => {
+      store.updateParty('buyer', 'name', 'Ana Pérez');
+      store.updateParty('buyer', 'nit', '98765432109');
+      store.updateParty('seller', 'identityCard', '85010112345');
+
+      expect(settings.profile()).toEqual(createEmptyProfile());
+    });
+
+    it('fills the seller block and the asset ids from a profile', () => {
+      const profile: SellerProfile = {
+        ...createEmptyProfile(),
+        name: 'Taller Rodríguez',
+        nit: '12345678901',
+        logoAssetId: 'logo-1',
+      };
+      store.updateParty('buyer', 'name', 'Ana Pérez');
+
+      store.applyProfile(profile);
+
+      expect(store.invoice().seller).toEqual({
+        ...emptyParty,
+        name: 'Taller Rodríguez',
+        nit: '12345678901',
+      });
+      expect(store.invoice().logoAssetId).toBe('logo-1');
+      expect(store.invoice().buyer.name).toBe('Ana Pérez');
     });
   });
 

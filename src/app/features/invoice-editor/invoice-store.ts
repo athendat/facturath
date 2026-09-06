@@ -1,4 +1,5 @@
-import { Service, computed, signal } from '@angular/core';
+import { Service, computed, inject, signal } from '@angular/core';
+import { SettingsStore } from '../../core/settings-store';
 import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
@@ -13,11 +14,17 @@ import {
   type Signatures,
   type Tax,
 } from '../../domain/invoice';
+import {
+  applyProfileToInvoice,
+  isProfileTextField,
+  type SellerProfile,
+} from '../../domain/seller-profile';
 import { computeTotals } from '../../domain/totals';
 
 /** Holds the open invoice and derives everything the editor displays from it. */
 @Service()
 export class InvoiceStore {
+  private readonly settings = inject(SettingsStore);
   // randomUUID exists in Node (prerender) and browsers alike, and the id is never rendered,
   // so it cannot cause a hydration mismatch. Draft persistence (a later ticket) owns ids for real.
   private readonly state = signal<Invoice>(createInvoice(crypto.randomUUID()));
@@ -57,8 +64,17 @@ export class InvoiceStore {
     );
   }
 
+  /** Seller edits are also remembered in the profile; buyer data never leaves the invoice. */
   updateParty(role: PartyRole, field: keyof Party, value: string): void {
     this.patchSection(role, field, value);
+    if (role === 'seller' && isProfileTextField(field)) {
+      this.settings.updateProfile(field, value);
+    }
+  }
+
+  /** Copies the remembered seller data into the open invoice, e.g. once the profile has loaded. */
+  applyProfile(profile: SellerProfile): void {
+    this.state.update((invoice) => applyProfileToInvoice(invoice, profile));
   }
 
   updateCarrier(field: keyof Carrier, value: string): void {
