@@ -38,8 +38,28 @@ export class ImagesStore {
   /** Stores `blob` as the new image of `kind` and shows it. */
   async set(kind: ImageKind, blob: Blob): Promise<void> {
     const id = crypto.randomUUID();
-    this.state.update((urls) => ({ ...urls, [kind]: this.objectUrls.create(blob) }));
+    this.show(kind, this.objectUrls.create(blob));
     this.settings.setAssetId(IMAGE_ASSET_FIELDS[kind], id);
     await this.assets.put(id, blob);
+  }
+
+  /** Forgets the image of `kind`: the placeholder returns and the asset is deleted. */
+  async remove(kind: ImageKind): Promise<void> {
+    const field = IMAGE_ASSET_FIELDS[kind];
+    const id = this.settings.profile()[field];
+    this.show(kind, null);
+    this.settings.setAssetId(field, null);
+    if (id !== null) {
+      await this.assets.delete(id);
+    }
+  }
+
+  /** Displays `url` for `kind`, revoking whatever was displayed before. */
+  private show(kind: ImageKind, url: string | null): void {
+    const previous = this.state()[kind];
+    this.state.update((urls) => ({ ...urls, [kind]: url }));
+    if (previous !== null) {
+      this.objectUrls.revoke(previous);
+    }
   }
 }
