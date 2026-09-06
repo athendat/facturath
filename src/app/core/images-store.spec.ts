@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { createEmptyProfile } from '../domain/seller-profile';
 import { ImagesStore } from './images-store';
 import { ObjectUrls } from './object-urls';
 import { SettingsStore } from './settings-store';
@@ -74,5 +75,53 @@ describe('ImagesStore', () => {
     await expect(assets.get(id)).resolves.toBe(jpeg);
     expect(images.urls().logo).toBe('blob:fake/2');
     expect(objectUrls.revoked).toEqual(['blob:fake/1']);
+  });
+
+  describe('on a new invoice, after reload', () => {
+    const qr = new Blob(['qr-bytes'], { type: 'image/png' });
+
+    beforeEach(async () => {
+      // What a previous session left behind: the blobs and a profile pointing at them.
+      await assets.put('logo-1', png);
+      await assets.put('qr-1', qr);
+      await preferences.saveProfile({
+        ...createEmptyProfile(),
+        logoAssetId: 'logo-1',
+        transfermovilQrAssetId: 'qr-1',
+      });
+    });
+
+    it('shows the remembered images without a new upload', async () => {
+      await settings.load();
+
+      await images.load();
+
+      expect(images.urls()).toEqual({
+        logo: 'blob:fake/1',
+        transfermovilQr: 'blob:fake/2',
+        enzonaQr: null,
+      });
+      expect(objectUrls.revoked).toEqual([]);
+    });
+
+    it('fetches the blobs only once', async () => {
+      await settings.load();
+      const get = vi.spyOn(assets, 'get');
+
+      await Promise.all([images.load(), images.load()]);
+      await images.load();
+
+      expect(get).toHaveBeenCalledTimes(2);
+    });
+
+    it('leaves the placeholder when the profile points at a missing asset', async () => {
+      await assets.delete('qr-1');
+      await settings.load();
+
+      await images.load();
+
+      expect(images.urls().transfermovilQr).toBeNull();
+      expect(images.urls().logo).toBe('blob:fake/1');
+    });
   });
 });

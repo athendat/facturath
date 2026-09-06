@@ -31,9 +31,27 @@ export class ImagesStore {
   private readonly settings = inject(SettingsStore);
   private readonly objectUrls = inject(ObjectUrls);
   private readonly state = signal<ImageUrls>(NO_URLS);
+  private loading: Promise<void> | null = null;
 
   /** An object URL per image, or null where there is none. */
   readonly urls = this.state.asReadonly();
+
+  /**
+   * Shows the images the profile points at; browser only, after hydration and
+   * once the profile is loaded. A missing blob leaves its placeholder.
+   */
+  load(): Promise<void> {
+    this.loading ??= Promise.all(
+      IMAGE_KINDS.map(async (kind) => {
+        const id = this.settings.profile()[IMAGE_ASSET_FIELDS[kind]];
+        const blob = id === null ? null : await this.assets.get(id);
+        if (blob !== null) {
+          this.show(kind, this.objectUrls.create(blob));
+        }
+      }),
+    ).then(() => undefined);
+    return this.loading;
+  }
 
   /** Stores `blob` as the new image of `kind` and shows it. */
   async set(kind: ImageKind, blob: Blob): Promise<void> {
