@@ -1,0 +1,45 @@
+import { Service, inject, signal } from '@angular/core';
+import type { AssetIds } from '../domain/invoice';
+import { ObjectUrls } from './object-urls';
+import { SettingsStore } from './settings-store';
+import { ASSET_STORE } from './storage/ports';
+
+/** The three images a seller uploads once and sees on every invoice. */
+export type ImageKind = 'logo' | 'transfermovilQr' | 'enzonaQr';
+
+export const IMAGE_KINDS = ['logo', 'transfermovilQr', 'enzonaQr'] as const satisfies ImageKind[];
+
+/** Which profile and invoice field holds the asset id of each image. */
+export const IMAGE_ASSET_FIELDS: Record<ImageKind, keyof AssetIds> = {
+  logo: 'logoAssetId',
+  transfermovilQr: 'transfermovilQrAssetId',
+  enzonaQr: 'enzonaQrAssetId',
+};
+
+export type ImageUrls = Record<ImageKind, string | null>;
+
+const NO_URLS: ImageUrls = { logo: null, transfermovilQr: null, enzonaQr: null };
+
+/**
+ * The seller's logo and payment QR codes: their blobs live in the asset store,
+ * the profile holds their ids, and this store hands the templates an object
+ * URL per image. Shared by the invoice editor and the settings panel.
+ */
+@Service()
+export class ImagesStore {
+  private readonly assets = inject(ASSET_STORE);
+  private readonly settings = inject(SettingsStore);
+  private readonly objectUrls = inject(ObjectUrls);
+  private readonly state = signal<ImageUrls>(NO_URLS);
+
+  /** An object URL per image, or null where there is none. */
+  readonly urls = this.state.asReadonly();
+
+  /** Stores `blob` as the new image of `kind` and shows it. */
+  async set(kind: ImageKind, blob: Blob): Promise<void> {
+    const id = crypto.randomUUID();
+    this.state.update((urls) => ({ ...urls, [kind]: this.objectUrls.create(blob) }));
+    this.settings.setAssetId(IMAGE_ASSET_FIELDS[kind], id);
+    await this.assets.put(id, blob);
+  }
+}
