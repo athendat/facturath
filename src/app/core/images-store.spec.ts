@@ -59,4 +59,20 @@ describe('ImagesStore', () => {
     expect(objectUrls.revoked).toEqual(['blob:fake/1']);
     await expect(preferences.loadProfile()).resolves.toMatchObject({ enzonaQrAssetId: null });
   });
+
+  it('replaces an image: deletes the previous asset and revokes its URL', async () => {
+    const jpeg = new Blob(['jpeg-bytes'], { type: 'image/jpeg' });
+    await images.set('logo', png);
+    const previousId = settings.profile().logoAssetId!;
+
+    await images.set('logo', jpeg);
+    TestBed.tick();
+
+    const id = settings.profile().logoAssetId!;
+    expect(id).not.toBe(previousId);
+    await expect(assets.get(previousId)).resolves.toBeNull();
+    await expect(assets.get(id)).resolves.toBe(jpeg);
+    expect(images.urls().logo).toBe('blob:fake/2');
+    expect(objectUrls.revoked).toEqual(['blob:fake/1']);
+  });
 });

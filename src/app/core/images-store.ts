@@ -37,10 +37,15 @@ export class ImagesStore {
 
   /** Stores `blob` as the new image of `kind` and shows it. */
   async set(kind: ImageKind, blob: Blob): Promise<void> {
+    const field = IMAGE_ASSET_FIELDS[kind];
+    const previousId = this.settings.profile()[field];
     const id = crypto.randomUUID();
     this.show(kind, this.objectUrls.create(blob));
-    this.settings.setAssetId(IMAGE_ASSET_FIELDS[kind], id);
+    this.settings.setAssetId(field, id);
     await this.assets.put(id, blob);
+    if (previousId !== null) {
+      await this.assets.delete(previousId);
+    }
   }
 
   /** Forgets the image of `kind`: the placeholder returns and the asset is deleted. */
