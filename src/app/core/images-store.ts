@@ -1,8 +1,9 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, inject, signal, type OnDestroy } from '@angular/core';
 import type { AssetIds } from '../domain/invoice';
 import { ObjectUrls } from './object-urls';
 import { SettingsStore } from './settings-store';
 import { ASSET_STORE } from './storage/ports';
+import { StorageStatus } from './storage/storage-status';
 
 /** The three images a seller uploads once and sees on every invoice. */
 export type ImageKind = 'logo' | 'transfermovilQr' | 'enzonaQr';
@@ -26,10 +27,11 @@ const NO_URLS: ImageUrls = { logo: null, transfermovilQr: null, enzonaQr: null }
  * URL per image. Shared by the invoice editor and the settings panel.
  */
 @Service()
-export class ImagesStore {
+export class ImagesStore implements OnDestroy {
   private readonly assets = inject(ASSET_STORE);
   private readonly settings = inject(SettingsStore);
   private readonly objectUrls = inject(ObjectUrls);
+  private readonly status = inject(StorageStatus);
   private readonly state = signal<ImageUrls>(NO_URLS);
   private loading: Promise<void> | null = null;
 
@@ -53,17 +55,22 @@ export class ImagesStore {
     return this.loading;
   }
 
-  /** Stores `blob` as the new image of `kind` and shows it. */
+  /**
+   * Stores `blob` as the new image of `kind` and shows it. The document and the
+   * profile change right away; a store that cannot write only disables saving.
+   */
   async set(kind: ImageKind, blob: Blob): Promise<void> {
     const field = IMAGE_ASSET_FIELDS[kind];
     const previousId = this.settings.profile()[field];
     const id = crypto.randomUUID();
     this.show(kind, this.objectUrls.create(blob));
     this.settings.setAssetId(field, id);
-    await this.assets.put(id, blob);
-    if (previousId !== null) {
-      await this.assets.delete(previousId);
-    }
+    await this.persist(async () => {
+      await this.assets.put(id, blob);
+      if (previousId !== null) {
+        await this.assets.delete(previousId);
+      }
+    });
   }
 
   /** Forgets the image of `kind`: the placeholder returns and the asset is deleted. */
@@ -73,7 +80,13 @@ export class ImagesStore {
     this.show(kind, null);
     this.settings.setAssetId(field, null);
     if (id !== null) {
-      await this.assets.delete(id);
+      await this.persist(() => this.assets.delete(id));
+    }
+  }
+
+  ngOnDestroy(): void {
+    for (const kind of IMAGE_KINDS) {
+      this.show(kind, null);
     }
   }
 
@@ -83,6 +96,15 @@ export class ImagesStore {
     this.state.update((urls) => ({ ...urls, [kind]: url }));
     if (previous !== null) {
       this.objectUrls.revoke(previous);
+    }
+  }
+
+  /** Runs a write against the asset store; a failure never reaches the UI beyond the notice. */
+  private async persist(write: () => Promise<void>): Promise<void> {
+    try {
+      await write();
+    } catch {
+      this.status.markUnavailable();
     }
   }
 }

@@ -6,6 +6,7 @@ import { SettingsStore } from './settings-store';
 import { InMemoryAssetStore } from './storage/in-memory-asset-store';
 import { InMemoryPreferencesStore } from './storage/in-memory-preferences-store';
 import { ASSET_STORE, PREFERENCES_STORE } from './storage/ports';
+import { StorageStatus } from './storage/storage-status';
 import { FakeObjectUrls } from './testing/fake-object-urls';
 
 const png = new Blob(['png-bytes'], { type: 'image/png' });
@@ -123,5 +124,35 @@ describe('ImagesStore', () => {
       expect(images.urls().transfermovilQr).toBeNull();
       expect(images.urls().logo).toBe('blob:fake/1');
     });
+  });
+
+  describe('when the browser blocks storage', () => {
+    it('keeps showing the image for the session and reports that saving is disabled', async () => {
+      vi.spyOn(assets, 'put').mockRejectedValue(new Error('blocked'));
+
+      await expect(images.set('logo', png)).resolves.toBeUndefined();
+
+      expect(images.urls().logo).toBe('blob:fake/1');
+      expect(TestBed.inject(StorageStatus).savingDisabled()).toBe(true);
+    });
+
+    it('still removes the image from the document when the delete fails', async () => {
+      await images.set('logo', png);
+      vi.spyOn(assets, 'delete').mockRejectedValue(new Error('blocked'));
+
+      await expect(images.remove('logo')).resolves.toBeUndefined();
+
+      expect(images.urls().logo).toBeNull();
+      expect(settings.profile().logoAssetId).toBeNull();
+    });
+  });
+
+  it('revokes every URL still displayed when destroyed', async () => {
+    await images.set('logo', png);
+    await images.set('enzonaQr', png);
+
+    TestBed.resetTestingModule();
+
+    expect(objectUrls.revoked).toEqual(['blob:fake/1', 'blob:fake/2']);
   });
 });
