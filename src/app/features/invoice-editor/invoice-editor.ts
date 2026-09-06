@@ -1,11 +1,14 @@
 import { Component, afterNextRender, inject } from '@angular/core';
+import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
 import { DocumentMeta } from './document-meta';
+import { ImageControl } from './image-control';
 import { InvoiceStore } from './invoice-store';
 import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
+import { PaymentQrControls } from './payment-qr-controls';
 import { SignaturesBlock } from './signatures-block';
 import { TextBlock } from './text-block';
 import { TotalsPanel } from './totals-panel';
@@ -16,9 +19,11 @@ import { TotalsPanel } from './totals-panel';
   imports: [
     CarrierBlock,
     DocumentMeta,
+    ImageControl,
     LegalFooter,
     LineItemsTable,
     PartyBlock,
+    PaymentQrControls,
     SignaturesBlock,
     TextBlock,
     TotalsPanel,
@@ -26,7 +31,10 @@ import { TotalsPanel } from './totals-panel';
   template: `
     <article class="sheet">
       <div class="head">
-        <app-party-block class="seller" party="seller" />
+        <div class="issuer">
+          <app-image-control kind="logo" />
+          <app-party-block class="seller" party="seller" />
+        </div>
         <app-document-meta class="meta" />
       </div>
       <div class="parties">
@@ -40,6 +48,7 @@ import { TotalsPanel } from './totals-panel';
       </div>
       <div class="band">
         <app-text-block class="terms" kind="terms" />
+        <app-payment-qr-controls />
       </div>
       <div class="band">
         <app-carrier-block />
@@ -69,9 +78,16 @@ import { TotalsPanel } from './totals-panel';
       border-bottom: 2px solid var(--gray-900);
     }
 
+    .issuer {
+      display: flex;
+      flex: 1;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 220px;
+    }
+
     .seller {
       flex: 1;
-      min-width: 220px;
     }
 
     .meta {
@@ -122,6 +138,10 @@ import { TotalsPanel } from './totals-panel';
       min-width: 180px;
     }
 
+    .band > app-payment-qr-controls {
+      flex: none;
+    }
+
     @media print {
       /* Keep an inset even when the dialog margins are "None". The 10-line
          case leaves ~28px of A4 height with @page 10mm, so vertical padding
@@ -138,13 +158,16 @@ import { TotalsPanel } from './totals-panel';
 export class InvoiceEditor {
   private readonly store = inject(InvoiceStore);
   private readonly settings = inject(SettingsStore);
+  private readonly images = inject(ImagesStore);
 
   constructor() {
-    // Browser only, after hydration: the prerendered document must stay undated and its
-    // seller block empty so the first client render matches it; both are filled right after.
+    // Browser only, after hydration: the prerendered document must stay undated, its seller
+    // block empty and its images placeholders so the first client render matches it; all
+    // are filled right after.
     afterNextRender(async () => {
       this.store.setIssueDateIfEmpty(new Date());
       this.store.applyProfile(await this.settings.load());
+      await this.images.load();
     });
   }
 }
