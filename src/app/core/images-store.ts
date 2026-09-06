@@ -8,7 +8,11 @@ import { StorageStatus } from './storage/storage-status';
 /** The three images a seller uploads once and sees on every invoice. */
 export type ImageKind = 'logo' | 'transfermovilQr' | 'enzonaQr';
 
-export const IMAGE_KINDS = ['logo', 'transfermovilQr', 'enzonaQr'] as const satisfies ImageKind[];
+export const IMAGE_KINDS = [
+  'logo',
+  'transfermovilQr',
+  'enzonaQr',
+] as const satisfies readonly ImageKind[];
 
 /** Which profile and invoice field holds the asset id of each image. */
 export const IMAGE_ASSET_FIELDS: Record<ImageKind, keyof AssetIds> = {
