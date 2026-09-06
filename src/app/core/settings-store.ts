@@ -1,4 +1,5 @@
 import { Service, effect, inject, signal } from '@angular/core';
+import type { AssetIds } from '../domain/invoice';
 import {
   createEmptyProfile,
   type ProfileTextField,
@@ -22,7 +23,7 @@ export class SettingsStore {
   private loading: Promise<SellerProfile> | null = null;
   private loaded = false;
   /** Edits made while the stored profile is still loading; they win over the stored values. */
-  private readonly editedBeforeLoad: Partial<Pick<SellerProfile, ProfileTextField>> = {};
+  private readonly editedBeforeLoad: Partial<SellerProfile> = {};
 
   readonly profile = this.state.asReadonly();
 
@@ -52,6 +53,15 @@ export class SettingsStore {
   }
 
   updateProfile(field: ProfileTextField, value: string): void {
+    this.edit(field, value);
+  }
+
+  /** Points the profile at an image in the asset store, or at none with `null`. */
+  setAssetId(field: keyof AssetIds, id: string | null): void {
+    this.edit(field, id);
+  }
+
+  private edit<K extends keyof SellerProfile>(field: K, value: SellerProfile[K]): void {
     this.state.update((profile) => ({ ...profile, [field]: value }));
     if (!this.loaded) {
       this.editedBeforeLoad[field] = value;

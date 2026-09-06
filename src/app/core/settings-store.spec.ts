@@ -92,6 +92,38 @@ describe('SettingsStore', () => {
     });
   });
 
+  it('persists an asset id like a text edit', async () => {
+    store.setAssetId('logoAssetId', 'asset-1');
+    TestBed.tick();
+
+    expect(store.profile().logoAssetId).toBe('asset-1');
+    await expect(preferences.loadProfile()).resolves.toEqual({
+      ...createEmptyProfile(),
+      logoAssetId: 'asset-1',
+    });
+  });
+
+  it('keeps an asset id set before the load resolves over the stored one', async () => {
+    await preferences.saveProfile({ ...stored, transfermovilQrAssetId: 'old-qr' });
+
+    const loading = store.load();
+    store.setAssetId('transfermovilQrAssetId', 'new-qr');
+    await loading;
+    TestBed.tick();
+
+    expect(store.profile()).toEqual({ ...stored, transfermovilQrAssetId: 'new-qr' });
+  });
+
+  it('clears an asset id with null', async () => {
+    await preferences.saveProfile({ ...stored, enzonaQrAssetId: 'qr' });
+    await store.load();
+
+    store.setAssetId('enzonaQrAssetId', null);
+    TestBed.tick();
+
+    await expect(preferences.loadProfile()).resolves.toEqual(stored);
+  });
+
   it('reports that saving is disabled when the store rejects a write', async () => {
     vi.spyOn(preferences, 'saveProfile').mockRejectedValue(new Error('quota'));
 
