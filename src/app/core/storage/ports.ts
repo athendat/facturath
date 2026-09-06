@@ -1,6 +1,7 @@
 import { InjectionToken } from '@angular/core';
 import type { Currency, Invoice } from '../../domain/invoice';
 import type { SellerProfile } from '../../domain/seller-profile';
+import { InMemoryInvoiceRepository } from './in-memory-invoice-repository';
 import { InMemoryPreferencesStore } from './in-memory-preferences-store';
 
 /**
@@ -44,6 +45,11 @@ export interface PreferencesStore {
   loadProfile(): Promise<SellerProfile | null>;
   saveProfile(profile: SellerProfile): Promise<void>;
 }
+
+export const INVOICE_REPOSITORY = new InjectionToken<InvoiceRepository>('INVOICE_REPOSITORY', {
+  providedIn: 'root',
+  factory: () => new InMemoryInvoiceRepository(),
+});
 
 export const PREFERENCES_STORE = new InjectionToken<PreferencesStore>('PREFERENCES_STORE', {
   providedIn: 'root',
