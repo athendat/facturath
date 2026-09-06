@@ -287,6 +287,25 @@ describe('InvoiceStore', () => {
       expect(store.invoice().logoAssetId).toBe('logo-1');
       expect(store.invoice().buyer.name).toBe('Ana Pérez');
     });
+
+    it('follows the asset ids of the profile as images are set and removed', () => {
+      settings.setAssetId('transfermovilQrAssetId', 'qr-1');
+      TestBed.tick();
+      expect(store.invoice().transfermovilQrAssetId).toBe('qr-1');
+
+      settings.setAssetId('transfermovilQrAssetId', null);
+      TestBed.tick();
+      expect(store.invoice().transfermovilQrAssetId).toBeNull();
+    });
+
+    it('keeps the invoice untouched when the profile changes elsewhere', () => {
+      const before = store.invoice();
+
+      settings.updateProfile('bankBranch', 'BANDEC 4321');
+      TestBed.tick();
+
+      expect(store.invoice()).toBe(before);
+    });
   });
 
   describe('text blocks', () => {

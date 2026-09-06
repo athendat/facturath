@@ -1,4 +1,4 @@
-import { Service, computed, inject, signal } from '@angular/core';
+import { Service, computed, effect, inject, signal } from '@angular/core';
 import { SettingsStore } from '../../core/settings-store';
 import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
@@ -15,7 +15,9 @@ import {
   type Tax,
 } from '../../domain/invoice';
 import {
+  applyAssetIdsToInvoice,
   applyProfileToInvoice,
+  hasSameAssetIds,
   isProfileTextField,
   type SellerProfile,
 } from '../../domain/seller-profile';
@@ -32,6 +34,17 @@ export class InvoiceStore {
   private readonly rawTotals = computed(() => computeTotals(this.state()));
 
   readonly invoice = this.state.asReadonly();
+
+  constructor() {
+    // The images belong to the seller profile and show on every invoice, so the open invoice
+    // follows the profile's asset ids; the images store only ever writes them to the profile.
+    effect(() => {
+      const profile = this.settings.profile();
+      this.state.update((invoice) =>
+        hasSameAssetIds(invoice, profile) ? invoice : applyAssetIdsToInvoice(invoice, profile),
+      );
+    });
+  }
 
   /** Formatted amount of each line, in the same order as `invoice().lines`. */
   readonly lineAmounts = computed(() => this.rawTotals().lineAmounts.map(formatAmount));
@@ -72,7 +85,11 @@ export class InvoiceStore {
     }
   }
 
-  /** Copies the remembered seller data into the open invoice, e.g. once the profile has loaded. */
+  /**
+   * Copies the remembered seller data into the open invoice, e.g. once the profile has loaded.
+   * It copies the asset ids too, which the effect above already mirrors: the effect keeps them
+   * in sync afterwards, while this call also brings in the text fields, which never sync back.
+   */
   applyProfile(profile: SellerProfile): void {
     this.state.update((invoice) => applyProfileToInvoice(invoice, profile));
   }

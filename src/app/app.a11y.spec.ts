@@ -2,8 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import axe from 'axe-core';
 import { App } from './app';
+import { ImagesStore } from './core/images-store';
+import { ObjectUrls } from './core/object-urls';
 import { StorageStatus } from './core/storage/storage-status';
+import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
+import { IMAGE_KINDS } from './domain/invoice';
 
 describe('App accessibility', () => {
   let fixture: ComponentFixture<App>;
@@ -11,7 +15,10 @@ describe('App accessibility', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [{ provide: SwUpdate, useValue: new FakeSwUpdate() }],
+      providers: [
+        { provide: SwUpdate, useValue: new FakeSwUpdate() },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(App);
     await fixture.whenStable();
@@ -38,6 +45,17 @@ describe('App accessibility', () => {
   it('passes axe with the saving-disabled notice shown', async () => {
     TestBed.inject(StorageStatus).markUnavailable();
     await fixture.whenStable();
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
+  it('passes axe with the logo and both payment QR codes set', async () => {
+    const images = TestBed.inject(ImagesStore);
+    for (const kind of IMAGE_KINDS) {
+      await images.set(kind, new Blob(['png'], { type: 'image/png' }));
+    }
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelectorAll('img').length).toBe(3);
 
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);

@@ -63,6 +63,23 @@ export interface AssetIds {
   enzonaQrAssetId: string | null;
 }
 
+/**
+ * The images a seller uploads once and sees on every invoice, each mapped to
+ * the field that holds its asset id. The single place a new image is added.
+ */
+export const IMAGE_ASSET_FIELDS = {
+  logo: 'logoAssetId',
+  transfermovilQr: 'transfermovilQrAssetId',
+  enzonaQr: 'enzonaQrAssetId',
+} as const satisfies Record<string, keyof AssetIds>;
+
+export type ImageKind = keyof typeof IMAGE_ASSET_FIELDS;
+
+export const IMAGE_KINDS = Object.keys(IMAGE_ASSET_FIELDS) as readonly ImageKind[];
+
+/** The asset id fields, in image order. */
+export const ASSET_ID_FIELDS = Object.values(IMAGE_ASSET_FIELDS) as readonly (keyof AssetIds)[];
+
 export interface Invoice extends AssetIds {
   id: string;
   schemaVersion: number;
