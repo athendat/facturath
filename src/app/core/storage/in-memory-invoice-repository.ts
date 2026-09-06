@@ -1,6 +1,6 @@
 import type { Invoice } from '../../domain/invoice';
 import type { InvoiceRepository, InvoiceSummary } from './ports';
-import { newestFirst, summarize } from './summaries';
+import { newestFirst, summarize } from './invoice-summaries';
 
 /** Holds invoices for the session only: the test fake and the fallback when IndexedDB is unavailable. */
 export class InMemoryInvoiceRepository implements InvoiceRepository {

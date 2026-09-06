@@ -1,7 +1,8 @@
 import { DOCUMENT } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
-import { LocalStoragePreferencesStore } from './local-storage-preferences-store';
+import { blockedDocument } from '../testing/fake-storage';
+import { LocalStoragePreferencesStore, PROFILE_KEY } from './local-storage-preferences-store';
 import { StorageStatus } from './storage-status';
 
 const profile: SellerProfile = {
@@ -9,15 +10,6 @@ const profile: SellerProfile = {
   name: 'Taller Rodríguez',
   nit: '12345678901',
   logoAssetId: 'logo-1',
-};
-
-/** A document whose window refuses access to localStorage, as a blocked or private browser does. */
-const blockedDocument = {
-  defaultView: {
-    get localStorage(): Storage {
-      throw new DOMException('Access is denied for this document.', 'SecurityError');
-    },
-  },
 };
 
 describe('LocalStoragePreferencesStore', () => {
@@ -47,7 +39,7 @@ describe('LocalStoragePreferencesStore', () => {
     });
 
     it('treats an unreadable stored value as no profile', async () => {
-      localStorage.setItem('facturath.profile', '{not json');
+      localStorage.setItem(PROFILE_KEY, '{not json');
 
       await expect(store.loadProfile()).resolves.toBeNull();
     });

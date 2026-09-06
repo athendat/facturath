@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { IDBFactory } from 'fake-indexeddb';
+import { provideFakeIndexedDb, provideNoIndexedDb } from '../testing/fake-storage';
 import { IndexedDbAssetStore } from './indexed-db-asset-store';
-import { INDEXED_DB_FACTORY } from './indexed-db-connection';
 import { InMemoryAssetStore } from './in-memory-asset-store';
 import type { AssetStore } from './ports';
 import { StorageStatus } from './storage-status';
@@ -58,18 +57,14 @@ function describeAssetStoreContract(name: string, create: () => AssetStore): voi
 
 describe('asset stores', () => {
   describeAssetStoreContract('IndexedDbAssetStore', () => {
-    TestBed.configureTestingModule({
-      providers: [{ provide: INDEXED_DB_FACTORY, useValue: () => new IDBFactory() }],
-    });
+    TestBed.configureTestingModule({ providers: [provideFakeIndexedDb()] });
     return TestBed.inject(IndexedDbAssetStore);
   });
 
   describeAssetStoreContract('InMemoryAssetStore', () => new InMemoryAssetStore());
 
   it('works in memory and reports that saving is disabled when indexedDB is missing', async () => {
-    TestBed.configureTestingModule({
-      providers: [{ provide: INDEXED_DB_FACTORY, useValue: () => undefined }],
-    });
+    TestBed.configureTestingModule({ providers: [provideNoIndexedDb()] });
     const assets = TestBed.inject(IndexedDbAssetStore);
 
     await assets.put('logo-1', new Blob([PNG_HEADER], { type: 'image/png' }));

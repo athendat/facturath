@@ -14,40 +14,50 @@ interface AssetRecord {
   bytes: ArrayBuffer;
 }
 
-/** Images in IndexedDB. Falls back to the in-memory twin when the connection could not be opened. */
+/**
+ * Images in IndexedDB. Delegates to the open database, or to the in-memory
+ * twin for the session when it could not be opened.
+ */
 @Service()
 export class IndexedDbAssetStore implements AssetStore {
   private readonly connection = inject(IndexedDbConnection);
-  private readonly memory = new InMemoryAssetStore();
+  private readonly backend: Promise<AssetStore> = this.connection
+    .open()
+    .then((database) => (database ? new DatabaseAssetStore(database) : new InMemoryAssetStore()));
 
   async put(id: string, blob: Blob): Promise<void> {
-    const database = await this.connection.database();
-    if (!database) {
-      return this.memory.put(id, blob);
-    }
+    return (await this.backend).put(id, blob);
+  }
+
+  async get(id: string): Promise<Blob | null> {
+    return (await this.backend).get(id);
+  }
+
+  async delete(id: string): Promise<void> {
+    return (await this.backend).delete(id);
+  }
+}
+
+/** The asset store over an open database. */
+class DatabaseAssetStore implements AssetStore {
+  constructor(private readonly database: IDBDatabase) {}
+
+  async put(id: string, blob: Blob): Promise<void> {
     const record: AssetRecord = { id, type: blob.type, bytes: await blob.arrayBuffer() };
-    const transaction = database.transaction(ASSETS_STORE, 'readwrite');
+    const transaction = this.database.transaction(ASSETS_STORE, 'readwrite');
     transaction.objectStore(ASSETS_STORE).put(record);
     await transactionDone(transaction);
   }
 
   async get(id: string): Promise<Blob | null> {
-    const database = await this.connection.database();
-    if (!database) {
-      return this.memory.get(id);
-    }
     const record = await requestToPromise<AssetRecord | undefined>(
-      database.transaction(ASSETS_STORE).objectStore(ASSETS_STORE).get(id),
+      this.database.transaction(ASSETS_STORE).objectStore(ASSETS_STORE).get(id),
     );
     return record ? new Blob([record.bytes], { type: record.type }) : null;
   }
 
   async delete(id: string): Promise<void> {
-    const database = await this.connection.database();
-    if (!database) {
-      return this.memory.delete(id);
-    }
-    const transaction = database.transaction(ASSETS_STORE, 'readwrite');
+    const transaction = this.database.transaction(ASSETS_STORE, 'readwrite');
     transaction.objectStore(ASSETS_STORE).delete(id);
     await transactionDone(transaction);
   }

@@ -1,24 +1,17 @@
-import { Service, computed, signal } from '@angular/core';
-
-export type StorageUnavailableReason =
-  'indexeddb-missing' | 'indexeddb-open-failed' | 'local-storage-blocked';
+import { Service, signal } from '@angular/core';
 
 /**
- * Whether the browser lets the app persist anything. Adapters flip it when
+ * Whether the browser lets the app persist anything. Adapters mark it when
  * they fall back to memory; the shell shows one persistent notice while it
  * is set. It never flips back within a session.
  */
 @Service()
 export class StorageStatus {
-  private readonly unavailable = signal<StorageUnavailableReason | null>(null);
+  private readonly unavailable = signal(false);
 
-  /** The first failure seen, for diagnostics. */
-  readonly reason = this.unavailable.asReadonly();
-  readonly savingDisabled = computed(() => this.unavailable() !== null);
+  readonly savingDisabled = this.unavailable.asReadonly();
 
-  disable(reason: StorageUnavailableReason): void {
-    if (this.unavailable() === null) {
-      this.unavailable.set(reason);
-    }
+  markUnavailable(): void {
+    this.unavailable.set(true);
   }
 }

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { createEmptyProfile, type SellerProfile } from '../domain/seller-profile';
 import { SettingsStore } from './settings-store';
+import { StorageStatus } from './storage/storage-status';
 import { InMemoryPreferencesStore } from './storage/in-memory-preferences-store';
 import { PREFERENCES_STORE } from './storage/ports';
 
@@ -65,6 +66,19 @@ describe('SettingsStore', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
+  it('merges an edit made before the load resolves over the stored profile', async () => {
+    await preferences.saveProfile(stored);
+
+    const loading = store.load();
+    store.updateProfile('name', 'Taller Nuevo');
+    const loaded = await loading;
+    TestBed.tick();
+
+    expect(loaded).toEqual({ ...stored, name: 'Taller Nuevo' });
+    expect(store.profile()).toEqual({ ...stored, name: 'Taller Nuevo' });
+    await expect(preferences.loadProfile()).resolves.toEqual({ ...stored, name: 'Taller Nuevo' });
+  });
+
   it('persists edits on top of the loaded profile', async () => {
     await preferences.saveProfile(stored);
     await store.load();
@@ -76,5 +90,15 @@ describe('SettingsStore', () => {
       ...stored,
       address: 'Calle 23 #456, La Habana',
     });
+  });
+
+  it('reports that saving is disabled when the store rejects a write', async () => {
+    vi.spyOn(preferences, 'saveProfile').mockRejectedValue(new Error('quota'));
+
+    store.updateProfile('name', 'Taller Rodríguez');
+    TestBed.tick();
+    await Promise.resolve();
+
+    expect(TestBed.inject(StorageStatus).savingDisabled()).toBe(true);
   });
 });

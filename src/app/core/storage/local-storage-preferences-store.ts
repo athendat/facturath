@@ -65,7 +65,7 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
 
   private block(): void {
     this.blocked = true;
-    this.status.disable('local-storage-blocked');
+    this.status.markUnavailable();
   }
 }
 

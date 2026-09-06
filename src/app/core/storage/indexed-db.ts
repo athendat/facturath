@@ -22,7 +22,12 @@ export function transactionDone(transaction: IDBTransaction): Promise<void> {
   });
 }
 
-/** Opens (creating or upgrading through `upgrade`) the database. Rejects when the browser refuses. */
+/**
+ * Opens (creating or upgrading through `upgrade`) the database. Rejects when
+ * the browser refuses. A `blocked` event (another tab still holds an older
+ * version) is not terminal: the open still succeeds or fails afterwards, so
+ * only those two events settle the promise.
+ */
 export function openDatabase(
   factory: IDBFactory,
   name: string,
@@ -34,6 +39,5 @@ export function openDatabase(
     request.onupgradeneeded = () => upgrade(request.result);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('IndexedDB open failed'));
-    request.onblocked = () => reject(new Error('IndexedDB open blocked by another tab'));
   });
 }

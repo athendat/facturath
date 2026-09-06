@@ -35,7 +35,7 @@ export const INDEXED_DB_FACTORY = new InjectionToken<() => IDBFactory | undefine
 /**
  * One lazily opened database shared by the IndexedDB adapters. When the
  * browser has no IndexedDB or refuses to open it (private mode in some
- * browsers), it flags the status and resolves to null for the whole
+ * browsers), it marks the status and resolves to null for the whole
  * session, and the adapters work from memory.
  */
 @Service()
@@ -44,21 +44,22 @@ export class IndexedDbConnection {
   private readonly status = inject(StorageStatus);
   private opening: Promise<IDBDatabase | null> | null = null;
 
-  database(): Promise<IDBDatabase | null> {
-    this.opening ??= this.open();
+  /** Opens the database on the first call; every later call shares the result. */
+  open(): Promise<IDBDatabase | null> {
+    this.opening ??= this.tryOpen();
     return this.opening;
   }
 
-  private async open(): Promise<IDBDatabase | null> {
+  private async tryOpen(): Promise<IDBDatabase | null> {
     const factory = this.factory();
     if (!factory) {
-      this.status.disable('indexeddb-missing');
+      this.status.markUnavailable();
       return null;
     }
     try {
       return await openDatabase(factory, DATABASE_NAME, DATABASE_VERSION, createStores);
     } catch {
-      this.status.disable('indexeddb-open-failed');
+      this.status.markUnavailable();
       return null;
     }
   }

@@ -2,7 +2,6 @@ import { createInvoice } from './invoice';
 import {
   applyProfileToInvoice,
   createEmptyProfile,
-  partyToProfile,
   profileToParty,
   type SellerProfile,
 } from './seller-profile';
@@ -48,35 +47,14 @@ describe('seller profile', () => {
     });
   });
 
-  it('takes the six text fields from a party and keeps the asset ids of the base profile', () => {
-    const party = {
-      name: 'Ana Pérez',
-      address: 'Ave. 51, Marianao',
-      nit: '98765432109',
-      identityCard: '85010112345',
-      commercialRegistry: 'RC 77',
-      bankAccount: '0300 9876 5432',
-      bankBranch: 'BPA 1',
-    };
-
-    expect(partyToProfile(party, profile)).toEqual({
-      ...profile,
-      name: 'Ana Pérez',
-      address: 'Ave. 51, Marianao',
-      nit: '98765432109',
-      commercialRegistry: 'RC 77',
-      bankAccount: '0300 9876 5432',
-      bankBranch: 'BPA 1',
-    });
-  });
-
   it('copies the profile into the seller block and asset ids of an invoice, leaving the rest alone', () => {
     const invoice = createInvoice('inv-1');
     invoice.buyer.name = 'Ana Pérez';
+    invoice.seller.identityCard = '85010112345';
 
     const filled = applyProfileToInvoice(invoice, profile);
 
-    expect(filled.seller).toEqual(profileToParty(profile));
+    expect(filled.seller).toEqual({ ...profileToParty(profile), identityCard: '85010112345' });
     expect(filled.logoAssetId).toBe('logo-1');
     expect(filled.transfermovilQrAssetId).toBeNull();
     expect(filled.enzonaQrAssetId).toBe('qr-2');

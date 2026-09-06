@@ -41,7 +41,7 @@ export function provideStorage(): EnvironmentProviders {
     provideEnvironmentInitializer(() => {
       if (inBrowser()) {
         const connection = inject(IndexedDbConnection);
-        afterNextRender(() => void connection.database());
+        afterNextRender(() => void connection.open());
       }
     }),
   ]);

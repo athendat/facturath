@@ -1,7 +1,13 @@
+import type { Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { IDBFactory } from 'fake-indexeddb';
 import { createInvoice, type Invoice } from '../../domain/invoice';
-import { IndexedDbConnection, INDEXED_DB_FACTORY } from './indexed-db-connection';
+import {
+  provideFakeIndexedDb,
+  provideIndexedDbFactory,
+  provideNoIndexedDb,
+} from '../testing/fake-storage';
+import { IndexedDbConnection } from './indexed-db-connection';
 import { IndexedDbInvoiceRepository } from './indexed-db-invoice-repository';
 import { InMemoryInvoiceRepository } from './in-memory-invoice-repository';
 import type { InvoiceRepository } from './ports';
@@ -133,9 +139,7 @@ function describeRepositoryContract(name: string, create: () => InvoiceRepositor
 
 describe('invoice repositories', () => {
   describeRepositoryContract('IndexedDbInvoiceRepository', () => {
-    TestBed.configureTestingModule({
-      providers: [{ provide: INDEXED_DB_FACTORY, useValue: () => new IDBFactory() }],
-    });
+    TestBed.configureTestingModule({ providers: [provideFakeIndexedDb()] });
     return TestBed.inject(IndexedDbInvoiceRepository);
   });
 
@@ -144,18 +148,14 @@ describe('invoice repositories', () => {
   describe('IndexedDbInvoiceRepository persistence', () => {
     it('sees the invoices a previous connection to the same database stored', async () => {
       const factory = new IDBFactory();
-      TestBed.configureTestingModule({
-        providers: [{ provide: INDEXED_DB_FACTORY, useValue: () => factory }],
-      });
+      TestBed.configureTestingModule({ providers: [provideFakeIndexedDb(factory)] });
       await TestBed.inject(IndexedDbInvoiceRepository).save(
         invoice('inv-1', 'A', '0001', '2026-09-01'),
       );
-      (await TestBed.inject(IndexedDbConnection).database())?.close();
+      (await TestBed.inject(IndexedDbConnection).open())?.close();
 
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [{ provide: INDEXED_DB_FACTORY, useValue: () => factory }],
-      });
+      TestBed.configureTestingModule({ providers: [provideFakeIndexedDb(factory)] });
       const reopened: IndexedDbInvoiceRepository = TestBed.inject(IndexedDbInvoiceRepository);
 
       await expect(reopened.get('inv-1')).resolves.toMatchObject({ id: 'inv-1' });
@@ -164,13 +164,11 @@ describe('invoice repositories', () => {
   });
 
   describe('IndexedDbInvoiceRepository without a usable IndexedDB', () => {
-    function repositoryWith(factory: () => IDBFactory | undefined): {
+    function repositoryWith(provider: Provider): {
       repository: IndexedDbInvoiceRepository;
       status: StorageStatus;
     } {
-      TestBed.configureTestingModule({
-        providers: [{ provide: INDEXED_DB_FACTORY, useValue: factory }],
-      });
+      TestBed.configureTestingModule({ providers: [provider] });
       return {
         repository: TestBed.inject(IndexedDbInvoiceRepository),
         status: TestBed.inject(StorageStatus),
@@ -178,12 +176,11 @@ describe('invoice repositories', () => {
     }
 
     it('reports that saving is disabled and works in memory when indexedDB is missing', async () => {
-      const { repository, status } = repositoryWith(() => undefined);
+      const { repository, status } = repositoryWith(provideNoIndexedDb());
 
       await repository.save(invoice('inv-1', 'A', '0001', '2026-09-01'));
 
       expect(status.savingDisabled()).toBe(true);
-      expect(status.reason()).toBe('indexeddb-missing');
       await expect(repository.get('inv-1')).resolves.toMatchObject({ id: 'inv-1' });
     });
 
@@ -196,11 +193,11 @@ describe('invoice repositories', () => {
           );
         },
       } as unknown as IDBFactory;
-      const { repository, status } = repositoryWith(() => throwing);
+      const { repository, status } = repositoryWith(provideIndexedDbFactory(throwing));
 
       await repository.save(invoice('inv-1', 'A', '0001', '2026-09-01'));
 
-      expect(status.reason()).toBe('indexeddb-open-failed');
+      expect(status.savingDisabled()).toBe(true);
       await expect(repository.listSummaries()).resolves.toHaveLength(1);
     });
 
@@ -215,11 +212,11 @@ describe('invoice repositories', () => {
           return request;
         },
       } as unknown as IDBFactory;
-      const { repository, status } = repositoryWith(() => failing);
+      const { repository, status } = repositoryWith(provideIndexedDbFactory(failing));
 
       await repository.saveDraft(invoice('draft-1', 'A', '0001', '2026-09-01'));
 
-      expect(status.reason()).toBe('indexeddb-open-failed');
+      expect(status.savingDisabled()).toBe(true);
       await expect(repository.getDraft()).resolves.toMatchObject({ id: 'draft-1' });
     });
   });

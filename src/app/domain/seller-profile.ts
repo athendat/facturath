@@ -1,22 +1,4 @@
-import { SCHEMA_VERSION, type Invoice, type Party } from './invoice';
-
-/**
- * The seller's own data, stored once and copied into every new invoice. The
- * text fields mirror the seller `Party` minus the identity card, which only
- * buyers carry; the asset ids point at images in the asset store.
- */
-export interface SellerProfile {
-  schemaVersion: number;
-  name: string;
-  address: string;
-  nit: string;
-  commercialRegistry: string;
-  bankAccount: string;
-  bankBranch: string;
-  logoAssetId: string | null;
-  transfermovilQrAssetId: string | null;
-  enzonaQrAssetId: string | null;
-}
+import { SCHEMA_VERSION, type AssetIds, type Invoice, type Party } from './invoice';
 
 /** The text fields a seller `Party` and the profile have in common. */
 export const PROFILE_TEXT_FIELDS = [
@@ -29,6 +11,17 @@ export const PROFILE_TEXT_FIELDS = [
 ] as const;
 
 export type ProfileTextField = (typeof PROFILE_TEXT_FIELDS)[number];
+
+const ASSET_ID_FIELDS = ['logoAssetId', 'transfermovilQrAssetId', 'enzonaQrAssetId'] as const;
+
+/**
+ * The seller's own data, stored once and copied into every new invoice: the
+ * seller `Party` minus the identity card, which only buyers carry, plus the
+ * ids of the images in the asset store.
+ */
+export interface SellerProfile extends Pick<Party, ProfileTextField>, AssetIds {
+  schemaVersion: number;
+}
 
 export function isProfileTextField(field: keyof Party): field is ProfileTextField {
   return (PROFILE_TEXT_FIELDS as readonly string[]).includes(field);
@@ -50,37 +43,22 @@ export function createEmptyProfile(): SellerProfile {
 }
 
 export function profileToParty(profile: SellerProfile): Party {
-  return {
-    name: profile.name,
-    address: profile.address,
-    nit: profile.nit,
-    identityCard: '',
-    commercialRegistry: profile.commercialRegistry,
-    bankAccount: profile.bankAccount,
-    bankBranch: profile.bankBranch,
-  };
+  return { ...pick(profile, PROFILE_TEXT_FIELDS), identityCard: '' };
 }
 
-/** The text fields of `party` over `base`; the asset ids come from `base`. */
-export function partyToProfile(party: Party, base: SellerProfile): SellerProfile {
-  return {
-    ...base,
-    name: party.name,
-    address: party.address,
-    nit: party.nit,
-    commercialRegistry: party.commercialRegistry,
-    bankAccount: party.bankAccount,
-    bankBranch: party.bankBranch,
-  };
-}
-
-/** A copy of `invoice` whose seller block and asset ids come from `profile`. */
+/** A copy of `invoice` whose seller text fields and asset ids come from `profile`; the rest is kept. */
 export function applyProfileToInvoice(invoice: Invoice, profile: SellerProfile): Invoice {
   return {
     ...invoice,
-    seller: profileToParty(profile),
-    logoAssetId: profile.logoAssetId,
-    transfermovilQrAssetId: profile.transfermovilQrAssetId,
-    enzonaQrAssetId: profile.enzonaQrAssetId,
+    ...pick(profile, ASSET_ID_FIELDS),
+    seller: { ...invoice.seller, ...pick(profile, PROFILE_TEXT_FIELDS) },
   };
+}
+
+function pick<T, K extends keyof T>(source: T, keys: readonly K[]): Pick<T, K> {
+  const picked = {} as Pick<T, K>;
+  for (const key of keys) {
+    picked[key] = source[key];
+  }
+  return picked;
 }

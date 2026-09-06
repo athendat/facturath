@@ -7,7 +7,7 @@ import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { ToastHost } from './shared/ui/toast-host';
 
-const SAVING_DISABLED_NOTICE =
+export const SAVING_DISABLED_NOTICE =
   'Este navegador no permite guardar. Puedes imprimir, pero la factura y tus datos se perderán al cerrar.';
 
 @Component({

@@ -36,7 +36,7 @@ describe('App accessibility', () => {
   }, 30_000);
 
   it('passes axe with the saving-disabled notice shown', async () => {
-    TestBed.inject(StorageStatus).disable('indexeddb-missing');
+    TestBed.inject(StorageStatus).markUnavailable();
     await fixture.whenStable();
 
     await expect(violations()).resolves.toEqual([]);

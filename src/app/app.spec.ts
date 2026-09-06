@@ -1,17 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
-import { App } from './app';
+import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
-import { INDEXED_DB_FACTORY } from './core/storage/indexed-db-connection';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
 import { findButton } from './core/testing/dom';
+import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
-
-const SAVING_DISABLED_NOTICE =
-  'Este navegador no permite guardar. Puedes imprimir, pero la factura y tus datos se perderán al cerrar.';
 
 /** The live regions under `root` whose text is the saving-disabled notice. */
 function notices(root: HTMLElement): Element[] {
@@ -127,7 +124,7 @@ describe('App', () => {
     });
 
     it('shows one persistent notice in a live region, inside the print-hidden top bar', async () => {
-      TestBed.inject(StorageStatus).disable('indexeddb-missing');
+      TestBed.inject(StorageStatus).markUnavailable();
       await fixture.whenStable();
 
       const shown = notices(compiled);
@@ -137,7 +134,7 @@ describe('App', () => {
     });
 
     it('keeps the notice when a toast shows and after it goes', async () => {
-      TestBed.inject(StorageStatus).disable('indexeddb-missing');
+      TestBed.inject(StorageStatus).markUnavailable();
       await fixture.whenStable();
 
       TestBed.inject(ToastService).show('Factura guardada.');
@@ -158,7 +155,7 @@ describe('App with storage provided', () => {
       imports: [App],
       providers: [
         provideStorage(),
-        { provide: INDEXED_DB_FACTORY, useValue: () => undefined },
+        provideNoIndexedDb(),
         { provide: SwUpdate, useValue: new FakeSwUpdate() },
       ],
     }).compileComponents();
