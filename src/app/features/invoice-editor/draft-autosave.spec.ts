@@ -1,5 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { INVOICE_REPOSITORY, PREFERENCES_STORE } from '../../core/storage/ports';
+import {
+  INVOICE_REPOSITORY,
+  PREFERENCES_STORE,
+  type InvoiceRepository,
+} from '../../core/storage/ports';
 import { createInvoice, type Invoice } from '../../domain/invoice';
 import { createEmptyProfile } from '../../domain/seller-profile';
 import { DraftAutosave } from './draft-autosave';
@@ -49,5 +53,37 @@ describe('DraftAutosave', () => {
     expect(invoice.issueDate).toBe('2026-09-19');
     expect(invoice.seller.name).toBe('Taller Rodríguez');
     expect(invoice.seller.nit).toBe('12345678901');
+  });
+
+  describe('once started', () => {
+    let repository: InvoiceRepository;
+    let saveDraft: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      repository = TestBed.inject(INVOICE_REPOSITORY);
+      await autosave.start(TODAY, () => '0001');
+      TestBed.tick();
+      saveDraft = vi.spyOn(repository, 'saveDraft');
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('writes the draft once, 500 ms after the last change', async () => {
+      store.setField('concept', 'V');
+      TestBed.tick();
+      vi.advanceTimersByTime(400);
+      store.setField('concept', 'Ve');
+      TestBed.tick();
+      vi.advanceTimersByTime(499);
+      expect(saveDraft).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+
+      expect(saveDraft).toHaveBeenCalledOnce();
+      await expect(repository.getDraft()).resolves.toMatchObject({ concept: 'Ve' });
+    });
   });
 });
