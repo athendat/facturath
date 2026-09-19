@@ -16,7 +16,9 @@ export class DraftAutosave {
 
   /**
    * Opens the invoice the editor shows at startup; browser only, after hydration. The
-   * profile loads first, then the draft slot is read: a draft replaces the open invoice.
+   * profile loads first, then the draft slot is read: a draft replaces the open invoice;
+   * without one the open invoice becomes a new invoice from the profile, dated `today`
+   * and numbered by `nextNumber` (the caller has the saved invoices loaded by then).
    */
   async start(today: Date, nextNumber: (series: string) => string): Promise<void> {
     this.store.setIssueDateIfEmpty(today);
@@ -24,6 +26,8 @@ export class DraftAutosave {
     const draft = await this.readDraft();
     if (draft !== null) {
       this.store.load(draft);
+    } else {
+      this.store.startNew(nextNumber(this.store.invoice().series));
     }
   }
 
