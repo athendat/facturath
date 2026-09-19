@@ -50,24 +50,19 @@ export class DraftAutosave {
    *
    * Known gap #37: text typed before hydration completes is lost. What the user typed
    * after it, while the draft was still being read, wins instead: an edited invoice is
-   * never replaced, neither by the draft nor by a new invoice; without a draft it only
-   * gets its number, so saving it cannot overwrite a saved invoice.
+   * never replaced, neither by the draft nor by a new invoice; it is dated, filled from
+   * the profile and numbered like a new one, so saving it cannot overwrite a saved invoice.
    */
   async start(today: Date, nextNumber: (series: string) => string): Promise<void> {
     this.store.setIssueDateIfEmpty(today);
     this.store.applyProfile(await this.settings.load());
     const draft = await this.readDraft();
-    if (draft !== null) {
-      if (!this.store.edited()) {
-        this.store.load(draft);
-      }
+    if (this.store.edited()) {
+      this.store.setField('number', nextNumber(this.store.invoice().series));
+    } else if (draft !== null) {
+      this.store.load(draft);
     } else {
-      const number = nextNumber(this.store.invoice().series);
-      if (this.store.edited()) {
-        this.store.setField('number', number);
-      } else {
-        this.store.startNew(number);
-      }
+      this.store.startNew(nextNumber(this.store.invoice().series));
     }
     this.watching = true;
   }

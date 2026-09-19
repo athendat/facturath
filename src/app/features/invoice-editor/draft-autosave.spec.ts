@@ -63,10 +63,12 @@ describe('DraftAutosave', () => {
     await TestBed.inject(INVOICE_REPOSITORY).saveDraft(draftInvoice());
     store.setField('concept', 'Lo que escribí');
 
-    await autosave.start(TODAY, () => '0001');
+    await autosave.start(TODAY, () => '0008');
 
     expect(store.invoice().concept).toBe('Lo que escribí');
     expect(store.invoice().id).not.toBe('draft-1');
+    expect(store.invoice().number).toBe('0008');
+    expect(store.invoice().issueDate).toBe('2026-09-19');
   });
 
   it('keeps what the user already edited when there is no draft, numbering it only', async () => {
