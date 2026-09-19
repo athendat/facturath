@@ -415,6 +415,30 @@ describe('InvoiceStore', () => {
     });
   });
 
+  describe('edited', () => {
+    it('is false until the user changes something', () => {
+      store.setIssueDateIfEmpty(new Date(2026, 8, 4));
+      store.applyProfile({ ...createEmptyProfile(), name: 'Taller Rodríguez' });
+      expect(store.edited()).toBe(false);
+
+      store.updateLine(0, 'quantity', '2');
+
+      expect(store.edited()).toBe(true);
+    });
+
+    it('is reset by opening a saved invoice and by starting a new one', () => {
+      store.setField('concept', 'Venta');
+      store.load(createInvoice('saved-1'));
+      expect(store.edited()).toBe(false);
+
+      store.updateParty('buyer', 'name', 'Ana Pérez');
+      expect(store.edited()).toBe(true);
+
+      store.startNew('0002');
+      expect(store.edited()).toBe(false);
+    });
+  });
+
   describe('text blocks', () => {
     it('start empty', () => {
       expect(store.invoice().concept).toBe('');

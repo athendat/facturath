@@ -55,6 +55,28 @@ describe('DraftAutosave', () => {
     expect(invoice.seller.nit).toBe('12345678901');
   });
 
+  // Known gap #37: text typed before hydration is lost; but what the user typed after it,
+  // while the draft was still being read, must not be overwritten by the draft.
+  it('keeps what the user already edited over a draft that arrives later', async () => {
+    await TestBed.inject(INVOICE_REPOSITORY).saveDraft(draftInvoice());
+    store.setField('concept', 'Lo que escribí');
+
+    await autosave.start(TODAY, () => '0001');
+
+    expect(store.invoice().concept).toBe('Lo que escribí');
+    expect(store.invoice().id).not.toBe('draft-1');
+  });
+
+  it('keeps what the user already edited when there is no draft, numbering it only', async () => {
+    store.setField('concept', 'Lo que escribí');
+
+    await autosave.start(TODAY, () => '0008');
+
+    expect(store.invoice().concept).toBe('Lo que escribí');
+    expect(store.invoice().number).toBe('0008');
+    expect(store.invoice().issueDate).toBe('2026-09-19');
+  });
+
   describe('once started', () => {
     let repository: InvoiceRepository;
     let saveDraft: ReturnType<typeof vi.spyOn>;

@@ -31,10 +31,17 @@ export class InvoiceStore {
   // randomUUID exists in Node (prerender) and browsers alike, and the id is never rendered,
   // so it cannot cause a hydration mismatch. Draft persistence (a later ticket) owns ids for real.
   private readonly state = signal<Invoice>(createInvoice(crypto.randomUUID()));
+  private readonly userEdited = signal(false);
 
   private readonly rawTotals = computed(() => computeTotals(this.state()));
 
   readonly invoice = this.state.asReadonly();
+
+  /**
+   * Whether the user changed the open invoice since it was opened (`load`, `startNew`).
+   * Filling it from the profile or dating it does not count; only the editing methods do.
+   */
+  readonly edited = this.userEdited.asReadonly();
 
   constructor() {
     // The images belong to the seller profile and show on every invoice, so the open invoice
@@ -68,6 +75,7 @@ export class InvoiceStore {
 
   setField<K extends keyof Invoice>(field: K, value: Invoice[K]): void {
     this.state.update((invoice) => ({ ...invoice, [field]: value }));
+    this.userEdited.set(true);
   }
 
   /**
@@ -86,6 +94,7 @@ export class InvoiceStore {
    */
   load(invoice: Invoice): void {
     this.state.set(invoice);
+    this.userEdited.set(false);
   }
 
   /**
@@ -99,6 +108,7 @@ export class InvoiceStore {
         this.settings.profile(),
       ),
     );
+    this.userEdited.set(false);
   }
 
   /** Seller edits are also remembered in the profile; buyer data never leaves the invoice. */
@@ -140,6 +150,7 @@ export class InvoiceStore {
       ...invoice,
       [section]: { ...invoice[section], [field]: value },
     }));
+    this.userEdited.set(true);
   }
 
   updateLine(index: number, field: keyof LineItem, value: string): void {
@@ -147,10 +158,12 @@ export class InvoiceStore {
       ...invoice,
       lines: invoice.lines.map((line, i) => (i === index ? { ...line, [field]: value } : line)),
     }));
+    this.userEdited.set(true);
   }
 
   addLine(): void {
     this.state.update((invoice) => ({ ...invoice, lines: [...invoice.lines, createEmptyLine()] }));
+    this.userEdited.set(true);
   }
 
   /** Removes the line; the last remaining line is reset to empty so the table never becomes empty. */
@@ -159,5 +172,6 @@ export class InvoiceStore {
       const lines = invoice.lines.filter((_, i) => i !== index);
       return { ...invoice, lines: lines.length > 0 ? lines : [createEmptyLine()] };
     });
+    this.userEdited.set(true);
   }
 }
