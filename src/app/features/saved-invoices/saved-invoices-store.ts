@@ -1,19 +1,14 @@
 import { Service, computed, inject, signal } from '@angular/core';
 import { INVOICE_REPOSITORY, type InvoiceSummary } from '../../core/storage/ports';
+import { QUOTA_FULL_MESSAGE, isQuotaExceeded } from '../../core/storage/quota';
 import { ToastService } from '../../core/toast';
 import { formatReference } from '../../domain/format';
 import type { Invoice } from '../../domain/invoice';
 import { nextNumber } from '../../domain/numbering';
 
-export const QUOTA_FULL_MESSAGE = 'No hay espacio para guardar. Exporta y elimina facturas antiguas.';
 export const SAVE_FAILED_MESSAGE = 'No se pudo guardar la factura.';
 export const DELETE_FAILED_MESSAGE = 'No se pudo eliminar la factura.';
 export const LOAD_FAILED_MESSAGE = 'No se pudieron leer las facturas guardadas.';
-
-/** IndexedDB rejects with this DOMException when the origin has run out of storage. */
-function isQuotaExceeded(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'QuotaExceededError';
-}
 
 /**
  * The saved invoices as the drawer lists them; persistence goes through the repository

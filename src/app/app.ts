@@ -1,8 +1,16 @@
-import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  PendingTasks,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
+import { DraftAutosave } from './features/invoice-editor/draft-autosave';
 import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesDrawer } from './features/saved-invoices/saved-invoices-drawer';
@@ -25,6 +33,8 @@ export class App {
   protected readonly printer = inject(Printer);
   private readonly storage = inject(StorageStatus);
   private readonly updateNotifier = inject(UpdateNotifier);
+  private readonly autosave = inject(DraftAutosave);
+  private readonly pendingTasks = inject(PendingTasks);
 
   protected readonly drawerOpen = signal(false);
 
@@ -38,20 +48,33 @@ export class App {
 
   constructor() {
     // Browser only, after hydration: the service worker never runs during prerender, and the
-    // saved invoices come from storage. `load` reports its own failure and never rejects.
-    afterNextRender(() => {
+    // saved invoices and the draft come from storage. The saved invoices load before the
+    // draft is read, since a new invoice takes its number from them. Neither call rejects.
+    // The startup counts as a pending task so the app (and `whenStable` in tests) is not
+    // stable until the open invoice is settled.
+    afterNextRender(async () => {
       this.updateNotifier.start();
-      void this.saved.load();
+      const done = this.pendingTasks.add();
+      try {
+        await this.saved.load();
+        await this.autosave.start(new Date(), (series) => this.saved.nextNumber(series));
+      } finally {
+        done();
+      }
     });
   }
 
-  protected save(): Promise<void> {
-    return this.saved.save(this.store.invoice());
+  /** Saves into history; the draft slot follows so it never lags behind. */
+  protected async save(): Promise<void> {
+    await this.saved.save(this.store.invoice());
+    await this.autosave.writeNow();
   }
 
-  /** Starts the next invoice of the current series. */
+  /** Starts the next invoice of the current series and makes it the draft at once. */
   protected startNew(): void {
     this.store.startNew(this.saved.nextNumber(this.store.invoice().series));
+    // Not awaited: the click handler has nothing to wait for, and `writeNow` never rejects.
+    void this.autosave.writeNow();
   }
 
   /** Puts the saved invoice in the editor and closes the drawer. */
