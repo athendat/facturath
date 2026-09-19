@@ -3,12 +3,15 @@ import { SwUpdate } from '@angular/service-worker';
 import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
+import { INVOICE_REPOSITORY } from './core/storage/ports';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
 import { findButton } from './core/testing/dom';
 import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
+import { createInvoice } from './domain/invoice';
+import { InvoiceStore } from './features/invoice-editor/invoice-store';
 
 /** The live regions under `root` whose text is the saving-disabled notice. */
 function notices(root: HTMLElement): Element[] {
@@ -118,6 +121,60 @@ describe('App', () => {
     expect(statusText()).toBe('');
   });
 
+  describe('saved invoices', () => {
+    function invoiceStore(): InvoiceStore {
+      return TestBed.inject(InvoiceStore);
+    }
+
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    it('saves the open invoice from the header and counts it', async () => {
+      expect(findButton(compiled, 'Guardadas (0)')?.closest('header')).not.toBeNull();
+
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+
+      expect(statusText()).toBe('Factura A-0001 guardada.');
+      expect(findButton(compiled, 'Guardadas (1)')).toBeDefined();
+    });
+
+    it('starts the next invoice of the series from the header', async () => {
+      invoiceStore().updateParty('buyer', 'name', 'Ana Pérez');
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+
+      findButton(compiled, 'Nueva')?.click();
+      await fixture.whenStable();
+
+      expect(invoiceStore().invoice().number).toBe('0002');
+      expect(invoiceStore().invoice().buyer.name).toBe('');
+      expect(compiled.querySelector('.reference')?.textContent).toContain('A-0002');
+    });
+
+    it('opens a saved invoice from the drawer and closes it', async () => {
+      invoiceStore().setField('concept', 'Venta');
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+      const savedId = invoiceStore().invoice().id;
+      findButton(compiled, 'Nueva')?.click();
+      await fixture.whenStable();
+      expect(invoiceStore().invoice().concept).toBe('');
+
+      findButton(compiled, 'Guardadas (1)')?.click();
+      await fixture.whenStable();
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+
+      findButton(dialog() as HTMLElement, 'Abrir')?.click();
+      await fixture.whenStable();
+
+      expect(dialog()).toBeNull();
+      expect(invoiceStore().invoice().id).toBe(savedId);
+      expect(invoiceStore().invoice().concept).toBe('Venta');
+    });
+  });
+
   describe('when the browser cannot save', () => {
     it('shows no notice while saving works', () => {
       expect(notices(compiled)).toHaveLength(0);
@@ -146,6 +203,23 @@ describe('App', () => {
       await fixture.whenStable();
       expect(notices(compiled)).toHaveLength(1);
     });
+  });
+});
+
+describe('App with invoices already saved', () => {
+  it('counts them in the header at startup', async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [{ provide: SwUpdate, useValue: new FakeSwUpdate() }],
+    }).compileComponents();
+    const repository = TestBed.inject(INVOICE_REPOSITORY);
+    await repository.save({ ...createInvoice('saved-1'), number: '0001' });
+    await repository.save({ ...createInvoice('saved-2'), number: '0002' });
+
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+
+    expect(findButton(fixture.nativeElement as HTMLElement, 'Guardadas (2)')).toBeDefined();
   });
 });
 

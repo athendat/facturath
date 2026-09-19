@@ -16,6 +16,21 @@ export function formatMoney(cents: number, currency: Currency): string {
   return `${formatAmount(cents)} ${currency}`;
 }
 
+const dateFormat = new Intl.DateTimeFormat('es-CU');
+
+/**
+ * Formats a stored `YYYY-MM-DD` date for es-CU, e.g. `12/9/2026`, reading the parts as a
+ * local calendar day so no time zone shifts it. Anything else is shown as typed.
+ */
+export function formatIsoDate(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) {
+    return iso;
+  }
+  const [, year, month, day] = match;
+  return dateFormat.format(new Date(Number(year), Number(month) - 1, Number(day)));
+}
+
 /** Totals as the document displays them. The total and the CUP equivalent carry their currency. */
 export interface FormattedTotals {
   subtotal: string;
@@ -37,6 +52,11 @@ export function formatTotals(totals: InvoiceTotals, currency: Currency): Formatt
   };
 }
 
+/** The invoice reference, series and number joined: `A-0001`. */
+export function formatReference(series: string, number: string): string {
+  return `${series}-${number}`;
+}
+
 /** The reference shown in the app header, e.g. `A-0001 · 1,234.50 CUP`. */
 export function formatHeaderReference(
   series: string,
@@ -44,5 +64,5 @@ export function formatHeaderReference(
   totalCents: number,
   currency: Currency,
 ): string {
-  return `${series}-${number} · ${formatMoney(totalCents, currency)}`;
+  return `${formatReference(series, number)} · ${formatMoney(totalCents, currency)}`;
 }

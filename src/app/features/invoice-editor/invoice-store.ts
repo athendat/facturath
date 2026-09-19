@@ -4,6 +4,7 @@ import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
   createEmptyLine,
+  createFollowingInvoice,
   createInvoice,
   needsExchangeRate,
   type Carrier,
@@ -38,6 +39,8 @@ export class InvoiceStore {
   constructor() {
     // The images belong to the seller profile and show on every invoice, so the open invoice
     // follows the profile's asset ids; the images store only ever writes them to the profile.
+    // Only the profile is tracked here (`update` reads the invoice untracked), so replacing the
+    // invoice through `load` does not re-run it and a saved invoice keeps its own images (#10).
     effect(() => {
       const profile = this.settings.profile();
       this.state.update((invoice) =>
@@ -74,6 +77,27 @@ export class InvoiceStore {
   setIssueDateIfEmpty(date: Date): void {
     this.state.update((invoice) =>
       invoice.issueDate === '' ? { ...invoice, issueDate: formatLocalIsoDate(date) } : invoice,
+    );
+  }
+
+  /**
+   * Opens a saved invoice as it was stored, its own images included: the profile's images
+   * replace them only when the profile changes afterwards (see the effect above).
+   */
+  load(invoice: Invoice): void {
+    this.state.set(invoice);
+  }
+
+  /**
+   * Starts the next invoice, numbered `number`: the seller block, series, date, currency and
+   * exchange rate, tax and terms carry over, the images come from the profile, the rest clears.
+   */
+  startNew(number: string): void {
+    this.state.update((invoice) =>
+      applyAssetIdsToInvoice(
+        createFollowingInvoice(invoice, crypto.randomUUID(), number),
+        this.settings.profile(),
+      ),
     );
   }
 

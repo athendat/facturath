@@ -117,6 +117,27 @@ export function createEmptyParty(): Party {
   };
 }
 
+/**
+ * The invoice that follows `previous` in its series: a fresh document numbered `number` that
+ * keeps what does not change between consecutive invoices of the same seller (seller block,
+ * series, issue date, currency and exchange rate, tax, terms) and clears the rest. The images
+ * come from the seller profile, so the caller applies them.
+ */
+export function createFollowingInvoice(previous: Invoice, id: string, number: string): Invoice {
+  const { series, issueDate, currency, exchangeRate, tax, terms, seller } = previous;
+  return {
+    ...createInvoice(id),
+    number,
+    series,
+    issueDate,
+    currency,
+    exchangeRate,
+    tax: { ...tax },
+    terms,
+    seller: { ...seller },
+  };
+}
+
 export function createInvoice(id: string): Invoice {
   return {
     id,
