@@ -56,6 +56,15 @@ export class DraftAutosave {
     this.watching = true;
   }
 
+  /**
+   * Writes the open invoice to the draft slot right away, dropping any pending debounced
+   * write: what a save into history and Nueva do, so the slot never lags behind them.
+   */
+  writeNow(): Promise<void> {
+    this.cancelPending();
+    return this.write(this.store.invoice());
+  }
+
   /** A draft that cannot be read counts as no draft. */
   private async readDraft(): Promise<Invoice | null> {
     try {

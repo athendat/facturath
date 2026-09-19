@@ -6,7 +6,7 @@ import {
 } from '../../core/storage/ports';
 import { createInvoice, type Invoice } from '../../domain/invoice';
 import { createEmptyProfile } from '../../domain/seller-profile';
-import { DraftAutosave } from './draft-autosave';
+import { DRAFT_DELAY_MS, DraftAutosave } from './draft-autosave';
 import { InvoiceStore } from './invoice-store';
 
 const TODAY = new Date(2026, 8, 19);
@@ -85,5 +85,30 @@ describe('DraftAutosave', () => {
       expect(saveDraft).toHaveBeenCalledOnce();
       await expect(repository.getDraft()).resolves.toMatchObject({ concept: 'Ve' });
     });
+
+    it('writes through at once on demand and drops the pending write', async () => {
+      store.setField('concept', 'Venta');
+      TestBed.tick();
+
+      await autosave.writeNow();
+
+      expect(saveDraft).toHaveBeenCalledOnce();
+      await expect(repository.getDraft()).resolves.toMatchObject({ concept: 'Venta' });
+      vi.advanceTimersByTime(DRAFT_DELAY_MS * 2);
+      expect(saveDraft).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('writes nothing before start, as during prerender', async () => {
+    vi.useFakeTimers();
+    try {
+      store.setField('concept', 'Venta');
+      TestBed.tick();
+      vi.advanceTimersByTime(DRAFT_DELAY_MS * 2);
+
+      await expect(TestBed.inject(INVOICE_REPOSITORY).getDraft()).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
