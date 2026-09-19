@@ -1,5 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { SettingsStore } from '../../core/settings-store';
+import {
+  SCHEMA_VERSION,
+  createEmptyLine,
+  createEmptyParty,
+  createInvoice,
+  type Invoice,
+} from '../../domain/invoice';
 import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
 import { InvoiceStore } from './invoice-store';
 
@@ -305,6 +312,106 @@ describe('InvoiceStore', () => {
       TestBed.tick();
 
       expect(store.invoice()).toBe(before);
+    });
+
+    it('lets a loaded invoice keep its own images until the profile changes again', () => {
+      settings.setAssetId('logoAssetId', 'logo-current');
+      TestBed.tick();
+
+      store.load({ ...createInvoice('saved-1'), logoAssetId: 'logo-old', enzonaQrAssetId: 'qr-old' });
+      TestBed.tick();
+      expect(store.invoice().logoAssetId).toBe('logo-old');
+      expect(store.invoice().enzonaQrAssetId).toBe('qr-old');
+
+      settings.setAssetId('logoAssetId', 'logo-new');
+      TestBed.tick();
+      expect(store.invoice().logoAssetId).toBe('logo-new');
+      expect(store.invoice().enzonaQrAssetId).toBeNull();
+    });
+  });
+
+  describe('load', () => {
+    it('replaces the open invoice with the saved one, every field included', () => {
+      const saved: Invoice = {
+        ...createInvoice('saved-1'),
+        series: 'B',
+        number: '0042',
+        issueDate: '2026-08-01',
+        currency: 'USD',
+        exchangeRate: '120',
+        concept: 'Venta',
+        buyer: { ...createEmptyParty(), name: 'Ana Pérez' },
+        lines: [{ code: 'X', description: 'Servicio', detail: '', unit: 'h', quantity: '2', unitPrice: '10' }],
+        discount: '1',
+        shipping: '2',
+        tax: { name: 'IVA', percent: '10' },
+        notes: 'Nota',
+        terms: 'Contado',
+        carrier: { name: 'Luis', identityCard: '1', plate: 'P1', waybill: 'W1', railwayBox: 'F1' },
+        signatures: { delivers: 'M', receives: 'A', carrier: 'L', books: 'P' },
+        transfermovilQrAssetId: 'qr-1',
+      };
+      store.updateLine(0, 'description', 'Borrador');
+
+      store.load(saved);
+
+      expect(store.invoice()).toEqual(saved);
+      expect(store.headerReference()).toBe('B-0042 · 22.90 USD');
+    });
+  });
+
+  describe('new invoice', () => {
+    it('keeps the seller, date and currency and clears the rest with the given number', () => {
+      store.setIssueDateIfEmpty(new Date(2026, 8, 4));
+      store.setField('currency', 'USD');
+      store.setField('exchangeRate', '120');
+      store.updateTax('name', 'IVA');
+      store.updateTax('percent', '10');
+      store.setField('terms', 'Contado');
+      store.updateParty('seller', 'name', 'Taller Rodríguez');
+      store.updateParty('buyer', 'name', 'Ana Pérez');
+      store.updateLine(0, 'description', 'Servicio');
+      store.addLine();
+      store.setField('concept', 'Venta');
+      store.setField('notes', 'Nota');
+      store.setField('discount', '1');
+      store.setField('shipping', '2');
+      store.updateCarrier('name', 'Luis');
+      store.updateSignature('delivers', 'Marta');
+      const previousId = store.invoice().id;
+
+      store.startNew('0002');
+
+      const invoice = store.invoice();
+      expect(invoice.id).not.toBe(previousId);
+      expect(invoice.schemaVersion).toBe(SCHEMA_VERSION);
+      expect(invoice.number).toBe('0002');
+      expect(invoice.series).toBe('A');
+      expect(invoice.issueDate).toBe('2026-09-04');
+      expect(invoice.currency).toBe('USD');
+      expect(invoice.exchangeRate).toBe('120');
+      expect(invoice.tax).toEqual({ name: 'IVA', percent: '10' });
+      expect(invoice.terms).toBe('Contado');
+      expect(invoice.seller.name).toBe('Taller Rodríguez');
+      expect(invoice.buyer).toEqual(emptyParty);
+      expect(invoice.lines).toEqual([createEmptyLine()]);
+      expect(invoice.concept).toBe('');
+      expect(invoice.notes).toBe('');
+      expect(invoice.discount).toBe('');
+      expect(invoice.shipping).toBe('');
+      expect(invoice.carrier).toEqual(createInvoice('').carrier);
+      expect(invoice.signatures).toEqual(createInvoice('').signatures);
+    });
+
+    it('takes the images from the profile', () => {
+      const settings = TestBed.inject(SettingsStore);
+      settings.setAssetId('logoAssetId', 'logo-1');
+      TestBed.tick();
+      store.load({ ...createInvoice('saved-1'), logoAssetId: 'logo-old' });
+
+      store.startNew('0002');
+
+      expect(store.invoice().logoAssetId).toBe('logo-1');
     });
   });
 
