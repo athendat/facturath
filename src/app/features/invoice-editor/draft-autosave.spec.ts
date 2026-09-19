@@ -112,6 +112,17 @@ describe('DraftAutosave', () => {
       await expect(repository.getDraft()).resolves.toMatchObject({ concept: 'Ve' });
     });
 
+    // App.startNew calls writeNow right after the store change, before the effect has run.
+    it('writes a new invoice once when written through before the effect runs', async () => {
+      store.startNew('0002');
+      await autosave.writeNow();
+      TestBed.tick();
+
+      vi.advanceTimersByTime(DRAFT_DELAY_MS * 2);
+
+      expect(saveDraft).toHaveBeenCalledOnce();
+    });
+
     it('writes through at once on demand and drops the pending write', async () => {
       store.setField('concept', 'Venta');
       TestBed.tick();
@@ -161,6 +172,25 @@ describe('DraftAutosave', () => {
 
       expect(TestBed.inject(ToastService).current()).toBeNull();
     });
+  });
+
+  it.each([
+    ['restored', () => TestBed.inject(INVOICE_REPOSITORY).saveDraft(draftInvoice())],
+    ['started new', () => Promise.resolve()],
+  ])('does not write back the invoice start just %s', async (_case, seed) => {
+    vi.useFakeTimers();
+    try {
+      await seed();
+      const saveDraft = vi.spyOn(TestBed.inject(INVOICE_REPOSITORY), 'saveDraft');
+
+      await autosave.start(TODAY, () => '0001');
+      TestBed.tick();
+      vi.advanceTimersByTime(DRAFT_DELAY_MS * 2);
+
+      expect(saveDraft).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('writes nothing before start, as during prerender', async () => {

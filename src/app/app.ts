@@ -73,6 +73,7 @@ export class App {
   /** Starts the next invoice of the current series and makes it the draft at once. */
   protected startNew(): void {
     this.store.startNew(this.saved.nextNumber(this.store.invoice().series));
+    // Not awaited: the click handler has nothing to wait for, and `writeNow` never rejects.
     void this.autosave.writeNow();
   }
 

@@ -29,7 +29,8 @@ import { computeTotals } from '../../domain/totals';
 export class InvoiceStore {
   private readonly settings = inject(SettingsStore);
   // randomUUID exists in Node (prerender) and browsers alike, and the id is never rendered,
-  // so it cannot cause a hydration mismatch. Draft persistence (a later ticket) owns ids for real.
+  // so it cannot cause a hydration mismatch. This id only lives until the startup settles the
+  // open invoice (`DraftAutosave.start`): a restored draft brings its own, a new invoice gets one.
   private readonly state = signal<Invoice>(createInvoice(crypto.randomUUID()));
   private readonly userEdited = signal(false);
 

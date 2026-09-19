@@ -23,14 +23,18 @@ export class DraftAutosave {
   private watching = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private quotaReported = false;
+  /** The invoice object the slot already holds (written, or just read), so it is not rewritten. */
+  private lastWritten: Invoice | null = null;
 
   constructor() {
     // Every change of the open invoice restarts the timer, so rapid typing ends in one
     // write after the pause. `watching` is a plain field on purpose: the first run (during
-    // prerender or before `start`) must only subscribe to the invoice, never schedule.
+    // prerender or before `start`) must only subscribe to the invoice, never schedule. An
+    // invoice already in the slot (restored by `start`, or written through before this
+    // effect ran, as Nueva does) is not scheduled again.
     effect(() => {
       const invoice = this.store.invoice();
-      if (!this.watching) {
+      if (!this.watching || invoice === this.lastWritten) {
         return;
       }
       this.cancelPending();
@@ -58,11 +62,17 @@ export class DraftAutosave {
     this.store.applyProfile(await this.settings.load());
     const draft = await this.readDraft();
     if (this.store.edited()) {
+      // Numbered here, written by the effect: the slot does not hold it yet.
       this.store.setField('number', nextNumber(this.store.invoice().series));
-    } else if (draft !== null) {
-      this.store.load(draft);
     } else {
-      this.store.startNew(nextNumber(this.store.invoice().series));
+      if (draft !== null) {
+        this.store.load(draft);
+      } else {
+        this.store.startNew(nextNumber(this.store.invoice().series));
+      }
+      // Nothing to write yet: the slot holds the draft, or reopening without one starts
+      // the same invoice again.
+      this.lastWritten = this.store.invoice();
     }
     this.watching = true;
   }
@@ -91,6 +101,7 @@ export class DraftAutosave {
    * session, with the same message the save into history uses.
    */
   private async write(invoice: Invoice): Promise<void> {
+    this.lastWritten = invoice;
     try {
       await this.repository.saveDraft(invoice);
     } catch (error) {
