@@ -98,26 +98,8 @@ describe('InvoiceEditor', () => {
     );
   });
 
-  it('dates the invoice with today once rendered in the browser', async () => {
-    await render();
-
-    expect(TestBed.inject(InvoiceStore).invoice().issueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  });
-
-  it('fills the seller block from the remembered profile once rendered in the browser', async () => {
-    const preferences = new InMemoryPreferencesStore();
-    await preferences.saveProfile({
-      ...createEmptyProfile(),
-      name: 'Taller Rodríguez',
-      nit: '12345678901',
-    });
-
-    await render(preferences);
-
-    expect(sellerNameInput()?.value).toBe('Taller Rodríguez');
-    expect(TestBed.inject(InvoiceStore).invoice().seller.nit).toBe('12345678901');
-  });
-
+  // Dating the invoice and filling the seller block from the profile happen at the shell's
+  // startup together with the draft restore; see app.spec.ts.
   it('leaves the seller block empty when nothing was remembered', async () => {
     await render();
 

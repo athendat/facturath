@@ -1,9 +1,11 @@
+import type { Provider } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
-import { INVOICE_REPOSITORY } from './core/storage/ports';
+import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-store';
+import { INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
 import { findButton } from './core/testing/dom';
@@ -11,6 +13,7 @@ import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
 import { createInvoice } from './domain/invoice';
+import { createEmptyProfile } from './domain/seller-profile';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 
 /** The live regions under `root` whose text is the saving-disabled notice. */
@@ -153,6 +156,19 @@ describe('App', () => {
       expect(compiled.querySelector('.reference')?.textContent).toContain('A-0002');
     });
 
+    it('writes the draft through when saving and when starting a new invoice', async () => {
+      const repository = TestBed.inject(INVOICE_REPOSITORY);
+      invoiceStore().setField('concept', 'Venta');
+
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+      await expect(repository.getDraft()).resolves.toMatchObject({ number: '0001', concept: 'Venta' });
+
+      findButton(compiled, 'Nueva')?.click();
+      await fixture.whenStable();
+      await expect(repository.getDraft()).resolves.toMatchObject({ number: '0002', concept: '' });
+    });
+
     it('opens a saved invoice from the drawer and closes it', async () => {
       invoiceStore().setField('concept', 'Venta');
       findButton(compiled, 'Guardar')?.click();
@@ -203,6 +219,48 @@ describe('App', () => {
       await fixture.whenStable();
       expect(notices(compiled)).toHaveLength(1);
     });
+  });
+});
+
+describe('App at startup', () => {
+  /** Configures the module, lets `seed` fill the stores, then renders and settles the app. */
+  async function render(
+    providers: Provider[] = [],
+    seed: () => Promise<void> = () => Promise.resolve(),
+  ): Promise<ComponentFixture<App>> {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [{ provide: SwUpdate, useValue: new FakeSwUpdate() }, ...providers],
+    }).compileComponents();
+    await seed();
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  it('restores the draft as the open invoice', async () => {
+    const draft = { ...createInvoice('draft-1'), number: '0004', concept: 'Venta pendiente' };
+
+    const fixture = await render([], () => TestBed.inject(INVOICE_REPOSITORY).saveDraft(draft));
+
+    expect(TestBed.inject(InvoiceStore).invoice()).toEqual(draft);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.reference')?.textContent).toContain(
+      'A-0004',
+    );
+  });
+
+  it('dates a new invoice with today and fills the seller block from the remembered profile', async () => {
+    const preferences = new InMemoryPreferencesStore();
+    await preferences.saveProfile({ ...createEmptyProfile(), name: 'Taller Rodríguez', nit: '12345678901' });
+
+    const fixture = await render([{ provide: PREFERENCES_STORE, useValue: preferences }]);
+
+    const seller = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      'input[aria-label="Nombre o razón social del vendedor"]',
+    );
+    expect(seller?.value).toBe('Taller Rodríguez');
+    expect(TestBed.inject(InvoiceStore).invoice().seller.nit).toBe('12345678901');
+    expect(TestBed.inject(InvoiceStore).invoice().issueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 

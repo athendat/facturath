@@ -1,10 +1,9 @@
-import { Component, afterNextRender, inject } from '@angular/core';
+import { Component, PendingTasks, afterNextRender, inject } from '@angular/core';
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
 import { DocumentMeta } from './document-meta';
 import { ImageControl } from './image-control';
-import { InvoiceStore } from './invoice-store';
 import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
@@ -156,18 +155,24 @@ import { TotalsPanel } from './totals-panel';
   `,
 })
 export class InvoiceEditor {
-  private readonly store = inject(InvoiceStore);
   private readonly settings = inject(SettingsStore);
   private readonly images = inject(ImagesStore);
+  private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {
-    // Browser only, after hydration: the prerendered document must stay undated, its seller
-    // block empty and its images placeholders so the first client render matches it; all
-    // are filled right after.
+    // Browser only, after hydration: the prerendered document shows image placeholders so
+    // the first client render matches it; the images the profile points at load right
+    // after, as a pending task so the app is not stable until they show. Dating the
+    // invoice, filling the seller block and restoring the draft are the shell's startup
+    // (see `DraftAutosave.start`).
     afterNextRender(async () => {
-      this.store.setIssueDateIfEmpty(new Date());
-      this.store.applyProfile(await this.settings.load());
-      await this.images.load();
+      const done = this.pendingTasks.add();
+      try {
+        await this.settings.load();
+        await this.images.load();
+      } finally {
+        done();
+      }
     });
   }
 }
