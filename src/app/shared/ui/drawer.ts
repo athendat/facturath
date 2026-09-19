@@ -2,7 +2,8 @@ import { DOCUMENT } from '@angular/common';
 import {
   Component,
   ElementRef,
-  afterRenderEffect,
+  afterEveryRender,
+  effect,
   inject,
   input,
   model,
@@ -33,7 +34,7 @@ let nextId = 0;
         (keydown)="onKeydown($event)"
       >
         <div class="panel-header">
-          <h2 class="panel-title" [id]="titleId">{{ title() }}</h2>
+          <h2 class="panel-title" [id]="titleId">{{ heading() }}</h2>
           <button type="button" class="close" (click)="close()">Cerrar</button>
         </div>
         <div class="panel-body">
@@ -124,7 +125,8 @@ let nextId = 0;
 })
 export class Drawer {
   readonly open = model(false);
-  readonly title = input.required<string>();
+  /** The dialog's accessible name, shown as its heading. */
+  readonly heading = input.required<string>();
 
   protected readonly titleId = `drawer-title-${nextId++}`;
   private readonly document = inject(DOCUMENT);
@@ -133,12 +135,21 @@ export class Drawer {
   private opener: HTMLElement | null = null;
 
   constructor() {
-    // Runs after the panel is in the DOM (or gone), so focus can move into or out of it.
-    afterRenderEffect(() => {
+    // Before the opening render, while focus is still on whatever opened the drawer.
+    effect(() => {
+      if (this.open()) {
+        this.opener ??= this.activeElement();
+      }
+    });
+    // After every render: focus lands inside the open panel and stays there even when the
+    // focused element was just removed (e.g. a deleted row), and goes back to the opener
+    // once the panel is gone. A closed drawer with no opener costs nothing here.
+    afterEveryRender(() => {
       const panel = this.panel()?.nativeElement;
       if (panel) {
-        this.opener ??= this.activeElement();
-        (this.focusable(panel)[0] ?? panel).focus();
+        if (!panel.contains(this.document.activeElement)) {
+          (this.focusable(panel)[0] ?? panel).focus();
+        }
       } else if (this.opener) {
         this.opener.focus();
         this.opener = null;

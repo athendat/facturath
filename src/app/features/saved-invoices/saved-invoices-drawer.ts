@@ -1,6 +1,6 @@
 import { Component, computed, inject, model, output } from '@angular/core';
 import type { InvoiceSummary } from '../../core/storage/ports';
-import { formatIsoDate, formatMoney } from '../../domain/format';
+import { formatIsoDate, formatMoney, formatReference } from '../../domain/format';
 import { Drawer } from '../../shared/ui/drawer';
 import { SavedInvoicesStore } from './saved-invoices-store';
 
@@ -15,7 +15,7 @@ interface SavedInvoiceRow {
 function toRow(summary: InvoiceSummary): SavedInvoiceRow {
   return {
     id: summary.id,
-    reference: `${summary.series}-${summary.number}`,
+    reference: formatReference(summary.series, summary.number),
     buyerName: summary.buyerName,
     date: formatIsoDate(summary.issueDate),
     total: formatMoney(summary.total, summary.currency),
@@ -27,7 +27,7 @@ function toRow(summary: InvoiceSummary): SavedInvoiceRow {
   selector: 'app-saved-invoices-drawer',
   imports: [Drawer],
   template: `
-    <app-drawer [(open)]="open" title="Facturas guardadas">
+    <app-drawer [(open)]="open" heading="Facturas guardadas">
       @if (rows().length === 0) {
         <p class="empty">Aún no hay facturas guardadas.</p>
       } @else {

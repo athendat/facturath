@@ -7,7 +7,7 @@ import { Drawer } from './drawer';
   imports: [Drawer],
   template: `
     <button type="button" (click)="open.set(true)">Abrir</button>
-    <app-drawer [(open)]="open" title="Guardadas">
+    <app-drawer [(open)]="open" heading="Guardadas">
       <button type="button">Primero</button>
       <button type="button">Segundo</button>
     </app-drawer>
@@ -55,10 +55,11 @@ describe('Drawer', () => {
     expect(dialog()).toBeNull();
   });
 
-  it('opens as a modal dialog labelled by its title and moves focus inside', async () => {
+  it('opens as a modal dialog labelled by its heading and moves focus inside', async () => {
     await openFromButton();
 
     const panel = dialog();
+    expect(element.querySelector('app-drawer')?.hasAttribute('title')).toBe(false);
     expect(panel?.getAttribute('aria-modal')).toBe('true');
     const title = panel?.getAttribute('aria-labelledby');
     expect(title).toBeTruthy();

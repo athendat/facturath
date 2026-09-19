@@ -103,20 +103,41 @@ describe('SavedInvoicesStore', () => {
 });
 
 describe('SavedInvoicesStore when the repository cannot write', () => {
-  function configure(error: unknown): SavedInvoicesStore {
-    const failing: InvoiceRepository = {
+  function configure(error: unknown, failing: Partial<InvoiceRepository> = {}): SavedInvoicesStore {
+    const repository: InvoiceRepository = {
       listSummaries: () => Promise.resolve([]),
       get: () => Promise.resolve(null),
       save: () => Promise.reject(error),
       delete: () => Promise.resolve(),
       getDraft: () => Promise.resolve(null),
       saveDraft: () => Promise.resolve(),
+      ...failing,
     };
     TestBed.configureTestingModule({
-      providers: [{ provide: INVOICE_REPOSITORY, useValue: failing }],
+      providers: [{ provide: INVOICE_REPOSITORY, useValue: repository }],
     });
     return TestBed.inject(SavedInvoicesStore);
   }
+
+  it('reports a delete that fails instead of rejecting', async () => {
+    const store = configure(new Error('boom'), { delete: () => Promise.reject(new Error('boom')) });
+
+    await expect(store.delete('any')).resolves.toBeUndefined();
+
+    expect(TestBed.inject(ToastService).current()?.message).toBe('No se pudo eliminar la factura.');
+  });
+
+  it('reports a load that fails instead of rejecting', async () => {
+    const store = configure(new Error('boom'), {
+      listSummaries: () => Promise.reject(new Error('boom')),
+    });
+
+    await expect(store.load()).resolves.toBeUndefined();
+
+    expect(TestBed.inject(ToastService).current()?.message).toBe(
+      'No se pudieron leer las facturas guardadas.',
+    );
+  });
 
   it('tells the user storage is full and stops there', async () => {
     const store = configure(new DOMException('Quota exceeded', 'QuotaExceededError'));

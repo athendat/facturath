@@ -38,7 +38,7 @@ export class App {
 
   constructor() {
     // Browser only, after hydration: the service worker never runs during prerender, and the
-    // saved invoices come from storage.
+    // saved invoices come from storage. `load` reports its own failure and never rejects.
     afterNextRender(() => {
       this.updateNotifier.start();
       void this.saved.load();

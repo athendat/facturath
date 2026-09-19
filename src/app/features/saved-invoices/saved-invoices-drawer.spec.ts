@@ -70,6 +70,25 @@ describe('SavedInvoicesDrawer', () => {
     await expect(TestBed.inject(INVOICE_REPOSITORY).get(second.id)).resolves.toBeNull();
   });
 
+  it('keeps focus inside the dialog after deleting from the keyboard, so Escape still closes', async () => {
+    const remove = rows()[0]?.querySelector<HTMLButtonElement>('button[aria-label="Eliminar A-0002"]');
+    remove?.focus();
+    remove?.click();
+    await fixture.whenStable();
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    expect(rows()).toHaveLength(1);
+    expect(dialog?.contains(document.activeElement)).toBe(true);
+
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    await fixture.whenStable();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+    expect(fixture.componentInstance.open()).toBe(false);
+  });
+
   it('says so when nothing is saved yet', async () => {
     await store.delete(first.id);
     await store.delete(second.id);

@@ -52,6 +52,11 @@ export function formatTotals(totals: InvoiceTotals, currency: Currency): Formatt
   };
 }
 
+/** The invoice reference, series and number joined: `A-0001`. */
+export function formatReference(series: string, number: string): string {
+  return `${series}-${number}`;
+}
+
 /** The reference shown in the app header, e.g. `A-0001 · 1,234.50 CUP`. */
 export function formatHeaderReference(
   series: string,
@@ -59,5 +64,5 @@ export function formatHeaderReference(
   totalCents: number,
   currency: Currency,
 ): string {
-  return `${series}-${number} · ${formatMoney(totalCents, currency)}`;
+  return `${formatReference(series, number)} · ${formatMoney(totalCents, currency)}`;
 }
