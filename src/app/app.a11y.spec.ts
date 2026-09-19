@@ -5,6 +5,7 @@ import { App } from './app';
 import { ImagesStore } from './core/images-store';
 import { ObjectUrls } from './core/object-urls';
 import { StorageStatus } from './core/storage/storage-status';
+import { findButton } from './core/testing/dom';
 import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
 import { IMAGE_KINDS } from './domain/invoice';
@@ -45,6 +46,17 @@ describe('App accessibility', () => {
   it('passes axe with the saving-disabled notice shown', async () => {
     TestBed.inject(StorageStatus).markUnavailable();
     await fixture.whenStable();
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
+  it('passes axe with the saved invoices drawer open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    findButton(compiled, 'Guardar')?.click();
+    await fixture.whenStable();
+    findButton(compiled, 'Guardadas (1)')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"] li')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);

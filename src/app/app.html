@@ -2,7 +2,14 @@
   <header class="app-header">
     <span class="wordmark">FACTURATH</span>
     <span class="reference">{{ store.headerReference() }}</span>
-    <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
+    <div class="actions">
+      <button type="button" class="secondary" (click)="save()">Guardar</button>
+      <button type="button" class="secondary" (click)="startNew()">Nueva</button>
+      <button type="button" class="secondary" (click)="drawerOpen.set(true)">
+        Guardadas ({{ saved.count() }})
+      </button>
+      <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
+    </div>
   </header>
   <app-toast-host
     [toast]="toasts.current()"
@@ -18,3 +25,4 @@
   FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce
   <a href="https://balanc.athendat.site" target="_blank" rel="noopener">BALANC</a>.
 </footer>
+<app-saved-invoices-drawer [(open)]="drawerOpen" (opened)="openSaved($event)" data-print-hide />

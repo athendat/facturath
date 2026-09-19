@@ -32,10 +32,10 @@ let nextId = 0;
         tabindex="-1"
         (keydown)="onKeydown($event)"
       >
-        <header class="panel-header">
+        <div class="panel-header">
           <h2 class="panel-title" [id]="titleId">{{ title() }}</h2>
           <button type="button" class="close" (click)="close()">Cerrar</button>
-        </header>
+        </div>
         <div class="panel-body">
           <ng-content />
         </div>

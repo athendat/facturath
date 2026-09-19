@@ -18,24 +18,47 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
-.primary {
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-1);
   margin-left: auto;
+}
+
+.primary,
+.secondary {
   min-height: 38px;
   padding: 0 14px;
   border: 0;
   border-radius: var(--radius-xs);
-  background: var(--bg-brand);
-  color: var(--fg-on-brand);
   font-size: 13px;
   font-weight: var(--fw-bold);
   cursor: pointer;
+}
+
+.primary {
+  background: var(--bg-brand);
+  color: var(--fg-on-brand);
 }
 
 .primary:hover {
   background: var(--gem-800);
 }
 
-.primary:focus-visible {
+.secondary {
+  border: 1px solid var(--border-2);
+  background: var(--bg-0);
+  color: var(--gem-900);
+  font-weight: var(--fw-medium);
+}
+
+.secondary:hover {
+  background: var(--bg-2);
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
   outline: 2px solid var(--gem-900);
   outline-offset: 2px;
 }
