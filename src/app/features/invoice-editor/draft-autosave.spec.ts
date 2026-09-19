@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
+import { InMemoryInvoiceRepository } from '../../core/storage/in-memory-invoice-repository';
 import {
   INVOICE_REPOSITORY,
   PREFERENCES_STORE,
   type InvoiceRepository,
 } from '../../core/storage/ports';
+import { ToastService } from '../../core/toast';
 import { createInvoice, type Invoice } from '../../domain/invoice';
 import { createEmptyProfile } from '../../domain/seller-profile';
 import { DRAFT_DELAY_MS, DraftAutosave } from './draft-autosave';
@@ -118,6 +120,44 @@ describe('DraftAutosave', () => {
       await expect(repository.getDraft()).resolves.toMatchObject({ concept: 'Venta' });
       vi.advanceTimersByTime(DRAFT_DELAY_MS * 2);
       expect(saveDraft).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('when the draft cannot be written', () => {
+    function failingWith(error: unknown): void {
+      const repository = new InMemoryInvoiceRepository();
+      vi.spyOn(repository, 'saveDraft').mockRejectedValue(error);
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [{ provide: INVOICE_REPOSITORY, useValue: repository }],
+      });
+      autosave = TestBed.inject(DraftAutosave);
+      store = TestBed.inject(InvoiceStore);
+    }
+
+    it('tells the user storage is full once, not on every write', async () => {
+      failingWith(new DOMException('Quota exceeded', 'QuotaExceededError'));
+      const toasts = TestBed.inject(ToastService);
+      await autosave.start(TODAY, () => '0001');
+
+      await autosave.writeNow();
+
+      expect(toasts.current()?.message).toBe(
+        'No hay espacio para guardar. Exporta y elimina facturas antiguas.',
+      );
+      toasts.dismiss();
+      store.setField('concept', 'Venta');
+      await autosave.writeNow();
+      expect(toasts.current()).toBeNull();
+    });
+
+    it('stays silent on any other failure', async () => {
+      failingWith(new Error('boom'));
+      await autosave.start(TODAY, () => '0001');
+
+      await expect(autosave.writeNow()).resolves.toBeUndefined();
+
+      expect(TestBed.inject(ToastService).current()).toBeNull();
     });
   });
 

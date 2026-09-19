@@ -1,6 +1,8 @@
 import { Service, effect, inject } from '@angular/core';
 import { SettingsStore } from '../../core/settings-store';
 import { INVOICE_REPOSITORY } from '../../core/storage/ports';
+import { QUOTA_FULL_MESSAGE, isQuotaExceeded } from '../../core/storage/quota';
+import { ToastService } from '../../core/toast';
 import type { Invoice } from '../../domain/invoice';
 import { InvoiceStore } from './invoice-store';
 
@@ -17,8 +19,10 @@ export class DraftAutosave {
   private readonly store = inject(InvoiceStore);
   private readonly settings = inject(SettingsStore);
   private readonly repository = inject(INVOICE_REPOSITORY);
+  private readonly toasts = inject(ToastService);
   private watching = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private quotaReported = false;
 
   constructor() {
     // Every change of the open invoice restarts the timer, so rapid typing ends in one
@@ -86,8 +90,20 @@ export class DraftAutosave {
     }
   }
 
+  /**
+   * A draft write that fails is swallowed: it would otherwise toast on every pause of
+   * typing. A full quota is the one failure the user can act on, so it shows once per
+   * session, with the same message the save into history uses.
+   */
   private async write(invoice: Invoice): Promise<void> {
-    await this.repository.saveDraft(invoice);
+    try {
+      await this.repository.saveDraft(invoice);
+    } catch (error) {
+      if (isQuotaExceeded(error) && !this.quotaReported) {
+        this.quotaReported = true;
+        this.toasts.show(QUOTA_FULL_MESSAGE);
+      }
+    }
   }
 
   private cancelPending(): void {
