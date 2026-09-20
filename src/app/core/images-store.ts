@@ -46,6 +46,18 @@ export class ImagesStore implements OnDestroy {
   }
 
   /**
+   * Shows the images the profile points at now, dropping what was shown: for when
+   * the profile is replaced at once (a restored backup) rather than edited image by image.
+   */
+  reload(): Promise<void> {
+    for (const kind of IMAGE_KINDS) {
+      this.show(kind, null);
+    }
+    this.loading = null;
+    return this.load();
+  }
+
+  /**
    * Stores `blob` as the new image of `kind` and shows it. The document and the
    * profile change right away; a store that cannot write only disables saving.
    */

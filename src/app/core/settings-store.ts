@@ -37,6 +37,15 @@ class Persisted<T extends object> {
     this.touched.set(true);
   }
 
+  /** Replaces the whole value, as an edit of every field. */
+  replace(value: T): void {
+    this.state.set(value);
+    if (!this.loaded) {
+      Object.assign(this.editedBeforeLoad, value);
+    }
+    this.touched.set(true);
+  }
+
   /** Takes the stored value in, keeping whatever was edited meanwhile. */
   receive(stored: T | null): void {
     this.loaded = true;
@@ -105,6 +114,16 @@ export class SettingsStore {
   /** Points the profile at an image in the asset store, or at none with `null`. */
   setAssetId(field: keyof AssetIds, id: string | null): void {
     this.profileState.edit(field, id);
+  }
+
+  /** Replaces the whole profile (an import restoring it) and persists it. */
+  replaceProfile(profile: SellerProfile): void {
+    this.profileState.replace(profile);
+  }
+
+  /** Replaces the whole preferences (an import restoring them) and persists them. */
+  replacePreferences(preferences: Preferences): void {
+    this.preferencesState.replace(preferences);
   }
 
   setDensity(density: Density): void {

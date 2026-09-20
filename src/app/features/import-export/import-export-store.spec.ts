@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { FileDownload } from '../../core/file-download';
+import { ImagesStore } from '../../core/images-store';
 import { ObjectUrls } from '../../core/object-urls';
 import { InMemoryAssetStore } from '../../core/storage/in-memory-asset-store';
 import { InMemoryInvoiceRepository } from '../../core/storage/in-memory-invoice-repository';
@@ -161,6 +162,49 @@ describe('ImportExportStore', () => {
       await expect(repository.get(before.id)).resolves.toBeNull();
       await expect(repository.get(replacement.id)).resolves.toEqual(replacement);
       await expect(assets.get('logo-1')).resolves.toBeInstanceOf(Blob);
+    });
+
+    it('restores the profile, persisted, and shows its images when the current profile is empty', async () => {
+      await settings.load();
+      const images = TestBed.inject(ImagesStore);
+      await images.load();
+      const profile = { ...createEmptyProfile(), name: 'Taller Copia', logoAssetId: 'logo-1' };
+
+      await store.importFile(
+        backup({ profile, assets: { 'logo-1': { type: 'image/png', data: PNG_BASE64 } } }),
+      );
+      TestBed.tick();
+
+      expect(settings.profile()).toEqual(profile);
+      await expect(TestBed.inject(PREFERENCES_STORE).loadProfile()).resolves.toEqual(profile);
+      expect(images.urls().logo).toBe('blob:fake/1');
+    });
+
+    it('keeps the current profile when it is not empty', async () => {
+      await settings.load();
+      settings.updateProfile('bankBranch', 'BANDEC 4321');
+      const current = settings.profile();
+
+      await store.importFile(backup({ profile: { ...createEmptyProfile(), name: 'Taller Copia' } }));
+      TestBed.tick();
+
+      expect(settings.profile()).toEqual(current);
+    });
+
+    it('restores the preferences, persisted, whatever the profile', async () => {
+      await settings.load();
+      settings.updateProfile('name', 'Taller Actual');
+
+      await store.importFile(
+        backup({ preferences: { ...createDefaultPreferences(), density: 'compact', showCarrier: false } }),
+      );
+      TestBed.tick();
+
+      expect(settings.preferences()).toMatchObject({ density: 'compact', showCarrier: false });
+      await expect(TestBed.inject(PREFERENCES_STORE).loadPreferences()).resolves.toMatchObject({
+        density: 'compact',
+        showCarrier: false,
+      });
     });
   });
 });

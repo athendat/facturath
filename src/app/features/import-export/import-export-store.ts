@@ -1,6 +1,7 @@
 import { Service, inject } from '@angular/core';
 import { base64ToBlob, blobToBase64 } from '../../core/base64';
 import { FileDownload } from '../../core/file-download';
+import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { ASSET_STORE, INVOICE_REPOSITORY } from '../../core/storage/ports';
 import { QUOTA_FULL_MESSAGE, isQuotaExceeded } from '../../core/storage/quota';
@@ -17,6 +18,8 @@ import {
 } from '../../domain/export-format';
 import { formatReference } from '../../domain/format';
 import { ASSET_ID_FIELDS, SCHEMA_VERSION, type AssetIds, type Invoice } from '../../domain/invoice';
+import { preferencesFrom } from '../../domain/preferences';
+import { isEmptyProfile } from '../../domain/seller-profile';
 
 export const INVALID_FILE_MESSAGE = 'El archivo no es una exportación de FACTURATH.';
 export const IMPORT_FAILED_MESSAGE = 'No se pudo importar el archivo.';
@@ -37,6 +40,7 @@ export class ImportExportStore {
   private readonly assets = inject(ASSET_STORE);
   private readonly repository = inject(INVOICE_REPOSITORY);
   private readonly settings = inject(SettingsStore);
+  private readonly images = inject(ImagesStore);
   private readonly download = inject(FileDownload);
   private readonly toasts = inject(ToastService);
 
@@ -104,6 +108,12 @@ export class ImportExportStore {
       for (const invoice of exported.invoices) {
         await this.repository.save(invoice);
       }
+      // The seller's own data is never overwritten by a copy; only a blank profile takes it.
+      if (isEmptyProfile(this.settings.profile())) {
+        this.settings.replaceProfile(exported.profile);
+        await this.images.reload();
+      }
+      this.settings.replacePreferences(preferencesFrom({ ...exported.preferences }));
       const imported = exported.invoices.length;
       this.toasts.show(`Copia importada: ${imported} ${imported === 1 ? 'factura' : 'facturas'}.`);
       return { kind: 'backup', imported };
