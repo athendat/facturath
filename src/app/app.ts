@@ -10,6 +10,7 @@ import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
+import { CompliancePanel } from './features/invoice-editor/compliance-panel';
 import { DraftAutosave } from './features/invoice-editor/draft-autosave';
 import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
@@ -23,7 +24,7 @@ export const SAVING_DISABLED_NOTICE =
 
 @Component({
   selector: 'app-root',
-  imports: [InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
+  imports: [CompliancePanel, InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -39,6 +40,7 @@ export class App {
 
   protected readonly drawerOpen = signal(false);
   protected readonly settingsOpen = signal(false);
+  protected readonly complianceOpen = signal(false);
 
   /**
    * Shown in a second toast host of its own, so it neither auto-dismisses nor

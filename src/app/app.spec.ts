@@ -255,6 +255,52 @@ describe('App', () => {
     });
   });
 
+  describe('compliance', () => {
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    // A dated new invoice with its number leaves 11 of the 13 data points pending.
+    it('counts the pending data points in the header and follows edits at once', async () => {
+      const button = findButton(compiled, 'Res. 55 (11)');
+      expect(button?.closest('header')).not.toBeNull();
+      expect(button?.getAttribute('aria-label')).toBe('Datos obligatorios, 11 pendientes');
+
+      typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
+      await fixture.whenStable();
+
+      expect(findButton(compiled, 'Res. 55 (10)')?.getAttribute('aria-label')).toBe(
+        'Datos obligatorios, 10 pendientes',
+      );
+    });
+
+    it('opens the panel from the header, print-hidden, and jumps to a field from it', async () => {
+      const button = findButton(compiled, 'Res. 55 (11)');
+      button?.focus();
+      button?.click();
+      await fixture.whenStable();
+
+      expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Datos obligatorios');
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+      expect(dialog()?.querySelectorAll('li')).toHaveLength(13);
+
+      findButton(dialog() as HTMLElement, 'Ir al campo')?.click();
+      await fixture.whenStable();
+
+      expect(dialog()).toBeNull();
+      expect(document.activeElement?.id).toBe('field-seller-name');
+    });
+
+    it('still prints with data points pending', async () => {
+      expect(TestBed.inject(InvoiceStore).pendingCount()).toBeGreaterThan(0);
+
+      findButton(compiled, 'PDF / Imprimir')?.click();
+      await fixture.whenStable();
+
+      expect(print).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('when the browser cannot save', () => {
     it('shows no notice while saving works', () => {
       expect(notices(compiled)).toHaveLength(0);

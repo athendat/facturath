@@ -8,6 +8,14 @@
       <button type="button" class="secondary" (click)="drawerOpen.set(true)">
         Guardadas ({{ saved.count() }})
       </button>
+      <button
+        type="button"
+        class="secondary"
+        [attr.aria-label]="'Datos obligatorios, ' + store.pendingCount() + ' pendientes'"
+        (click)="complianceOpen.set(true)"
+      >
+        Res. 55 ({{ store.pendingCount() }})
+      </button>
       <button type="button" class="secondary" (click)="settingsOpen.set(true)">Ajustes</button>
       <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
     </div>
@@ -33,4 +41,7 @@
 }
 @defer (when settingsOpen()) {
   <app-settings-panel [(open)]="settingsOpen" />
+}
+@defer (when complianceOpen()) {
+  <app-compliance-panel [(open)]="complianceOpen" />
 }

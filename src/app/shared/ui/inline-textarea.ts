@@ -1,4 +1,5 @@
-import { Component, ElementRef, effect, input, model, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, input, model, viewChild } from '@angular/core';
+import { fieldElementId, type FieldId } from '../../domain/compliance';
 
 /**
  * The multiline sibling of `InlineInput`: a borderless textarea that sits inside
@@ -9,6 +10,7 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
   template: `
     <textarea
       #field
+      [attr.id]="elementId()"
       (input)="onInput($event)"
       [attr.aria-label]="label()"
       [placeholder]="placeholder()"
@@ -78,6 +80,13 @@ export class InlineTextarea {
   readonly label = input.required<string>();
   readonly placeholder = input('');
   readonly rows = input(3);
+  /** The document field this control edits; it becomes the element id so the compliance panel can focus it. */
+  readonly fieldId = input<FieldId | null>(null);
+
+  protected readonly elementId = computed(() => {
+    const fieldId = this.fieldId();
+    return fieldId === null ? null : fieldElementId(fieldId);
+  });
 
   private readonly field = viewChild.required<ElementRef<HTMLTextAreaElement>>('field');
 
