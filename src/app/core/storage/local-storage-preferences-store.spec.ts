@@ -1,8 +1,13 @@
 import { DOCUMENT } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { createDefaultPreferences, type Preferences } from '../../domain/preferences';
 import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
 import { blockedDocument } from '../testing/fake-storage';
-import { LocalStoragePreferencesStore, PROFILE_KEY } from './local-storage-preferences-store';
+import {
+  LocalStoragePreferencesStore,
+  PREFERENCES_KEY,
+  PROFILE_KEY,
+} from './local-storage-preferences-store';
 import { StorageStatus } from './storage-status';
 
 const profile: SellerProfile = {
@@ -10,6 +15,12 @@ const profile: SellerProfile = {
   name: 'Taller Rodríguez',
   nit: '12345678901',
   logoAssetId: 'logo-1',
+};
+
+const preferences: Preferences = {
+  ...createDefaultPreferences(),
+  density: 'compact',
+  showCarrier: false,
 };
 
 describe('LocalStoragePreferencesStore', () => {
@@ -43,6 +54,36 @@ describe('LocalStoragePreferencesStore', () => {
 
       await expect(store.loadProfile()).resolves.toBeNull();
     });
+
+    it('has no preferences until some are saved', async () => {
+      await expect(store.loadPreferences()).resolves.toBeNull();
+    });
+
+    it('keeps the preferences under their own key, apart from the profile', async () => {
+      await store.savePreferences(preferences);
+
+      TestBed.resetTestingModule();
+      const reloaded: LocalStoragePreferencesStore = TestBed.inject(LocalStoragePreferencesStore);
+
+      await expect(reloaded.loadPreferences()).resolves.toEqual(preferences);
+      await expect(reloaded.loadProfile()).resolves.toBeNull();
+      expect(localStorage.getItem(PREFERENCES_KEY)).not.toBeNull();
+    });
+
+    it('reads stored preferences over the defaults, so a missing flag reads as shown', async () => {
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ density: 'compact' }));
+
+      await expect(store.loadPreferences()).resolves.toEqual({
+        ...createDefaultPreferences(),
+        density: 'compact',
+      });
+    });
+
+    it('treats an unreadable stored value as no preferences', async () => {
+      localStorage.setItem(PREFERENCES_KEY, '[not an object]');
+
+      await expect(store.loadPreferences()).resolves.toBeNull();
+    });
   });
 
   describe('with localStorage blocked', () => {
@@ -68,6 +109,13 @@ describe('LocalStoragePreferencesStore', () => {
       await expect(store.loadProfile()).resolves.toBeNull();
 
       expect(status.savingDisabled()).toBe(true);
+    });
+
+    it('keeps the preferences for the session and reports that saving is disabled', async () => {
+      await store.savePreferences(preferences);
+
+      expect(status.savingDisabled()).toBe(true);
+      await expect(store.loadPreferences()).resolves.toEqual(preferences);
     });
   });
 });

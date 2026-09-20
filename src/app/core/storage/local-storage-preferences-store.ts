@@ -1,16 +1,18 @@
 import { DOCUMENT, Service, inject } from '@angular/core';
+import { createDefaultPreferences, type Preferences } from '../../domain/preferences';
 import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
 import { InMemoryPreferencesStore } from './in-memory-preferences-store';
 import type { PreferencesStore } from './ports';
 import { StorageStatus } from './storage-status';
 
 export const PROFILE_KEY = 'facturath.profile';
+export const PREFERENCES_KEY = 'facturath.preferences';
 
 /**
- * Keeps the profile as one JSON key in localStorage. Browser only: callers
- * reach it after hydration. When the browser blocks localStorage (private
- * mode, disabled site data, quota) it flags the status and keeps the profile
- * in memory for the rest of the session.
+ * Keeps the profile and the layout preferences as one JSON key each in
+ * localStorage. Browser only: callers reach it after hydration. When the
+ * browser blocks localStorage (private mode, disabled site data, quota) it
+ * flags the status and keeps both in memory for the rest of the session.
  */
 @Service()
 export class LocalStoragePreferencesStore implements PreferencesStore {
@@ -20,30 +22,55 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
   private blocked = false;
 
   loadProfile(): Promise<SellerProfile | null> {
-    const storage = this.storage();
-    if (storage === null) {
-      return this.memory.loadProfile();
-    }
-    try {
-      const raw = storage.getItem(PROFILE_KEY);
-      return Promise.resolve(raw === null ? null : parseProfile(raw));
-    } catch {
-      this.block();
-      return this.memory.loadProfile();
-    }
+    return this.read(PROFILE_KEY, createEmptyProfile, () => this.memory.loadProfile());
   }
 
   saveProfile(profile: SellerProfile): Promise<void> {
+    return this.write(PROFILE_KEY, profile, () => this.memory.saveProfile(profile));
+  }
+
+  loadPreferences(): Promise<Preferences | null> {
+    return this.read(PREFERENCES_KEY, createDefaultPreferences, () =>
+      this.memory.loadPreferences(),
+    );
+  }
+
+  savePreferences(preferences: Preferences): Promise<void> {
+    return this.write(PREFERENCES_KEY, preferences, () =>
+      this.memory.savePreferences(preferences),
+    );
+  }
+
+  /** The value under `key` merged over `defaults()`, null when absent or unreadable; `fallback` when blocked. */
+  private read<T extends object>(
+    key: string,
+    defaults: () => T,
+    fallback: () => Promise<T | null>,
+  ): Promise<T | null> {
+    const storage = this.storage();
+    if (storage === null) {
+      return fallback();
+    }
+    try {
+      const raw = storage.getItem(key);
+      return Promise.resolve(raw === null ? null : parseOver(raw, defaults()));
+    } catch {
+      this.block();
+      return fallback();
+    }
+  }
+
+  private write<T>(key: string, value: T, fallback: () => Promise<void>): Promise<void> {
     const storage = this.storage();
     if (storage !== null) {
       try {
-        storage.setItem(PROFILE_KEY, JSON.stringify(profile));
+        storage.setItem(key, JSON.stringify(value));
         return Promise.resolve();
       } catch {
         this.block();
       }
     }
-    return this.memory.saveProfile(profile);
+    return fallback();
   }
 
   /** The window's localStorage, or null once the browser refused it. Reading the property can throw. */
@@ -69,14 +96,14 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
   }
 }
 
-/** The stored profile over the empty one, so fields added later read as empty; null when unreadable. */
-function parseProfile(raw: string): SellerProfile | null {
+/** The stored object over `defaults`, so fields added later read as their default; null when unreadable. */
+function parseOver<T extends object>(raw: string, defaults: T): T | null {
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) {
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return null;
     }
-    return { ...createEmptyProfile(), ...(parsed as Partial<SellerProfile>) };
+    return { ...defaults, ...(parsed as Partial<T>) };
   } catch {
     return null;
   }
