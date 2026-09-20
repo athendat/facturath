@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ObjectUrls } from '../../core/object-urls';
+import { SettingsStore } from '../../core/settings-store';
 import { InMemoryAssetStore } from '../../core/storage/in-memory-asset-store';
 import { InMemoryPreferencesStore } from '../../core/storage/in-memory-preferences-store';
 import { ASSET_STORE, PREFERENCES_STORE } from '../../core/storage/ports';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { createDefaultPreferences } from '../../domain/preferences';
 import { createEmptyProfile } from '../../domain/seller-profile';
 import { InvoiceEditor } from './invoice-editor';
 import { InvoiceStore } from './invoice-store';
@@ -134,5 +136,70 @@ describe('InvoiceEditor', () => {
     expect(element.querySelector('img[alt="QR EnZona"]')).not.toBeNull();
     expect(element.querySelector('img[alt="QR Transfermóvil"]')).toBeNull();
     expect(TestBed.inject(InvoiceStore).invoice().logoAssetId).toBe('logo-1');
+  });
+
+  describe('layout preferences', () => {
+    function sheet(): HTMLElement | null {
+      return element.querySelector<HTMLElement>('article.sheet');
+    }
+
+    it('marks the sheet spacious by default and compact once chosen', async () => {
+      await render();
+      expect(sheet()?.getAttribute('data-density')).toBe('spacious');
+
+      TestBed.inject(SettingsStore).setDensity('compact');
+      await fixture.whenStable();
+
+      expect(sheet()?.getAttribute('data-density')).toBe('compact');
+    });
+
+    it('sizes the logo from the sheet, so it follows the density', async () => {
+      await render();
+
+      const logo = element.querySelector<HTMLElement>('app-image-control');
+      expect(logo?.style.getPropertyValue('--size')).toBe('var(--logo-size, 64px)');
+    });
+
+    it('renders with the remembered density', async () => {
+      const preferences = new InMemoryPreferencesStore();
+      await preferences.savePreferences({ ...createDefaultPreferences(), density: 'compact' });
+
+      await render(preferences);
+
+      expect(sheet()?.getAttribute('data-density')).toBe('compact');
+    });
+
+    it.each([
+      ['showCarrier', 'app-carrier-block'],
+      ['showSignatures', 'app-signatures-block'],
+      ['showPaymentQr', 'app-payment-qr-controls'],
+    ] as const)('removes the section behind %s from the document and brings it back', async (flag, tag) => {
+      await render();
+      const settings = TestBed.inject(SettingsStore);
+      expect(element.querySelector(tag)).not.toBeNull();
+
+      settings.setSection(flag, false);
+      await fixture.whenStable();
+      expect(element.querySelector(tag)).toBeNull();
+
+      settings.setSection(flag, true);
+      await fixture.whenStable();
+      expect(element.querySelector(tag)).not.toBeNull();
+    });
+
+    it('leaves no empty band behind a hidden section', async () => {
+      const preferences = new InMemoryPreferencesStore();
+      await preferences.savePreferences({
+        ...createDefaultPreferences(),
+        showCarrier: false,
+        showSignatures: false,
+      });
+
+      await render(preferences);
+
+      const bands = Array.from(element.querySelectorAll('.band'));
+      expect(bands).toHaveLength(1);
+      expect(bands[0]?.querySelector('app-text-block.terms')).not.toBeNull();
+    });
   });
 });

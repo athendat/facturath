@@ -11,25 +11,32 @@ interface ImageLayout {
   remove: string;
   /** Printed under the image, or nothing. */
   caption: string | null;
-  /** Side of the square box in px. */
-  size: number;
+  /** Side of the square box, as a CSS length. */
+  size: string;
 }
 
 const LAYOUTS: Record<ImageKind, ImageLayout> = {
-  logo: { name: 'Logo', upload: 'Subir logo', remove: 'Quitar logo', caption: null, size: 64 },
+  // The sheet sets --logo-size by density; outside it (the settings panel) the logo is spacious.
+  logo: {
+    name: 'Logo',
+    upload: 'Subir logo',
+    remove: 'Quitar logo',
+    caption: null,
+    size: 'var(--logo-size, 64px)',
+  },
   transfermovilQr: {
     name: 'QR Transfermóvil',
     upload: 'Subir QR Transfermóvil',
     remove: 'Quitar QR de Transfermóvil',
     caption: 'Transfermóvil',
-    size: 72,
+    size: '72px',
   },
   enzonaQr: {
     name: 'QR EnZona',
     upload: 'Subir QR EnZona',
     remove: 'Quitar QR de EnZona',
     caption: 'EnZona',
-    size: 72,
+    size: '72px',
   },
 };
 
@@ -160,7 +167,7 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
     }
   `,
   host: {
-    '[style.--size.px]': 'layout().size',
+    '[style.--size]': 'layout().size',
     '[attr.data-print-hide]': 'url() === null ? "" : null',
   },
 })
