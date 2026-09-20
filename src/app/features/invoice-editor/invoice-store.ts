@@ -1,5 +1,6 @@
 import { Service, computed, effect, inject, signal } from '@angular/core';
 import { SettingsStore } from '../../core/settings-store';
+import { checkCompliance, countPending } from '../../domain/compliance';
 import { formatLocalIsoDate } from '../../domain/dates';
 import { formatAmount, formatHeaderReference, formatTotals } from '../../domain/format';
 import {
@@ -76,6 +77,17 @@ export class InvoiceStore {
     const { series, number, currency } = this.state();
     return formatHeaderReference(series, number, this.rawTotals().total, currency);
   });
+
+  /** The 13 data points of Res. 55/2021 against the open invoice; hidden sections count as not applicable. */
+  readonly compliance = computed(() =>
+    checkCompliance(this.state(), {
+      showCarrier: this.settings.showCarrier(),
+      showSignatures: this.settings.showSignatures(),
+    }),
+  );
+
+  /** How many data points are still pending, for the header counter. */
+  readonly pendingCount = computed(() => countPending(this.compliance()));
 
   setField<K extends keyof Invoice>(field: K, value: Invoice[K]): void {
     this.state.update((invoice) => ({ ...invoice, [field]: value }));

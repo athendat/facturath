@@ -608,4 +608,51 @@ describe('InvoiceStore', () => {
       expect(store.totals().subtotal).toBe('0.03');
     });
   });
+
+  describe('compliance with Res. 55/2021', () => {
+    function entry(id: string) {
+      const found = store.compliance().find((candidate) => candidate.id === id);
+      if (!found) {
+        throw new Error(`No compliance entry ${id}`);
+      }
+      return found;
+    }
+
+    it('lists the 13 data points of the resolution; a new invoice only has its number', () => {
+      expect(store.compliance().map((item) => item.id)).toEqual([
+        'issue-date',
+        'seller',
+        'buyer',
+        'concept',
+        'carrier',
+        'lines',
+        'tax',
+        'total',
+        'signature-delivers',
+        'signature-receives',
+        'signature-carrier',
+        'signature-books',
+        'number',
+      ]);
+      expect(store.compliance().map((item) => item.state)).toEqual([
+        ...Array<string>(12).fill('pending'),
+        'fulfilled',
+      ]);
+      expect(store.pendingCount()).toBe(12);
+    });
+
+    it('marks the issue date fulfilled as soon as it is set, and counts one less pending', () => {
+      expect(entry('issue-date')).toMatchObject({
+        label: 'Fecha de emisión.',
+        where: 'Encabezado · fecha',
+        state: 'pending',
+        focusField: 'issueDate',
+      });
+
+      store.setField('issueDate', '2026-09-19');
+
+      expect(entry('issue-date')).toMatchObject({ state: 'fulfilled', focusField: null });
+      expect(store.pendingCount()).toBe(11);
+    });
+  });
 });
