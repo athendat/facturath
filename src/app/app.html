@@ -11,9 +11,17 @@
         class="secondary menu-toggle"
         aria-controls="header-menu"
         [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="
+          'Menú de acciones, ' + store.pendingCount() + ' datos obligatorios pendientes'
+        "
         (click)="toggleMenu()"
       >
         Menú
+        <!-- The collapsed menu hides the Res. 55 counter, so the toggle carries it: as a badge
+             for the eye and in its accessible name for a screen reader. -->
+        @if (store.pendingCount() > 0) {
+          <span class="badge" aria-hidden="true">{{ store.pendingCount() }}</span>
+        }
       </button>
       <div id="header-menu" class="menu" [class.open]="menuOpen()">
         <button type="button" class="secondary" (click)="save()">Guardar</button>

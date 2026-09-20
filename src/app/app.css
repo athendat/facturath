@@ -63,6 +63,22 @@
   outline-offset: 2px;
 }
 
+/* The Res. 55 counter, shown on the toggle while the menu hides the button that carries it. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: var(--sp-1);
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-bold);
+}
+
 .wordmark {
   font-weight: var(--fw-black);
   font-size: var(--fs-18);

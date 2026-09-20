@@ -178,6 +178,24 @@ describe('App', () => {
       expect(menu()?.classList.contains('open')).toBe(false);
     });
 
+    it('surfaces the pending data points on the toggle, which hides them', async () => {
+      const badge = () => toggle()?.querySelector('.badge');
+
+      expect(toggle()?.getAttribute('aria-label')).toBe(
+        'Menú de acciones, 11 datos obligatorios pendientes',
+      );
+      expect(badge()?.textContent?.trim()).toBe('11');
+      expect(badge()?.getAttribute('aria-hidden')).toBe('true');
+
+      typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-label')).toBe(
+        'Menú de acciones, 10 datos obligatorios pendientes',
+      );
+      expect(badge()?.textContent?.trim()).toBe('10');
+    });
+
     it('closes the menu on Escape and puts focus back on the toggle', async () => {
       toggle()?.focus();
       toggle()?.click();

@@ -148,6 +148,8 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/app.css|.secondary:hover|background': surface,
   'src/app/app.css|.primary:focus-visible|outline': nonText(HEADER),
   'src/app/app.css|.secondary:focus-visible|outline': nonText(HEADER),
+  'src/app/app.css|.badge|background': surface,
+  'src/app/app.css|.badge|color': text([['--warning-bg']]),
   'src/app/app.css|.wordmark|color': text(HEADER),
   'src/app/app.css|.reference|border-left': SEPARATOR,
   'src/app/app.css|.reference|color': text(HEADER),
