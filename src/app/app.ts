@@ -40,6 +40,12 @@ export class App {
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
 
+  /**
+   * Whether the collapsed header menu is showing. It only has an effect below the
+   * breakpoint; above it, CSS lays the menu out as the header row and hides the toggle.
+   */
+  protected readonly menuOpen = signal(false);
+
   protected readonly drawerOpen = signal(false);
   protected readonly settingsOpen = signal(false);
   protected readonly complianceOpen = signal(false);

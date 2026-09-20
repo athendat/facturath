@@ -133,6 +133,38 @@ describe('App', () => {
     expect(statusText()).toBe('');
   });
 
+  describe('header menu', () => {
+    function toggle(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.menu-toggle');
+    }
+
+    function menu(): HTMLElement | null {
+      const controls = toggle()?.getAttribute('aria-controls');
+      return controls ? compiled.querySelector<HTMLElement>(`#${controls}`) : null;
+    }
+
+    it('gathers every control but printing behind one toggle', () => {
+      const button = toggle();
+
+      expect(button?.closest('header')).not.toBeNull();
+      expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(
+        Array.from(menu()?.querySelectorAll('button') ?? []).map((item) =>
+          item.textContent?.trim(),
+        ),
+      ).toEqual(['Guardar', 'Nueva', 'Guardadas (0)', 'Res. 55 (11)', 'Archivo', 'Ajustes']);
+    });
+
+    it('keeps printing out of the menu and renders each control once', () => {
+      const print = findButton(compiled, 'PDF / Imprimir');
+
+      expect(print?.closest('header')).not.toBeNull();
+      expect(menu()?.contains(print as Node)).toBe(false);
+      // Seven controls plus the toggle: nothing is duplicated for a second layout (#43).
+      expect(compiled.querySelectorAll('.app-header button')).toHaveLength(8);
+    });
+  });
+
   describe('saved invoices', () => {
     function invoiceStore(): InvoiceStore {
       return TestBed.inject(InvoiceStore);
