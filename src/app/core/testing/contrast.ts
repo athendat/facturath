@@ -2,6 +2,9 @@
  * WCAG 2.1 contrast maths (1.4.3 text, 1.4.11 non-text). Pure: it takes CSS
  * colour strings and returns numbers, so the accessibility suite can assert the
  * real token values instead of eyeballing them.
+ *
+ * Test-only. No app code needs it, so it lives here rather than in `domain/`,
+ * which holds the invoice model and its rules.
  */
 
 /** A colour with straight (non-premultiplied) alpha; channels are 0-255, alpha 0-1. */

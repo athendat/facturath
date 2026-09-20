@@ -27,10 +27,15 @@
   --danger-bg:  #FEE2E2; --danger-fg:  #991B1B;
   --info-bg:    #E2F3FC; --info-fg:    var(--picton-700);
 
-  --fg-1: var(--gray-900); --fg-2: var(--gray-700); --fg-3: var(--gray-500); --fg-4: var(--gray-400);
+  --fg-1: var(--gray-900); --fg-2: var(--gray-700); --fg-3: var(--gray-500);
+  /* --fg-4 is 2.54:1 on white: not for text. Use --fg-3, or --fg-placeholder for a hint (#15). */
+  --fg-4: var(--gray-400);
   --fg-on-brand: #FFFFFF; --fg-link: var(--gem-800); --fg-link-hover: var(--gem-900);
   --bg-0: #FFFFFF; --bg-1: var(--gray-50); --bg-2: var(--gray-100); --bg-brand: var(--gem-900);
-  --border-1: var(--gray-200); --border-2: var(--gray-300); --border-focus: var(--gem-600);
+  --border-1: var(--gray-200);
+  /* --border-2 is 1.47:1 on white: not for a control boundary. Use --border-control (#15). */
+  --border-2: var(--gray-300);
+  --border-focus: var(--gem-600);
 
   /* Accessibility semantics (#15). The ATHENDAT palette above keeps its values; these
      compose from it to meet WCAG AA where a plain palette token does not:
