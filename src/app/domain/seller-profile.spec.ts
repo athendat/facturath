@@ -2,6 +2,7 @@ import { createInvoice } from './invoice';
 import {
   applyProfileToInvoice,
   createEmptyProfile,
+  isEmptyProfile,
   profileToParty,
   type SellerProfile,
 } from './seller-profile';
@@ -61,5 +62,14 @@ describe('seller profile', () => {
     expect(filled.buyer.name).toBe('Ana Pérez');
     expect(filled.id).toBe('inv-1');
     expect(invoice.seller.name).toBe('');
+  });
+});
+
+describe('isEmptyProfile', () => {
+  it('is true only for a profile with no text and no images', () => {
+    expect(isEmptyProfile(createEmptyProfile())).toBe(true);
+    expect(isEmptyProfile({ ...createEmptyProfile(), bankBranch: 'BANDEC' })).toBe(false);
+    expect(isEmptyProfile({ ...createEmptyProfile(), enzonaQrAssetId: 'qr-2' })).toBe(false);
+    expect(isEmptyProfile(profile)).toBe(false);
   });
 });

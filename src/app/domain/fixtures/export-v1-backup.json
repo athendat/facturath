@@ -1,0 +1,160 @@
+{
+  "format": "facturath",
+  "kind": "backup",
+  "schemaVersion": 1,
+  "invoices": [
+    {
+      "id": "0f6b2a3c-0000-4000-8000-000000000101",
+      "schemaVersion": 1,
+      "series": "A",
+      "number": "0001",
+      "issueDate": "2026-09-10",
+      "currency": "CUP",
+      "exchangeRate": "",
+      "concept": "Venta de mercancías",
+      "seller": {
+        "name": "Taller Rodríguez",
+        "address": "Calle 23 n. 456, La Habana",
+        "nit": "12345678901",
+        "identityCard": "",
+        "commercialRegistry": "",
+        "bankAccount": "",
+        "bankBranch": ""
+      },
+      "buyer": {
+        "name": "Ana Pérez",
+        "address": "Calle 23 n. 456, La Habana",
+        "nit": "",
+        "identityCard": "",
+        "commercialRegistry": "",
+        "bankAccount": "",
+        "bankBranch": ""
+      },
+      "lines": [
+        {
+          "code": "P-1",
+          "description": "Servicio",
+          "detail": "",
+          "unit": "u",
+          "quantity": "2",
+          "unitPrice": "150.00"
+        }
+      ],
+      "discount": "",
+      "shipping": "",
+      "tax": {
+        "name": "",
+        "percent": ""
+      },
+      "notes": "",
+      "terms": "Pago a 30 días",
+      "carrier": {
+        "name": "",
+        "identityCard": "",
+        "plate": "",
+        "waybill": "",
+        "railwayBox": ""
+      },
+      "signatures": {
+        "delivers": "",
+        "receives": "",
+        "carrier": "",
+        "books": ""
+      },
+      "logoAssetId": "7d8a1c2e-1111-4a5b-8c6d-000000000001",
+      "transfermovilQrAssetId": null,
+      "enzonaQrAssetId": null
+    },
+    {
+      "id": "0f6b2a3c-0000-4000-8000-000000000102",
+      "schemaVersion": 1,
+      "series": "A",
+      "number": "0002",
+      "issueDate": "2026-09-10",
+      "currency": "CUP",
+      "exchangeRate": "",
+      "concept": "Venta de mercancías",
+      "seller": {
+        "name": "Taller Rodríguez",
+        "address": "Calle 23 n. 456, La Habana",
+        "nit": "12345678901",
+        "identityCard": "",
+        "commercialRegistry": "",
+        "bankAccount": "",
+        "bankBranch": ""
+      },
+      "buyer": {
+        "name": "Luis Gómez",
+        "address": "Calle 23 n. 456, La Habana",
+        "nit": "",
+        "identityCard": "",
+        "commercialRegistry": "",
+        "bankAccount": "",
+        "bankBranch": ""
+      },
+      "lines": [
+        {
+          "code": "P-1",
+          "description": "Servicio",
+          "detail": "",
+          "unit": "u",
+          "quantity": "2",
+          "unitPrice": "150.00"
+        }
+      ],
+      "discount": "",
+      "shipping": "",
+      "tax": {
+        "name": "",
+        "percent": ""
+      },
+      "notes": "",
+      "terms": "Pago a 30 días",
+      "carrier": {
+        "name": "",
+        "identityCard": "",
+        "plate": "",
+        "waybill": "",
+        "railwayBox": ""
+      },
+      "signatures": {
+        "delivers": "",
+        "receives": "",
+        "carrier": "",
+        "books": ""
+      },
+      "logoAssetId": "7d8a1c2e-1111-4a5b-8c6d-000000000001",
+      "transfermovilQrAssetId": "7d8a1c2e-2222-4a5b-8c6d-000000000002",
+      "enzonaQrAssetId": null
+    }
+  ],
+  "profile": {
+    "schemaVersion": 1,
+    "name": "Taller Rodríguez",
+    "address": "Calle 23 n. 456, La Habana",
+    "nit": "12345678901",
+    "commercialRegistry": "RC-77",
+    "bankAccount": "0598",
+    "bankBranch": "1234",
+    "logoAssetId": "7d8a1c2e-1111-4a5b-8c6d-000000000001",
+    "transfermovilQrAssetId": "7d8a1c2e-2222-4a5b-8c6d-000000000002",
+    "enzonaQrAssetId": null
+  },
+  "preferences": {
+    "schemaVersion": 1,
+    "density": "compact",
+    "showCarrier": false,
+    "showSignatures": true,
+    "showPaymentQr": true
+  },
+  "assets": {
+    "7d8a1c2e-1111-4a5b-8c6d-000000000001": {
+      "type": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    },
+    "7d8a1c2e-2222-4a5b-8c6d-000000000002": {
+      "type": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    }
+  }
+}
