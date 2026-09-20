@@ -79,6 +79,18 @@ describe('LocalStoragePreferencesStore', () => {
       });
     });
 
+    it('falls back to the default for a density or flag that is not one', async () => {
+      localStorage.setItem(
+        PREFERENCES_KEY,
+        JSON.stringify({ density: 'huge', showCarrier: 'no', showSignatures: false }),
+      );
+
+      await expect(store.loadPreferences()).resolves.toEqual({
+        ...createDefaultPreferences(),
+        showSignatures: false,
+      });
+    });
+
     it('treats an unreadable stored value as no preferences', async () => {
       localStorage.setItem(PREFERENCES_KEY, '[not an object]');
 

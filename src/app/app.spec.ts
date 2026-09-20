@@ -313,6 +313,19 @@ describe('App at startup', () => {
     );
   });
 
+  it('lets a restored draft keep its own seller block over the remembered profile', async () => {
+    const preferences = new InMemoryPreferencesStore();
+    await preferences.saveProfile({ ...createEmptyProfile(), name: 'Taller Perfil' });
+    const draft = { ...createInvoice('draft-1'), number: '0004' };
+    draft.seller = { ...draft.seller, name: 'Taller Borrador' };
+
+    await render([{ provide: PREFERENCES_STORE, useValue: preferences }], () =>
+      TestBed.inject(INVOICE_REPOSITORY).saveDraft(draft),
+    );
+
+    expect(TestBed.inject(InvoiceStore).invoice().seller.name).toBe('Taller Borrador');
+  });
+
   it('dates a new invoice with today and fills the seller block from the remembered profile', async () => {
     const preferences = new InMemoryPreferencesStore();
     await preferences.saveProfile({ ...createEmptyProfile(), name: 'Taller Rodríguez', nit: '12345678901' });

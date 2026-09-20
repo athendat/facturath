@@ -198,14 +198,6 @@ describe('SettingsStore', () => {
       await expect(preferences.loadPreferences()).resolves.toEqual(createDefaultPreferences());
     });
 
-    it('toggles a section', () => {
-      store.toggleSection('showSignatures');
-      expect(store.showSignatures()).toBe(false);
-
-      store.toggleSection('showSignatures');
-      expect(store.showSignatures()).toBe(true);
-    });
-
     it('does not write the untouched defaults nor preferences it only loaded', async () => {
       await preferences.savePreferences({ ...createDefaultPreferences(), showCarrier: false });
       const save = vi.spyOn(preferences, 'savePreferences');

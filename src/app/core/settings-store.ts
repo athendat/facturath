@@ -22,8 +22,8 @@ import { StorageStatus } from './storage/storage-status';
 class Persisted<T extends object> {
   readonly state: WritableSignal<T>;
   readonly touched = signal(false);
-  readonly editedBeforeLoad: Partial<T> = {};
-  loaded = false;
+  private readonly editedBeforeLoad: Partial<T> = {};
+  private loaded = false;
 
   constructor(initial: T) {
     this.state = signal(initial);
@@ -68,16 +68,16 @@ export class SettingsStore {
   readonly showPaymentQr = computed(() => this.preferences().showPaymentQr);
 
   constructor() {
+    this.persist(this.profileState, (profile) => this.store.saveProfile(profile));
+    this.persist(this.preferencesState, (preferences) => this.store.savePreferences(preferences));
+  }
+
+  /** Writes `persisted` through `save` on every change once the user touched it. */
+  private persist<T extends object>(persisted: Persisted<T>, save: (value: T) => Promise<void>): void {
     effect(() => {
-      const profile = this.profileState.state();
-      if (this.profileState.touched()) {
-        this.store.saveProfile(profile).catch(() => this.status.markUnavailable());
-      }
-    });
-    effect(() => {
-      const preferences = this.preferencesState.state();
-      if (this.preferencesState.touched()) {
-        this.store.savePreferences(preferences).catch(() => this.status.markUnavailable());
+      const value = persisted.state();
+      if (persisted.touched()) {
+        save(value).catch(() => this.status.markUnavailable());
       }
     });
   }
@@ -114,9 +114,5 @@ export class SettingsStore {
   /** Shows (`true`) or hides a section of the document, on screen and on paper. */
   setSection(flag: SectionFlag, shown: boolean): void {
     this.preferencesState.edit(flag, shown);
-  }
-
-  toggleSection(flag: SectionFlag): void {
-    this.setSection(flag, !this.preferences()[flag]);
   }
 }

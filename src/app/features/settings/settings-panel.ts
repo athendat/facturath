@@ -72,7 +72,8 @@ let nextId = 0;
         <div class="images">
           @for (image of images; track image.value) {
             <div class="image">
-              <span class="label">{{ image.label }}</span>
+              <!-- Visual only: the control already names itself (Subir logo, Quitar logo...). -->
+              <span class="label" aria-hidden="true">{{ image.label }}</span>
               <app-image-control
                 [kind]="image.value"
                 [url]="imagesStore.urls()[image.value]"

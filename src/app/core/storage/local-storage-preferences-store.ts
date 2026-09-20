@@ -1,5 +1,5 @@
 import { DOCUMENT, Service, inject } from '@angular/core';
-import { createDefaultPreferences, type Preferences } from '../../domain/preferences';
+import { preferencesFrom, type Preferences } from '../../domain/preferences';
 import { createEmptyProfile, type SellerProfile } from '../../domain/seller-profile';
 import { InMemoryPreferencesStore } from './in-memory-preferences-store';
 import type { PreferencesStore } from './ports';
@@ -22,7 +22,11 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
   private blocked = false;
 
   loadProfile(): Promise<SellerProfile | null> {
-    return this.read(PROFILE_KEY, createEmptyProfile, () => this.memory.loadProfile());
+    return this.read(
+      PROFILE_KEY,
+      (stored) => ({ ...createEmptyProfile(), ...(stored as Partial<SellerProfile>) }),
+      () => this.memory.loadProfile(),
+    );
   }
 
   saveProfile(profile: SellerProfile): Promise<void> {
@@ -30,9 +34,7 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
   }
 
   loadPreferences(): Promise<Preferences | null> {
-    return this.read(PREFERENCES_KEY, createDefaultPreferences, () =>
-      this.memory.loadPreferences(),
-    );
+    return this.read(PREFERENCES_KEY, preferencesFrom, () => this.memory.loadPreferences());
   }
 
   savePreferences(preferences: Preferences): Promise<void> {
@@ -41,10 +43,10 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
     );
   }
 
-  /** The value under `key` merged over `defaults()`, null when absent or unreadable; `fallback` when blocked. */
+  /** The object under `key` through `parse`, null when absent or unreadable; `fallback` when blocked. */
   private read<T extends object>(
     key: string,
-    defaults: () => T,
+    parse: (stored: Record<string, unknown>) => T,
     fallback: () => Promise<T | null>,
   ): Promise<T | null> {
     const storage = this.storage();
@@ -53,7 +55,8 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
     }
     try {
       const raw = storage.getItem(key);
-      return Promise.resolve(raw === null ? null : parseOver(raw, defaults()));
+      const stored = raw === null ? null : parseObject(raw);
+      return Promise.resolve(stored === null ? null : parse(stored));
     } catch {
       this.block();
       return fallback();
@@ -96,14 +99,14 @@ export class LocalStoragePreferencesStore implements PreferencesStore {
   }
 }
 
-/** The stored object over `defaults`, so fields added later read as their default; null when unreadable. */
-function parseOver<T extends object>(raw: string, defaults: T): T | null {
+/** The stored JSON as a plain object, or null when it is not one or cannot be parsed. */
+function parseObject(raw: string): Record<string, unknown> | null {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return null;
     }
-    return { ...defaults, ...(parsed as Partial<T>) };
+    return parsed as Record<string, unknown>;
   } catch {
     return null;
   }
