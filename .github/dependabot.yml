@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  # The workflow pins every action to a commit SHA with the release in a
+  # trailing comment. Dependabot understands that shape and moves the SHA
+  # and the comment together, which is the only practical way to keep a
+  # pinned action current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      # One pull request a week for everything that is not a major, so the
+      # twelve Angular packages, which release in lockstep, arrive together
+      # instead of twelve at a time. A major comes on its own, since it
+      # usually needs a code change rather than a merge.
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # The TypeScript major is bound to the range each Angular release
+      # supports, so a TypeScript 7 pull request against Angular 22 would
+      # only ever arrive red. It moves with the Angular major instead.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # These type definitions must match the Node version CI runs, not the
+      # newest published major. They are behind today; see issue #53.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
+    commit-message:
+      prefix: chore
