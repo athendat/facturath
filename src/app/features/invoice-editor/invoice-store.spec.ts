@@ -654,5 +654,125 @@ describe('InvoiceStore', () => {
       expect(entry('issue-date')).toMatchObject({ state: 'fulfilled', focusField: null });
       expect(store.pendingCount()).toBe(11);
     });
+
+    /** Each remaining entry: its first focus target, the edits that complete it and where the focus lands meanwhile. */
+    const transitions: [id: string, focusField: string, steps: [(s: InvoiceStore) => void, string | null][]][] = [
+      [
+        'seller',
+        'seller.name',
+        [
+          [(s) => s.updateParty('seller', 'name', 'Taller Rodríguez'), 'seller.address'],
+          [(s) => s.updateParty('seller', 'address', 'Calle 1'), 'seller.nit'],
+          [(s) => s.updateParty('seller', 'nit', '12345678901'), 'seller.commercialRegistry'],
+          [(s) => s.updateParty('seller', 'commercialRegistry', 'RC-1'), 'seller.bankAccount'],
+          [(s) => s.updateParty('seller', 'bankAccount', '0598'), 'seller.bankBranch'],
+          [(s) => s.updateParty('seller', 'bankBranch', '1234'), null],
+        ],
+      ],
+      [
+        'buyer',
+        'buyer.name',
+        [
+          [(s) => s.updateParty('buyer', 'name', 'Ana Pérez'), 'buyer.address'],
+          [(s) => s.updateParty('buyer', 'address', 'Calle 2'), 'buyer.nit'],
+          [(s) => s.updateParty('buyer', 'identityCard', '90010112345'), null],
+        ],
+      ],
+      ['concept', 'concept', [[(s) => s.setField('concept', 'Venta'), null]]],
+      [
+        'carrier',
+        'carrier.name',
+        [
+          [(s) => s.updateCarrier('name', 'Luis'), 'carrier.identityCard'],
+          [(s) => s.updateCarrier('identityCard', '85010112345'), 'carrier.plate'],
+          [(s) => s.updateCarrier('plate', 'P123456'), null],
+        ],
+      ],
+      [
+        'lines',
+        'lines.0.description',
+        [
+          [(s) => s.updateLine(0, 'description', 'Servicio'), 'lines.0.unitPrice'],
+          [(s) => s.updateLine(0, 'unitPrice', '10'), null],
+        ],
+      ],
+      [
+        'tax',
+        'tax.name',
+        [
+          [(s) => s.updateTax('name', 'Impuesto sobre ventas'), 'tax.percent'],
+          [(s) => s.updateTax('percent', '10'), null],
+        ],
+      ],
+      ['total', 'lines.0.unitPrice', [[(s) => s.updateLine(0, 'unitPrice', '10'), null]]],
+      ['signature-delivers', 'signatures.delivers', [[(s) => s.updateSignature('delivers', 'Luis'), null]]],
+      ['signature-receives', 'signatures.receives', [[(s) => s.updateSignature('receives', 'Ana'), null]]],
+      ['signature-carrier', 'signatures.carrier', [[(s) => s.updateSignature('carrier', 'Pedro'), null]]],
+      ['signature-books', 'signatures.books', [[(s) => s.updateSignature('books', 'Rosa'), null]]],
+    ];
+
+    it.each(transitions)('flips %s to fulfilled once its fields are filled', (id, focusField, steps) => {
+      const before = store.pendingCount();
+      expect(entry(id)).toMatchObject({ state: 'pending', focusField });
+
+      for (const [edit, nextFocus] of steps) {
+        edit(store);
+        expect(entry(id).focusField).toBe(nextFocus);
+      }
+
+      expect(entry(id).state).toBe('fulfilled');
+      expect(store.pendingCount()).toBe(before - (id === 'lines' ? 2 : 1));
+    });
+
+    it('flips the number to pending when the series or the number is cleared', () => {
+      store.setField('number', '   ');
+      expect(entry('number')).toMatchObject({ state: 'pending', focusField: 'number' });
+
+      store.setField('number', '0002');
+      store.setField('series', '');
+      expect(entry('number')).toMatchObject({ state: 'pending', focusField: 'series' });
+
+      store.setField('series', 'B');
+      expect(entry('number')).toMatchObject({ state: 'fulfilled', focusField: null });
+    });
+
+    it('accepts a buyer NIT instead of the identity card', () => {
+      store.updateParty('buyer', 'name', 'Empresa SA');
+      store.updateParty('buyer', 'address', 'Calle 2');
+      store.updateParty('buyer', 'nit', '12345678901');
+
+      expect(entry('buyer').state).toBe('fulfilled');
+    });
+
+    it('keeps the lines pending while a line has no quantity above zero or a second line is empty', () => {
+      store.updateLine(0, 'description', 'Servicio');
+      store.updateLine(0, 'unitPrice', '10');
+      store.updateLine(0, 'quantity', '0');
+      expect(entry('lines').focusField).toBe('lines.0.quantity');
+
+      store.updateLine(0, 'quantity', '2');
+      store.addLine();
+      expect(entry('lines').focusField).toBe('lines.1.description');
+    });
+
+    it('marks the carrier not applicable, out of the count, while its section is hidden', () => {
+      TestBed.inject(SettingsStore).setSection('showCarrier', false);
+
+      expect(entry('carrier')).toMatchObject({ state: 'not-applicable', focusField: null });
+      expect(store.pendingCount()).toBe(11);
+
+      TestBed.inject(SettingsStore).setSection('showCarrier', true);
+      expect(entry('carrier').state).toBe('pending');
+      expect(store.pendingCount()).toBe(12);
+    });
+
+    it('marks the four signatures not applicable, out of the count, while the section is hidden', () => {
+      TestBed.inject(SettingsStore).setSection('showSignatures', false);
+
+      const signatures = store.compliance().filter((item) => item.id.startsWith('signature-'));
+      expect(signatures).toHaveLength(4);
+      expect(signatures.map((item) => item.state)).toEqual(Array<string>(4).fill('not-applicable'));
+      expect(store.pendingCount()).toBe(8);
+    });
   });
 });
