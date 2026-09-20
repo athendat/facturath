@@ -76,7 +76,7 @@ let nextId = 0;
     .button {
       min-height: 38px;
       padding: 0 14px;
-      border: 1px solid var(--border-2);
+      border: 1px solid var(--border-control);
       border-radius: var(--radius-xs);
       background: var(--bg-0);
       color: var(--gem-900);

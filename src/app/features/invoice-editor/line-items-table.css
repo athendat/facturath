@@ -14,7 +14,8 @@
 th {
   padding: 5px 6px;
   background: var(--gray-100);
-  color: var(--fg-3);
+  /* --fg-3 is only 4.39:1 on this tint, below the 4.5:1 AA minimum for text (#15). */
+  color: var(--fg-2);
   font-size: 9px;
   font-weight: var(--fw-bold);
   letter-spacing: var(--tr-wide);
@@ -92,7 +93,7 @@ td.qty-price {
 }
 
 .times {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 td.amount {
@@ -120,7 +121,7 @@ td.actions {
 
 .delete {
   padding: 4px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .delete:hover {

@@ -47,7 +47,7 @@
 }
 
 .secondary {
-  border: 1px solid var(--border-2);
+  border: 1px solid var(--border-control);
   background: var(--bg-0);
   color: var(--gem-900);
   font-weight: var(--fw-medium);
@@ -89,7 +89,8 @@
    the template so the global rule in styles.css keeps it off paper (#32). */
 .app-footer {
   padding: var(--sp-2) var(--sp-3) var(--sp-6);
-  color: var(--fg-3);
+  /* The page background is --gray-100, where --fg-3 is only 4.39:1, below AA (#15). */
+  color: var(--fg-2);
   font-size: var(--fs-12);
   text-align: center;
 }

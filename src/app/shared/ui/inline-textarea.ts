@@ -43,7 +43,7 @@ import { fieldElementId, type FieldId } from '../../domain/compliance';
     }
 
     textarea::placeholder {
-      color: var(--fg-4);
+      color: var(--fg-placeholder);
     }
 
     textarea:hover {

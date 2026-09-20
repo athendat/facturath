@@ -20,7 +20,7 @@ import { Component } from '@angular/core';
 
     p {
       margin: 0;
-      color: var(--fg-4);
+      color: var(--fg-3);
       font-size: 9px;
       line-height: var(--lh-relaxed);
     }

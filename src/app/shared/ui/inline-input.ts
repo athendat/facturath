@@ -47,7 +47,7 @@ import { fieldElementId, type FieldId } from '../../domain/compliance';
     }
 
     input::placeholder {
-      color: var(--fg-4);
+      color: var(--fg-placeholder);
       font-weight: var(--fw-regular);
     }
 

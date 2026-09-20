@@ -123,10 +123,10 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
       width: 100%;
       height: 100%;
       padding: var(--sp-1);
-      border: 1px dashed var(--border-2);
+      border: 1px dashed var(--border-control);
       align-items: center;
       justify-content: center;
-      color: var(--fg-4);
+      color: var(--fg-placeholder);
       font-size: 9px;
       line-height: 1.3;
     }

@@ -31,7 +31,20 @@
   --fg-on-brand: #FFFFFF; --fg-link: var(--gem-800); --fg-link-hover: var(--gem-900);
   --bg-0: #FFFFFF; --bg-1: var(--gray-50); --bg-2: var(--gray-100); --bg-brand: var(--gem-900);
   --border-1: var(--gray-200); --border-2: var(--gray-300); --border-focus: var(--gem-600);
-  --focus-ring: 0 0 0 2px rgba(58,12,163,.25);
+
+  /* Accessibility semantics (#15). The ATHENDAT palette above keeps its values; these
+     compose from it to meet WCAG AA where a plain palette token does not:
+     - --border-control bounds an interactive control, so it needs 3:1 (1.4.11).
+       --border-2 (#D1D5DB) is 1.47:1 on white; --gray-500 is 4.83:1.
+     - --fg-placeholder paints placeholder text, which is text and needs 4.5:1 (1.4.3).
+       --fg-4 (#9CA3AF) is 2.54:1 on white; --gray-600 is 7.56:1, and stays 6.87:1
+       over the --gray-100 hover tint.
+     - --focus-ring is a focus indicator, so it needs 3:1 (1.4.11). The old
+       rgba(58,12,163,.25) halo was 1.68:1 over white; the solid ring is 11.92:1 and
+       matches the outline the header buttons already use. Same 2px spread, so nothing moves. */
+  --border-control: var(--gray-500);
+  --fg-placeholder: var(--gray-600);
+  --focus-ring: 0 0 0 2px var(--gem-900);
 
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
 
