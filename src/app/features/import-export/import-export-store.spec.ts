@@ -8,8 +8,11 @@ import { SettingsStore } from '../../core/settings-store';
 import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from '../../core/storage/ports';
 import { FakeFileDownload } from '../../core/testing/fake-file-download';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { QUOTA_FULL_MESSAGE } from '../../core/storage/quota';
 import { ToastService } from '../../core/toast';
 import type { BackupExportFile } from '../../domain/export-format';
+import v1Backup from '../../domain/fixtures/export-v1-backup.json';
+import v1Invoice from '../../domain/fixtures/export-v1-invoice.json';
 import { SCHEMA_VERSION, createInvoice, type Invoice } from '../../domain/invoice';
 import { createDefaultPreferences } from '../../domain/preferences';
 import { createEmptyProfile } from '../../domain/seller-profile';
@@ -205,6 +208,109 @@ describe('ImportExportStore', () => {
         density: 'compact',
         showCarrier: false,
       });
+    });
+  });
+
+  describe('importFile with a file that is not a FACTURATH export', () => {
+    it.each([
+      ['plain text', new Blob(['hola'], { type: 'text/plain' })],
+      ['JSON of another app', jsonFile({ format: 'other', invoices: [] })],
+      [
+        'a newer schema version',
+        jsonFile({
+          format: 'facturath',
+          kind: 'invoice',
+          schemaVersion: SCHEMA_VERSION + 1,
+          invoice: invoice(),
+          assets: {},
+        }),
+      ],
+      [
+        'an image that is not base64',
+        jsonFile({
+          format: 'facturath',
+          kind: 'invoice',
+          schemaVersion: SCHEMA_VERSION,
+          invoice: invoice({ logoAssetId: 'logo-1' }),
+          assets: { 'logo-1': { type: 'image/png', data: '%%not base64%%' } },
+        }),
+      ],
+    ])('explains %s in a toast and changes nothing', async (_, file) => {
+      await settings.load();
+      const put = vi.spyOn(assets, 'put');
+      const save = vi.spyOn(repository, 'save');
+
+      const result = await store.importFile(file);
+
+      expect(result).toEqual({ kind: 'invalid' });
+      expect(toasts.current()?.message).toBe('El archivo no es una exportación de FACTURATH.');
+      expect(put).not.toHaveBeenCalled();
+      expect(save).not.toHaveBeenCalled();
+      expect(settings.profile()).toEqual(createEmptyProfile());
+    });
+  });
+
+  describe('importFile when the store cannot write', () => {
+    const file = () =>
+      jsonFile({
+        format: 'facturath',
+        kind: 'invoice',
+        schemaVersion: SCHEMA_VERSION,
+        invoice: invoice({ logoAssetId: 'logo-1' }),
+        assets: { 'logo-1': { type: 'image/png', data: PNG_BASE64 } },
+      });
+
+    it('reports a full origin with the quota message and resolves', async () => {
+      vi.spyOn(assets, 'put').mockRejectedValue(new DOMException('full', 'QuotaExceededError'));
+
+      await expect(store.importFile(file())).resolves.toEqual({ kind: 'invalid' });
+
+      expect(toasts.current()?.message).toBe(QUOTA_FULL_MESSAGE);
+    });
+
+    it('reports any other refused write and resolves', async () => {
+      vi.spyOn(assets, 'put').mockRejectedValue(new Error('blocked'));
+
+      await expect(store.importFile(file())).resolves.toEqual({ kind: 'invalid' });
+
+      expect(toasts.current()?.message).toBe('No se pudo importar el archivo.');
+    });
+  });
+
+  describe('importFile with a file from a prior schema version', () => {
+    /** One exported file of each kind per released schema version; a new version adds a row. */
+    const FIXTURES: Record<number, { invoice: unknown; backup: unknown }> = {
+      1: { invoice: v1Invoice, backup: v1Backup },
+    };
+    const versions = Array.from({ length: SCHEMA_VERSION }, (_, index) => index + 1);
+
+    it.each(versions)('upgrades a v%i invoice file to the current schema, images included', async (version) => {
+      const result = await store.importFile(jsonFile(FIXTURES[version]?.invoice));
+
+      expect(result.kind).toBe('invoice');
+      if (result.kind === 'invoice') {
+        expect(result.invoice.schemaVersion).toBe(SCHEMA_VERSION);
+        expect(Object.keys(result.invoice).sort()).toEqual(Object.keys(createInvoice('a')).sort());
+        const logo = await assets.get(result.invoice.logoAssetId!);
+        expect(new Uint8Array(await logo!.arrayBuffer())).toEqual(PNG_BYTES);
+      }
+    });
+
+    it.each(versions)('upgrades a v%i backup file to the current schema', async (version) => {
+      await settings.load();
+
+      const result = await store.importFile(jsonFile(FIXTURES[version]?.backup));
+      TestBed.tick();
+
+      expect(result).toEqual({ kind: 'backup', imported: 2 });
+      for (const { id } of await repository.listSummaries()) {
+        const stored = await repository.get(id);
+        expect(stored?.schemaVersion).toBe(SCHEMA_VERSION);
+        expect(Object.keys(stored ?? {}).sort()).toEqual(Object.keys(createInvoice('a')).sort());
+      }
+      expect(settings.profile().name).toBe('Taller Rodríguez');
+      expect(settings.preferences().density).toBe('compact');
+      await expect(assets.get(settings.profile().logoAssetId!)).resolves.toBeInstanceOf(Blob);
     });
   });
 });
