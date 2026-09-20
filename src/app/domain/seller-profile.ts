@@ -46,6 +46,14 @@ export function createEmptyProfile(): SellerProfile {
   };
 }
 
+/** Whether the seller has set nothing yet: every text field blank and no image. */
+export function isEmptyProfile(profile: SellerProfile): boolean {
+  return (
+    PROFILE_TEXT_FIELDS.every((field) => profile[field] === '') &&
+    ASSET_ID_FIELDS.every((field) => profile[field] === null)
+  );
+}
+
 export function profileToParty(profile: SellerProfile): Party {
   return { ...pick(profile, PROFILE_TEXT_FIELDS), identityCard: '' };
 }

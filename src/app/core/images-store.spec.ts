@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { createEmptyProfile } from '../domain/seller-profile';
 import { ImagesStore } from './images-store';
@@ -156,6 +157,34 @@ describe('ImagesStore', () => {
 
       expect(images.urls().logo).toBeNull();
       expect(settings.profile().logoAssetId).toBeNull();
+    });
+  });
+
+  describe('an id of the open invoice, apart from the profile', () => {
+    it('resolves it once, hands out its URL by id and revokes it when destroyed', async () => {
+      await assets.put('logo-own', png);
+      const get = vi.spyOn(assets, 'get');
+      expect(images.urlFor('logo-own')).toBeNull();
+
+      images.resolve('logo-own');
+      images.resolve('logo-own');
+      await TestBed.inject(ApplicationRef).whenStable();
+
+      expect(get).toHaveBeenCalledTimes(1);
+      expect(images.urlFor('logo-own')).toBe('blob:fake/1');
+      expect(images.urls().logo).toBeNull();
+
+      TestBed.resetTestingModule();
+      expect(objectUrls.revoked).toEqual(['blob:fake/1']);
+    });
+
+    it('leaves a missing blob or no id without a URL', async () => {
+      images.resolve('gone');
+      images.resolve(null);
+      await TestBed.inject(ApplicationRef).whenStable();
+
+      expect(images.urlFor('gone')).toBeNull();
+      expect(images.urlFor(null)).toBeNull();
     });
   });
 

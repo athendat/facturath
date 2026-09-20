@@ -16,6 +16,7 @@
       >
         Res. 55 ({{ store.pendingCount() }})
       </button>
+      <button type="button" class="secondary" (click)="fileOpen.set(true)">Archivo</button>
       <button type="button" class="secondary" (click)="settingsOpen.set(true)">Ajustes</button>
       <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
     </div>
@@ -44,4 +45,7 @@
 }
 @defer (when complianceOpen()) {
   <app-compliance-panel [(open)]="complianceOpen" />
+}
+@defer (when fileOpen()) {
+  <app-file-panel [(open)]="fileOpen" [invoice]="store.invoice()" (imported)="onImported($event)" />
 }
