@@ -163,6 +163,34 @@ describe('App', () => {
       // Seven controls plus the toggle: nothing is duplicated for a second layout (#43).
       expect(compiled.querySelectorAll('.app-header button')).toHaveLength(8);
     });
+
+    it('opens and closes the menu from the toggle', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
+      expect(menu()?.classList.contains('open')).toBe(true);
+
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+      expect(menu()?.classList.contains('open')).toBe(false);
+    });
+
+    it('closes the menu on Escape and puts focus back on the toggle', async () => {
+      toggle()?.focus();
+      toggle()?.click();
+      await fixture.whenStable();
+      const first = menu()?.querySelector('button');
+      first?.focus();
+
+      first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(toggle());
+    });
   });
 
   describe('saved invoices', () => {

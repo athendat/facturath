@@ -1,10 +1,12 @@
 import {
   Component,
+  ElementRef,
   PendingTasks,
   afterNextRender,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
@@ -39,6 +41,7 @@ export class App {
   private readonly updateNotifier = inject(UpdateNotifier);
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
+  private readonly menuToggle = viewChild.required<ElementRef<HTMLButtonElement>>('menuToggle');
 
   /**
    * Whether the collapsed header menu is showing. It only has an effect below the
@@ -75,6 +78,24 @@ export class App {
         done();
       }
     });
+  }
+
+  /** Shows or hides the collapsed menu. */
+  protected toggleMenu(): void {
+    this.menuOpen.update((open) => !open);
+  }
+
+  /**
+   * Closes the menu and takes focus back to the toggle, the way a disclosure should.
+   * It stays open while a panel is up, so the panel can return focus to the control
+   * that opened it. Above the breakpoint nothing is collapsed and this does nothing.
+   */
+  protected closeMenu(): void {
+    if (!this.menuOpen()) {
+      return;
+    }
+    this.menuOpen.set(false);
+    this.menuToggle().nativeElement.focus();
   }
 
   /** Saves into history; the draft slot follows so it never lags behind. */
