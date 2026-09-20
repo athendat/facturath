@@ -99,7 +99,14 @@ export class ImportExportStore {
         this.toasts.show(`Factura ${formatReference(invoice.series, invoice.number)} importada.`);
         return { kind: 'invoice', invoice };
       }
-      return { kind: 'invalid' };
+      // The repository replaces an existing invoice with the same series and number, so
+      // saving one by one merges the backup into the history without touching the rest.
+      for (const invoice of exported.invoices) {
+        await this.repository.save(invoice);
+      }
+      const imported = exported.invoices.length;
+      this.toasts.show(`Copia importada: ${imported} ${imported === 1 ? 'factura' : 'facturas'}.`);
+      return { kind: 'backup', imported };
     } catch (error) {
       this.toasts.show(isQuotaExceeded(error) ? QUOTA_FULL_MESSAGE : IMPORT_FAILED_MESSAGE);
       return { kind: 'invalid' };

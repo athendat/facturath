@@ -122,6 +122,47 @@ describe('ImportExportStore', () => {
       await expect(repository.listSummaries()).resolves.toEqual([]);
     });
   });
+
+  describe('importFile with a backup file', () => {
+    function backup(overrides: Partial<BackupExportFile> = {}): Blob {
+      return jsonFile({
+        format: 'facturath',
+        kind: 'backup',
+        schemaVersion: SCHEMA_VERSION,
+        invoices: [],
+        profile: createEmptyProfile(),
+        preferences: createDefaultPreferences(),
+        assets: {},
+        ...overrides,
+      });
+    }
+
+    it('merges into the history: existing invoices stay, the same series and number is replaced', async () => {
+      const kept = invoice({ series: 'A', number: '0001', concept: 'Se queda' });
+      const before = invoice({ series: 'A', number: '0002', concept: 'Antes' });
+      await repository.save(kept);
+      await repository.save(before);
+      const replacement = invoice({ series: 'A', number: '0002', concept: 'Después' });
+      const added = invoice({ series: 'B', number: '0001', logoAssetId: 'logo-1' });
+
+      const result = await store.importFile(
+        backup({
+          invoices: [replacement, added],
+          assets: { 'logo-1': { type: 'image/png', data: PNG_BASE64 } },
+        }),
+      );
+
+      expect(result).toEqual({ kind: 'backup', imported: 2 });
+      expect(toasts.current()?.message).toBe('Copia importada: 2 facturas.');
+      const summaries = await repository.listSummaries();
+      expect(summaries.map((summary) => summary.id).sort()).toEqual(
+        [kept.id, replacement.id, added.id].sort(),
+      );
+      await expect(repository.get(before.id)).resolves.toBeNull();
+      await expect(repository.get(replacement.id)).resolves.toEqual(replacement);
+      await expect(assets.get('logo-1')).resolves.toBeInstanceOf(Blob);
+    });
+  });
 });
 
 /** `value` as the JSON file a user would pick. */
