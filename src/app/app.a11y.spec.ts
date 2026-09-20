@@ -61,6 +61,15 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
+  it('passes axe with the settings panel open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    findButton(compiled, 'Ajustes')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"] h3')).not.toBeNull();
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
   it('passes axe with the logo and both payment QR codes set', async () => {
     const images = TestBed.inject(ImagesStore);
     for (const kind of IMAGE_KINDS) {

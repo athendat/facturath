@@ -15,6 +15,7 @@ import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesDrawer } from './features/saved-invoices/saved-invoices-drawer';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
+import { SettingsPanel } from './features/settings/settings-panel';
 import { ToastHost } from './shared/ui/toast-host';
 
 export const SAVING_DISABLED_NOTICE =
@@ -22,7 +23,7 @@ export const SAVING_DISABLED_NOTICE =
 
 @Component({
   selector: 'app-root',
-  imports: [InvoiceEditor, SavedInvoicesDrawer, ToastHost],
+  imports: [InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -37,6 +38,7 @@ export class App {
   private readonly pendingTasks = inject(PendingTasks);
 
   protected readonly drawerOpen = signal(false);
+  protected readonly settingsOpen = signal(false);
 
   /**
    * Shown in a second toast host of its own, so it neither auto-dismisses nor

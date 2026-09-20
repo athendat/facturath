@@ -8,7 +8,7 @@ import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-s
 import { INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
-import { findButton } from './core/testing/dom';
+import { findButton, typeInto } from './core/testing/dom';
 import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
@@ -188,6 +188,70 @@ describe('App', () => {
       expect(dialog()).toBeNull();
       expect(invoiceStore().invoice().id).toBe(savedId);
       expect(invoiceStore().invoice().concept).toBe('Venta');
+    });
+  });
+
+  describe('settings', () => {
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    async function openSettings(): Promise<HTMLButtonElement | undefined> {
+      const button = findButton(compiled, 'Ajustes');
+      button?.focus();
+      button?.click();
+      await fixture.whenStable();
+      return button;
+    }
+
+    it('opens the settings panel from the header and closes it with Escape, focus restored', async () => {
+      const button = await openSettings();
+
+      expect(button?.closest('header')).not.toBeNull();
+      expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Ajustes');
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+      expect(dialog()?.contains(document.activeElement)).toBe(true);
+
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(button);
+    });
+
+    it('reflects a seller name typed in the panel in the document, and vice versa', async () => {
+      await openSettings();
+      const panelInput = Array.from(dialog()?.querySelectorAll('label') ?? []).find(
+        (label) => label.textContent?.trim() === 'Nombre o razón social',
+      )?.control as HTMLInputElement;
+      const documentInput = compiled.querySelector<HTMLInputElement>(
+        'input[aria-label="Nombre o razón social del vendedor"]',
+      );
+
+      panelInput.value = 'Taller Rodríguez';
+      panelInput.dispatchEvent(new Event('input', { bubbles: true }));
+      await fixture.whenStable();
+      expect(documentInput?.value).toBe('Taller Rodríguez');
+
+      typeInto(compiled, 'Nombre o razón social del vendedor', 'Taller Nuevo');
+      await fixture.whenStable();
+      expect(panelInput.value).toBe('Taller Nuevo');
+    });
+
+    it('hides the carrier from the document when unchecked in the panel', async () => {
+      await openSettings();
+      expect(compiled.querySelector('app-carrier-block')).not.toBeNull();
+      const checkbox = Array.from(dialog()?.querySelectorAll('label') ?? []).find(
+        (label) => label.textContent?.trim() === 'Mostrar transportista',
+      )?.control as HTMLInputElement;
+
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('app-carrier-block')).toBeNull();
     });
   });
 
