@@ -305,13 +305,46 @@ describe('InvoiceStore', () => {
       expect(store.invoice().transfermovilQrAssetId).toBeNull();
     });
 
-    it('keeps the invoice untouched when the profile changes elsewhere', () => {
-      const before = store.invoice();
+    it('follows a seller field edited elsewhere, e.g. in the settings panel', () => {
+      store.updateParty('buyer', 'name', 'Ana Pérez');
 
       settings.updateProfile('bankBranch', 'BANDEC 4321');
       TestBed.tick();
 
+      expect(store.invoice().seller.bankBranch).toBe('BANDEC 4321');
+      expect(store.invoice().buyer.name).toBe('Ana Pérez');
+    });
+
+    it('keeps the same invoice object when the profile already matches it', () => {
+      store.updateParty('seller', 'name', 'Taller Rodríguez');
+      TestBed.tick();
+      const before = store.invoice();
+
+      settings.updateProfile('name', 'Taller Rodríguez');
+      TestBed.tick();
+
       expect(store.invoice()).toBe(before);
+    });
+
+    it('lets a loaded invoice keep its own seller until the profile changes again', () => {
+      settings.updateProfile('name', 'Taller Actual');
+      TestBed.tick();
+
+      store.load({
+        ...createInvoice('saved-1'),
+        seller: { ...emptyParty, name: 'Taller Antiguo', identityCard: '85010112345' },
+      });
+      TestBed.tick();
+      expect(store.invoice().seller.name).toBe('Taller Antiguo');
+
+      settings.updateProfile('nit', '12345678901');
+      TestBed.tick();
+      expect(store.invoice().seller).toEqual({
+        ...emptyParty,
+        name: 'Taller Actual',
+        nit: '12345678901',
+        identityCard: '85010112345',
+      });
     });
 
     it('lets a loaded invoice keep its own images until the profile changes again', () => {

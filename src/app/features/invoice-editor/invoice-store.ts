@@ -18,8 +18,8 @@ import {
 import {
   applyAssetIdsToInvoice,
   applyProfileToInvoice,
-  hasSameAssetIds,
   isProfileTextField,
+  matchesProfile,
   type SellerProfile,
 } from '../../domain/seller-profile';
 import { computeTotals } from '../../domain/totals';
@@ -45,14 +45,17 @@ export class InvoiceStore {
   readonly edited = this.userEdited.asReadonly();
 
   constructor() {
-    // The images belong to the seller profile and show on every invoice, so the open invoice
-    // follows the profile's asset ids; the images store only ever writes them to the profile.
-    // Only the profile is tracked here (`update` reads the invoice untracked), so replacing the
-    // invoice through `load` does not re-run it and a saved invoice keeps its own images (#10).
+    // The seller data and the images belong to the profile and show on every invoice, so the
+    // open invoice follows the profile: the images store writes the asset ids there and the
+    // settings panel the text fields (#12); a seller edit in the document itself reaches the
+    // profile through `updateParty` and comes back unchanged. Only the profile is tracked here
+    // (`update` reads the invoice untracked), so replacing the invoice through `load` does not
+    // re-run it and a saved invoice keeps its own seller and images until the profile changes
+    // again (#10).
     effect(() => {
       const profile = this.settings.profile();
       this.state.update((invoice) =>
-        hasSameAssetIds(invoice, profile) ? invoice : applyAssetIdsToInvoice(invoice, profile),
+        matchesProfile(invoice, profile) ? invoice : applyProfileToInvoice(invoice, profile),
       );
     });
   }
