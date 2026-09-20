@@ -1,9 +1,12 @@
 import { Service, inject } from '@angular/core';
 import { blobToBase64 } from '../../core/base64';
 import { FileDownload } from '../../core/file-download';
-import { ASSET_STORE } from '../../core/storage/ports';
+import { SettingsStore } from '../../core/settings-store';
+import { ASSET_STORE, INVOICE_REPOSITORY } from '../../core/storage/ports';
+import { formatLocalIsoDate } from '../../domain/dates';
 import {
   EXPORT_FORMAT,
+  backupExportFileName,
   invoiceExportFileName,
   type ExportFile,
   type ExportedAssets,
@@ -18,7 +21,35 @@ import { ASSET_ID_FIELDS, SCHEMA_VERSION, type AssetIds, type Invoice } from '..
 @Service()
 export class ImportExportStore {
   private readonly assets = inject(ASSET_STORE);
+  private readonly repository = inject(INVOICE_REPOSITORY);
+  private readonly settings = inject(SettingsStore);
   private readonly download = inject(FileDownload);
+
+  /**
+   * Saves every stored invoice, the profile, the preferences and all the images
+   * they reference as `facturath-copia-<YYYY-MM-DD>.json`, dated `today`.
+   */
+  async exportBackup(today: Date): Promise<void> {
+    const summaries = await this.repository.listSummaries();
+    const invoices: Invoice[] = [];
+    for (const { id } of summaries) {
+      const invoice = await this.repository.get(id);
+      if (invoice !== null) {
+        invoices.push(invoice);
+      }
+    }
+    const profile = this.settings.profile();
+    const file: ExportFile = {
+      format: EXPORT_FORMAT,
+      kind: 'backup',
+      schemaVersion: SCHEMA_VERSION,
+      invoices,
+      profile,
+      preferences: this.settings.preferences(),
+      assets: await this.inlineAssets([profile, ...invoices].flatMap(assetIdsOf)),
+    };
+    this.save(backupExportFileName(formatLocalIsoDate(today)), file);
+  }
 
   /** Saves `invoice` with the images it references as `factura-<series>-<number>.json`. */
   async exportInvoice(invoice: Invoice): Promise<void> {
