@@ -11,6 +11,7 @@
 
 .app-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
   max-width: 960px;
@@ -18,12 +19,50 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
+/* A row of its own under the wordmark while the menu is collapsed, so the open menu has the
+   full header width; from 960px up it shares the row with the wordmark again. */
 .actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--sp-1);
+  flex-basis: 100%;
   margin-left: auto;
+}
+
+/* Collapsed by default and opened by the toggle: the six secondary controls become a panel
+   of their own under the header row. Mobile first, so there is no width between the two
+   layouts that matches neither (a fractional viewport falls in such a gap). */
+.menu {
+  display: none;
+  /* Last in `.actions`, on a line of its own. */
+  order: 1;
+  flex-basis: 100%;
+}
+
+.menu.open {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+}
+
+/* The seven controls need 922px on one row (measured in Chrome), and the header stops
+   growing at its 960px max-width, so 960px is the width from which the row always fits.
+   There the menu stops being a container at all and its buttons lay themselves out in
+   `.actions` as if they were written there, and the toggle goes away. Below it only
+   PDF / Imprimir stays out of the menu, since printing is what the app is for (#43). */
+@media (min-width: 960px) {
+  .menu,
+  .menu.open {
+    display: contents;
+  }
+
+  .menu-toggle {
+    display: none;
+  }
+
+  .actions {
+    flex-basis: auto;
+  }
 }
 
 .primary,
