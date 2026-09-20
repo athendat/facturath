@@ -7,6 +7,7 @@ import { SettingsStore } from '../../core/settings-store';
 import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from '../../core/storage/ports';
 import { FakeFileDownload } from '../../core/testing/fake-file-download';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { ToastService } from '../../core/toast';
 import type { BackupExportFile } from '../../domain/export-format';
 import { SCHEMA_VERSION, createInvoice, type Invoice } from '../../domain/invoice';
 import { createDefaultPreferences } from '../../domain/preferences';
@@ -34,6 +35,7 @@ describe('ImportExportStore', () => {
   let repository: InMemoryInvoiceRepository;
   let download: FakeFileDownload;
   let settings: SettingsStore;
+  let toasts: ToastService;
 
   beforeEach(() => {
     assets = new InMemoryAssetStore();
@@ -49,6 +51,7 @@ describe('ImportExportStore', () => {
     });
     store = TestBed.inject(ImportExportStore);
     settings = TestBed.inject(SettingsStore);
+    toasts = TestBed.inject(ToastService);
   });
 
   describe('exportInvoice', () => {
@@ -97,4 +100,31 @@ describe('ImportExportStore', () => {
       expect(Object.keys(file.assets).sort()).toEqual(['logo-1', 'qr-1']);
     });
   });
+
+  describe('importFile with an invoice file', () => {
+    it('stores the inlined images under their ids, returns the invoice and confirms', async () => {
+      const exported = invoice({ series: 'A', number: '0007', logoAssetId: 'logo-1' });
+      const file = jsonFile({
+        format: 'facturath',
+        kind: 'invoice',
+        schemaVersion: SCHEMA_VERSION,
+        invoice: exported,
+        assets: { 'logo-1': { type: 'image/png', data: PNG_BASE64 } },
+      });
+
+      const result = await store.importFile(file);
+
+      expect(result).toEqual({ kind: 'invoice', invoice: exported });
+      const stored = await assets.get('logo-1');
+      expect(stored?.type).toBe('image/png');
+      expect(new Uint8Array(await stored!.arrayBuffer())).toEqual(PNG_BYTES);
+      expect(toasts.current()?.message).toBe('Factura A-0007 importada.');
+      await expect(repository.listSummaries()).resolves.toEqual([]);
+    });
+  });
 });
+
+/** `value` as the JSON file a user would pick. */
+function jsonFile(value: unknown): Blob {
+  return new Blob([JSON.stringify(value)], { type: 'application/json' });
+}
