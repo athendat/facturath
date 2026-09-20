@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import type { FieldId } from '../../domain/compliance';
 import type { Signatures } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
 import { InvoiceStore } from './invoice-store';
@@ -27,6 +28,7 @@ const LINES: SignatureLine[] = [
           class="line"
           [label]="line.label"
           placeholder="Nombre"
+          [fieldId]="fieldId(line.field)"
           [value]="store.invoice().signatures[line.field]"
           (valueChange)="store.updateSignature(line.field, $event)"
         />
@@ -64,4 +66,8 @@ const LINES: SignatureLine[] = [
 export class SignaturesBlock {
   protected readonly store = inject(InvoiceStore);
   protected readonly lines = LINES;
+
+  protected fieldId(field: keyof Signatures): FieldId {
+    return `signatures.${field}`;
+  }
 }

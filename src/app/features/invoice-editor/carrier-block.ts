@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import type { FieldId } from '../../domain/compliance';
 import type { Carrier } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
 import type { FieldSpec } from './field-spec';
@@ -28,6 +29,7 @@ const FIELDS: FieldSpec<Carrier>[] = [
           class="field"
           [label]="field.label"
           [placeholder]="field.placeholder"
+          [fieldId]="fieldId(field.field)"
           [value]="store.invoice().carrier[field.field]"
           (valueChange)="store.updateCarrier(field.field, $event)"
         />
@@ -61,4 +63,8 @@ const FIELDS: FieldSpec<Carrier>[] = [
 export class CarrierBlock {
   protected readonly store = inject(InvoiceStore);
   protected readonly fields = FIELDS;
+
+  protected fieldId(field: keyof Carrier): FieldId {
+    return `carrier.${field}`;
+  }
 }

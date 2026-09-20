@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, effect, input, model, viewChild } from '@angular/core';
+import { fieldElementId, type FieldId } from '../../domain/compliance';
 
 /**
  * A borderless text input that sits inside the document. Font, color and
@@ -10,6 +11,7 @@ import { Component, ElementRef, computed, effect, input, model, viewChild } from
   template: `
     <input
       #field
+      [attr.id]="elementId()"
       [type]="type()"
       [attr.value]="value()"
       (input)="onInput($event)"
@@ -104,6 +106,13 @@ export class InlineInput {
   readonly inputMode = input<'text' | 'decimal'>('text');
   /** A native date input emits ISO `YYYY-MM-DD` on `input`, which is what the model stores. */
   readonly type = input<'text' | 'date'>('text');
+  /** The document field this control edits; it becomes the element id so the compliance panel can focus it. */
+  readonly fieldId = input<FieldId | null>(null);
+
+  protected readonly elementId = computed(() => {
+    const fieldId = this.fieldId();
+    return fieldId === null ? null : fieldElementId(fieldId);
+  });
 
   /** `inputmode` only means something on a text input; a date input has its own editor. */
   protected readonly inputModeAttribute = computed(() =>

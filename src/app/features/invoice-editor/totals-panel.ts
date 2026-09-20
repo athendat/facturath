@@ -37,6 +37,7 @@ import { InvoiceStore } from './invoice-store';
         class="tax-name"
         label="Nombre del impuesto"
         placeholder="Impuesto"
+        fieldId="tax.name"
         [value]="store.invoice().tax.name"
         (valueChange)="store.updateTax('name', $event)"
       />
@@ -45,6 +46,7 @@ import { InvoiceStore } from './invoice-store';
         label="Porcentaje del impuesto"
         placeholder="0"
         inputMode="decimal"
+        fieldId="tax.percent"
         [value]="store.invoice().tax.percent"
         (valueChange)="store.updateTax('percent', $event)"
       />

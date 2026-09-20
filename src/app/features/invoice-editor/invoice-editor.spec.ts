@@ -5,6 +5,7 @@ import { InMemoryAssetStore } from '../../core/storage/in-memory-asset-store';
 import { InMemoryPreferencesStore } from '../../core/storage/in-memory-preferences-store';
 import { ASSET_STORE, PREFERENCES_STORE } from '../../core/storage/ports';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { fieldElementId, type FieldId } from '../../domain/compliance';
 import { createDefaultPreferences } from '../../domain/preferences';
 import { createEmptyProfile } from '../../domain/seller-profile';
 import { InvoiceEditor } from './invoice-editor';
@@ -98,6 +99,48 @@ describe('InvoiceEditor', () => {
     expect(element.textContent).toContain(
       'las firmas pueden sustituirse por métodos criptográficos aprobados',
     );
+  });
+
+  it('gives every field the compliance panel can point at a control with its DOM id', async () => {
+    await render();
+    const targets: FieldId[] = [
+      'issueDate',
+      'series',
+      'number',
+      'concept',
+      'seller.name',
+      'seller.address',
+      'seller.nit',
+      'seller.commercialRegistry',
+      'seller.bankAccount',
+      'seller.bankBranch',
+      'buyer.name',
+      'buyer.address',
+      'buyer.nit',
+      'buyer.identityCard',
+      'carrier.name',
+      'carrier.identityCard',
+      'carrier.plate',
+      'lines.0.description',
+      'lines.0.unit',
+      'lines.0.quantity',
+      'lines.0.unitPrice',
+      'tax.name',
+      'tax.percent',
+      'signatures.delivers',
+      'signatures.receives',
+      'signatures.carrier',
+      'signatures.books',
+    ];
+
+    const controls = targets.map((target) => element.querySelector(`#${fieldElementId(target)}`));
+
+    expect(fieldElementId('lines.0.unitPrice')).toBe('field-lines-0-unit-price');
+    expect(controls.map((control) => control?.tagName.toLowerCase())).toEqual(
+      targets.map((target) => (target === 'concept' ? 'textarea' : 'input')),
+    );
+    const ids = Array.from(element.querySelectorAll('[id^="field-"]'), (control) => control.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   // Dating the invoice and filling the seller block from the profile happen at the shell's

@@ -23,6 +23,7 @@
               class="description"
               label="Descripción"
               placeholder="Descripción del producto o servicio"
+              [fieldId]="lineField($index, 'description')"
               [value]="line.description"
               (valueChange)="store.updateLine($index, 'description', $event)"
             />
@@ -30,6 +31,7 @@
               class="unit muted"
               label="Unidad de medida"
               placeholder="U/M"
+              [fieldId]="lineField($index, 'unit')"
               [value]="line.unit"
               (valueChange)="store.updateLine($index, 'unit', $event)"
             />
@@ -48,6 +50,7 @@
             label="Cantidad"
             placeholder="0"
             inputMode="decimal"
+            [fieldId]="lineField($index, 'quantity')"
             [value]="line.quantity"
             (valueChange)="store.updateLine($index, 'quantity', $event)"
           />
@@ -57,6 +60,7 @@
             label="Precio unitario"
             placeholder="0.00"
             inputMode="decimal"
+            [fieldId]="lineField($index, 'unitPrice')"
             [value]="line.unitPrice"
             (valueChange)="store.updateLine($index, 'unitPrice', $event)"
           />

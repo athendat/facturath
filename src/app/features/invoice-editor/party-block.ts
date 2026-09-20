@@ -1,4 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
+import type { FieldId } from '../../domain/compliance';
 import type { Party, PartyRole } from '../../domain/invoice';
 import { InlineInput } from '../../shared/ui/inline-input';
 import type { FieldSpec } from './field-spec';
@@ -86,6 +87,7 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
       class="name"
       [label]="layout().name.label"
       [placeholder]="layout().name.placeholder"
+      [fieldId]="fieldId('name')"
       [value]="values().name"
       (valueChange)="store.updateParty(party(), 'name', $event)"
     />
@@ -93,6 +95,7 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
       class="address"
       [label]="layout().address.label"
       [placeholder]="layout().address.placeholder"
+      [fieldId]="fieldId('address')"
       [value]="values().address"
       (valueChange)="store.updateParty(party(), 'address', $event)"
     />
@@ -102,6 +105,7 @@ const LAYOUTS: Record<PartyRole, PartyLayout> = {
           class="detail"
           [label]="detail.label"
           [placeholder]="detail.placeholder"
+          [fieldId]="fieldId(detail.field)"
           [value]="values()[detail.field]"
           (valueChange)="store.updateParty(party(), detail.field, $event)"
         />
@@ -157,4 +161,8 @@ export class PartyBlock {
 
   protected readonly layout = computed(() => LAYOUTS[this.party()]);
   protected readonly values = computed(() => this.store.invoice()[this.party()]);
+
+  protected fieldId(field: keyof Party): FieldId {
+    return `${this.party()}.${field}`;
+  }
 }

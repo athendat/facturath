@@ -40,6 +40,7 @@ const LAYOUTS: Record<TextBlockKind, TextLayout> = {
       [label]="layout().title"
       [placeholder]="layout().placeholder"
       [rows]="layout().rows"
+      [fieldId]="kind() === 'concept' ? 'concept' : null"
       [value]="store.invoice()[kind()]"
       (valueChange)="store.setField(kind(), $event)"
     />

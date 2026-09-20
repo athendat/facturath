@@ -14,6 +14,7 @@ import { InvoiceStore } from './invoice-store';
         class="series"
         label="Serie"
         placeholder="A"
+        fieldId="series"
         [value]="store.invoice().series"
         (valueChange)="store.setField('series', $event)"
       />
@@ -22,6 +23,7 @@ import { InvoiceStore } from './invoice-store';
         class="number"
         label="Número"
         placeholder="0001"
+        fieldId="number"
         [value]="store.invoice().number"
         (valueChange)="store.setField('number', $event)"
       />
@@ -32,6 +34,7 @@ import { InvoiceStore } from './invoice-store';
         class="date"
         label="Fecha de emisión"
         type="date"
+        fieldId="issueDate"
         [value]="store.invoice().issueDate"
         (valueChange)="store.setField('issueDate', $event)"
       />
