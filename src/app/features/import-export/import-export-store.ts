@@ -109,10 +109,13 @@ export class ImportExportStore {
         await this.repository.save(invoice);
       }
       // The seller's own data is never overwritten by a copy; only a blank profile takes it.
+      // The stored profile must be in before judging it blank (`load` is memoized, so cheap).
+      await this.settings.load();
       if (isEmptyProfile(this.settings.profile())) {
         this.settings.replaceProfile(exported.profile);
         await this.images.reload();
       }
+      // The spread widens the `Preferences` interface to a plain record, which the validator takes.
       this.settings.replacePreferences(preferencesFrom({ ...exported.preferences }));
       const imported = exported.invoices.length;
       this.toasts.show(`Copia importada: ${imported} ${imported === 1 ? 'factura' : 'facturas'}.`);

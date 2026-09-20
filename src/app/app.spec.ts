@@ -4,17 +4,25 @@ import { SwUpdate } from '@angular/service-worker';
 import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
+import { ObjectUrls } from './core/object-urls';
+import { SettingsStore } from './core/settings-store';
 import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-store';
-import { INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
+import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
 import { findButton, typeInto } from './core/testing/dom';
+import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
 import { createInvoice } from './domain/invoice';
 import { createEmptyProfile } from './domain/seller-profile';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
+import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
+
+/** A 1x1 PNG as base64, for export files with a real image. */
+const PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
 /** The live regions under `root` whose text is the saving-disabled notice. */
 function notices(root: HTMLElement): Element[] {
@@ -40,6 +48,7 @@ describe('App', () => {
         { provide: SwUpdate, useValue: swUpdate },
         { provide: PageReloader, useValue: { reload } },
         { provide: Printer, useValue: { print } },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(App);
@@ -188,6 +197,23 @@ describe('App', () => {
       expect(dialog()).toBeNull();
       expect(invoiceStore().invoice().id).toBe(savedId);
       expect(invoiceStore().invoice().concept).toBe('Venta');
+    });
+
+    it('shows the own images of an opened saved invoice, not the profile ones', async () => {
+      const repository = TestBed.inject(INVOICE_REPOSITORY);
+      await TestBed.inject(ASSET_STORE).put('logo-old', new Blob(['png'], { type: 'image/png' }));
+      await repository.save({ ...createInvoice('saved-old'), number: '0001', logoAssetId: 'logo-old' });
+      await TestBed.inject(SavedInvoicesStore).load();
+      await fixture.whenStable();
+      expect(compiled.querySelector('img[alt="Logo"]')).toBeNull();
+
+      findButton(compiled, 'Guardadas (1)')?.click();
+      await fixture.whenStable();
+      findButton(dialog() as HTMLElement, 'Abrir')?.click();
+      await fixture.whenStable();
+
+      expect(invoiceStore().invoice().logoAssetId).toBe('logo-old');
+      expect(compiled.querySelector('img[alt="Logo"]')?.getAttribute('src')).toMatch(/^blob:/);
     });
   });
 
@@ -353,6 +379,30 @@ describe('App', () => {
       expect(TestBed.inject(InvoiceStore).invoice()).toEqual(imported);
       expect(compiled.querySelector('.reference')?.textContent).toContain('C-0009');
       expect(statusText()).toBe('Factura C-0009 importada.');
+    });
+
+    it('shows the images of an imported invoice even when the profile has none', async () => {
+      const imported = { ...createInvoice('imported-2'), logoAssetId: 'logo-x', enzonaQrAssetId: 'qr-x' };
+      await openPanel();
+
+      await pick(
+        'Importar factura',
+        exportFile({
+          format: 'facturath',
+          kind: 'invoice',
+          schemaVersion: 1,
+          invoice: imported,
+          assets: {
+            'logo-x': { type: 'image/png', data: PNG_BASE64 },
+            'qr-x': { type: 'image/png', data: PNG_BASE64 },
+          },
+        }),
+      );
+
+      expect(TestBed.inject(SettingsStore).profile().logoAssetId).toBeNull();
+      expect(compiled.querySelector('img[alt="Logo"]')?.getAttribute('src')).toMatch(/^blob:/);
+      expect(compiled.querySelector('img[alt="QR EnZona"]')?.getAttribute('src')).toMatch(/^blob:/);
+      expect(compiled.querySelector('img[alt="QR Transfermóvil"]')).toBeNull();
     });
 
     it('refreshes the saved count after importing a backup', async () => {

@@ -1,9 +1,10 @@
-import { Component, PendingTasks, afterNextRender, inject } from '@angular/core';
+import { Component, PendingTasks, afterNextRender, effect, inject } from '@angular/core';
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
 import { ImageControl } from '../../shared/ui/image-control';
 import { DocumentMeta } from './document-meta';
+import { InvoiceStore } from './invoice-store';
 import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
@@ -33,7 +34,7 @@ import { TotalsPanel } from './totals-panel';
         <div class="issuer">
           <app-image-control
             kind="logo"
-            [url]="images.urls().logo"
+            [url]="images.urlFor(store.invoice().logoAssetId)"
             (fileChosen)="images.set('logo', $event)"
             (removed)="images.remove('logo')"
           />
@@ -185,9 +186,13 @@ import { TotalsPanel } from './totals-panel';
 export class InvoiceEditor {
   protected readonly settings = inject(SettingsStore);
   protected readonly images = inject(ImagesStore);
+  protected readonly store = inject(InvoiceStore);
   private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {
+    // The document shows the open invoice's own logo, which a loaded or imported invoice may
+    // keep apart from the profile's; its blob is fetched the first time the id appears.
+    effect(() => this.images.resolve(this.store.invoice().logoAssetId));
     // Browser only, after hydration: the prerendered document shows image placeholders so
     // the first client render matches it; the images the profile points at load right
     // after, as a pending task so the app is not stable until they show. Dating the
