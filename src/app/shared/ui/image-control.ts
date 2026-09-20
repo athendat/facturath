@@ -1,5 +1,4 @@
-import { Component, ElementRef, computed, inject, input, viewChild } from '@angular/core';
-import { ImagesStore } from '../../core/images-store';
+import { Component, ElementRef, computed, input, output, viewChild } from '@angular/core';
 import type { ImageKind } from '../../domain/invoice';
 
 interface ImageLayout {
@@ -11,32 +10,41 @@ interface ImageLayout {
   remove: string;
   /** Printed under the image, or nothing. */
   caption: string | null;
-  /** Side of the square box in px. */
-  size: number;
+  /** Side of the square box, as a CSS length. */
+  size: string;
 }
 
 const LAYOUTS: Record<ImageKind, ImageLayout> = {
-  logo: { name: 'Logo', upload: 'Subir logo', remove: 'Quitar logo', caption: null, size: 64 },
+  // The sheet sets --logo-size by density; outside it (the settings panel) the logo is spacious.
+  logo: {
+    name: 'Logo',
+    upload: 'Subir logo',
+    remove: 'Quitar logo',
+    caption: null,
+    size: 'var(--logo-size, 64px)',
+  },
   transfermovilQr: {
     name: 'QR Transfermóvil',
     upload: 'Subir QR Transfermóvil',
     remove: 'Quitar QR de Transfermóvil',
     caption: 'Transfermóvil',
-    size: 72,
+    size: '72px',
   },
   enzonaQr: {
     name: 'QR EnZona',
     upload: 'Subir QR EnZona',
     remove: 'Quitar QR de EnZona',
     caption: 'EnZona',
-    size: 72,
+    size: '72px',
   },
 };
 
 /**
- * One of the seller's images: a file control shown as the image when set and
- * as a dashed upload box when not. The whole control is hidden in print while
- * empty; a set image prints with exact colours so QR codes stay scannable.
+ * One of the seller's images: a file control shown as the image at `url` when
+ * set and as a dashed upload box when not. Presentational: the parent stores
+ * the chosen file and hands back the URL to show. The whole control is hidden
+ * in print while empty; a set image prints with exact colours so QR codes
+ * stay scannable.
  */
 @Component({
   selector: 'app-image-control',
@@ -160,22 +168,26 @@ const LAYOUTS: Record<ImageKind, ImageLayout> = {
     }
   `,
   host: {
-    '[style.--size.px]': 'layout().size',
+    '[style.--size]': 'layout().size',
     '[attr.data-print-hide]': 'url() === null ? "" : null',
   },
 })
 export class ImageControl {
-  protected readonly images = inject(ImagesStore);
   readonly kind = input.required<ImageKind>();
+  /** The image to show, or null for the upload box. */
+  readonly url = input.required<string | null>();
+  /** The user picked this file as the new image. */
+  readonly fileChosen = output<File>();
+  /** The user wants the image gone. */
+  readonly removed = output<void>();
 
   private readonly file = viewChild.required<ElementRef<HTMLInputElement>>('file');
 
   protected readonly layout = computed(() => LAYOUTS[this.kind()]);
-  protected readonly url = computed(() => this.images.urls()[this.kind()]);
 
   /** The remove button disappears with the image, so focus moves to the file control. */
-  protected async remove(): Promise<void> {
-    await this.images.remove(this.kind());
+  protected remove(): void {
+    this.removed.emit();
     this.file().nativeElement.focus();
   }
 
@@ -183,7 +195,7 @@ export class ImageControl {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-      void this.images.set(this.kind(), file);
+      this.fileChosen.emit(file);
     }
     // So choosing the same file again after removing it fires `change`.
     input.value = '';

@@ -2,8 +2,8 @@ import { Component, PendingTasks, afterNextRender, inject } from '@angular/core'
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
+import { ImageControl } from '../../shared/ui/image-control';
 import { DocumentMeta } from './document-meta';
-import { ImageControl } from './image-control';
 import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
@@ -28,10 +28,15 @@ import { TotalsPanel } from './totals-panel';
     TotalsPanel,
   ],
   template: `
-    <article class="sheet">
+    <article class="sheet" [attr.data-density]="settings.density()">
       <div class="head">
         <div class="issuer">
-          <app-image-control kind="logo" />
+          <app-image-control
+            kind="logo"
+            [url]="images.urls().logo"
+            (fileChosen)="images.set('logo', $event)"
+            (removed)="images.remove('logo')"
+          />
           <app-party-block class="seller" party="seller" />
         </div>
         <app-document-meta class="meta" />
@@ -47,20 +52,43 @@ import { TotalsPanel } from './totals-panel';
       </div>
       <div class="band">
         <app-text-block class="terms" kind="terms" />
-        <app-payment-qr-controls />
+        @if (settings.showPaymentQr()) {
+          <app-payment-qr-controls />
+        }
       </div>
-      <div class="band">
-        <app-carrier-block />
-      </div>
-      <div class="band">
-        <app-signatures-block />
-      </div>
+      @if (settings.showCarrier()) {
+        <div class="band">
+          <app-carrier-block />
+        </div>
+      }
+      @if (settings.showSignatures()) {
+        <div class="band">
+          <app-signatures-block />
+        </div>
+      }
       <app-legal-footer />
     </article>
   `,
   styles: `
+    /* Density only switches these; spacious is the layout the sheet has always had. */
+    .sheet[data-density='spacious'] {
+      --sheet-pad: var(--sp-5);
+      --sheet-pad-print: var(--sp-3);
+      --sheet-gap: 14px;
+      --sheet-band-gap: var(--sp-3);
+      --logo-size: 64px;
+    }
+
+    .sheet[data-density='compact'] {
+      --sheet-pad: var(--sp-3);
+      --sheet-pad-print: var(--sp-2);
+      --sheet-gap: var(--sp-2);
+      --sheet-band-gap: var(--sp-2);
+      --logo-size: 48px;
+    }
+
     .sheet {
-      padding: var(--sp-5);
+      padding: var(--sheet-pad);
       border: 1px solid var(--border-1);
       border-radius: var(--radius-xs);
       background: var(--bg-0);
@@ -72,8 +100,8 @@ import { TotalsPanel } from './totals-panel';
     .head {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
-      padding-bottom: 14px;
+      gap: var(--sheet-gap);
+      padding-bottom: var(--sheet-gap);
       border-bottom: 2px solid var(--gray-900);
     }
 
@@ -97,16 +125,16 @@ import { TotalsPanel } from './totals-panel';
     .parties {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 14px;
-      padding: 14px 0;
+      gap: var(--sheet-gap);
+      padding: var(--sheet-gap) 0;
     }
 
     .summary {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
-      gap: 14px;
-      padding-top: var(--sp-3);
+      gap: var(--sheet-gap);
+      padding-top: var(--sheet-band-gap);
     }
 
     .notes {
@@ -123,9 +151,9 @@ import { TotalsPanel } from './totals-panel';
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
-      gap: 14px;
-      margin-top: var(--sp-3);
-      padding-top: var(--sp-3);
+      gap: var(--sheet-gap);
+      margin-top: var(--sheet-band-gap);
+      padding-top: var(--sheet-band-gap);
       border-top: 1px solid var(--border-1);
     }
 
@@ -143,10 +171,10 @@ import { TotalsPanel } from './totals-panel';
 
     @media print {
       /* Keep an inset even when the dialog margins are "None". The 10-line
-         case leaves ~28px of A4 height with @page 10mm, so vertical padding
-         is --sp-3, not --sp-5 (that would push it to a second page). */
+         spacious case leaves ~28px of A4 height with @page 10mm, so vertical
+         padding is --sp-3, not --sp-5 (that would push it to a second page). */
       .sheet {
-        padding: var(--sp-3) var(--sp-5);
+        padding: var(--sheet-pad-print) var(--sheet-pad);
         border: 0;
         border-radius: 0;
         box-shadow: none;
@@ -155,8 +183,8 @@ import { TotalsPanel } from './totals-panel';
   `,
 })
 export class InvoiceEditor {
-  private readonly settings = inject(SettingsStore);
-  private readonly images = inject(ImagesStore);
+  protected readonly settings = inject(SettingsStore);
+  protected readonly images = inject(ImagesStore);
   private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {

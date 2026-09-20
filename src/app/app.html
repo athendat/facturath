@@ -8,6 +8,7 @@
       <button type="button" class="secondary" (click)="drawerOpen.set(true)">
         Guardadas ({{ saved.count() }})
       </button>
+      <button type="button" class="secondary" (click)="settingsOpen.set(true)">Ajustes</button>
       <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
     </div>
   </header>
@@ -25,4 +26,11 @@
   FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce
   <a href="https://balanc.athendat.site" target="_blank" rel="noopener">BALANC</a>.
 </footer>
-<app-saved-invoices-drawer [(open)]="drawerOpen" (opened)="openSaved($event)" data-print-hide />
+<!-- Each panel is its own chunk, fetched the first time it opens (the service worker prefetches
+     them for offline use), so the initial bundle stays under budget (#41). -->
+@defer (when drawerOpen()) {
+  <app-saved-invoices-drawer [(open)]="drawerOpen" (opened)="openSaved($event)" data-print-hide />
+}
+@defer (when settingsOpen()) {
+  <app-settings-panel [(open)]="settingsOpen" />
+}

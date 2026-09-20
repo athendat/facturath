@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { createEmptyProfile, type SellerProfile } from '../domain/seller-profile';
+import { createDefaultPreferences, SECTION_FLAGS } from '../domain/preferences';
+import { PROFILE_TEXT_FIELDS, createEmptyProfile, type SellerProfile } from '../domain/seller-profile';
 import { SettingsStore } from './settings-store';
 import { StorageStatus } from './storage/storage-status';
 import { InMemoryPreferencesStore } from './storage/in-memory-preferences-store';
@@ -52,6 +53,17 @@ describe('SettingsStore', () => {
       ...createEmptyProfile(),
       name: 'Taller Rodríguez',
       nit: '12345678901',
+    });
+  });
+
+  it.each(PROFILE_TEXT_FIELDS)('persists the %s field of the profile', async (field) => {
+    store.updateProfile(field, 'valor');
+    TestBed.tick();
+
+    expect(store.profile()[field]).toBe('valor');
+    await expect(preferences.loadProfile()).resolves.toEqual({
+      ...createEmptyProfile(),
+      [field]: 'valor',
     });
   });
 
@@ -132,5 +144,107 @@ describe('SettingsStore', () => {
     await Promise.resolve();
 
     expect(TestBed.inject(StorageStatus).savingDisabled()).toBe(true);
+  });
+
+  describe('layout preferences', () => {
+    it('starts spacious with every section shown', () => {
+      expect(store.preferences()).toEqual(createDefaultPreferences());
+      expect(store.density()).toBe('spacious');
+      expect(store.showCarrier()).toBe(true);
+      expect(store.showSignatures()).toBe(true);
+      expect(store.showPaymentQr()).toBe(true);
+    });
+
+    it('keeps the defaults when nothing was stored', async () => {
+      await store.load();
+
+      expect(store.preferences()).toEqual(createDefaultPreferences());
+    });
+
+    it('loads the stored preferences together with the profile', async () => {
+      await preferences.saveProfile(stored);
+      await preferences.savePreferences({ ...createDefaultPreferences(), density: 'compact' });
+
+      await store.load();
+
+      expect(store.profile()).toEqual(stored);
+      expect(store.density()).toBe('compact');
+    });
+
+    it('persists the density', async () => {
+      store.setDensity('compact');
+      TestBed.tick();
+
+      expect(store.density()).toBe('compact');
+      await expect(preferences.loadPreferences()).resolves.toEqual({
+        ...createDefaultPreferences(),
+        density: 'compact',
+      });
+    });
+
+    it.each(SECTION_FLAGS)('persists %s when hidden and shown again', async (flag) => {
+      store.setSection(flag, false);
+      TestBed.tick();
+
+      expect(store.preferences()[flag]).toBe(false);
+      await expect(preferences.loadPreferences()).resolves.toEqual({
+        ...createDefaultPreferences(),
+        [flag]: false,
+      });
+
+      store.setSection(flag, true);
+      TestBed.tick();
+
+      await expect(preferences.loadPreferences()).resolves.toEqual(createDefaultPreferences());
+    });
+
+    it('does not write the untouched defaults nor preferences it only loaded', async () => {
+      await preferences.savePreferences({ ...createDefaultPreferences(), showCarrier: false });
+      const save = vi.spyOn(preferences, 'savePreferences');
+
+      TestBed.tick();
+      await store.load();
+      TestBed.tick();
+
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('does not rewrite the profile when only a preference changes', async () => {
+      const saveProfile = vi.spyOn(preferences, 'saveProfile');
+
+      store.setDensity('compact');
+      TestBed.tick();
+
+      expect(saveProfile).not.toHaveBeenCalled();
+    });
+
+    it('keeps a choice made before the load resolves over the stored one', async () => {
+      await preferences.savePreferences({
+        ...createDefaultPreferences(),
+        density: 'compact',
+        showCarrier: false,
+      });
+
+      const loading = store.load();
+      store.setDensity('spacious');
+      await loading;
+      TestBed.tick();
+
+      expect(store.preferences()).toEqual({ ...createDefaultPreferences(), showCarrier: false });
+      await expect(preferences.loadPreferences()).resolves.toEqual({
+        ...createDefaultPreferences(),
+        showCarrier: false,
+      });
+    });
+
+    it('reports that saving is disabled when the store rejects a preferences write', async () => {
+      vi.spyOn(preferences, 'savePreferences').mockRejectedValue(new Error('quota'));
+
+      store.setDensity('compact');
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(TestBed.inject(StorageStatus).savingDisabled()).toBe(true);
+    });
   });
 });

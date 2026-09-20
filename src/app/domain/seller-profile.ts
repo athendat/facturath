@@ -64,6 +64,14 @@ export function hasSameAssetIds(invoice: AssetIds, profile: AssetIds): boolean {
   return ASSET_ID_FIELDS.every((field) => invoice[field] === profile[field]);
 }
 
+/** Whether `invoice` already carries the seller text fields and the images of `profile`. */
+export function matchesProfile(invoice: Invoice, profile: SellerProfile): boolean {
+  return (
+    hasSameAssetIds(invoice, profile) &&
+    PROFILE_TEXT_FIELDS.every((field) => invoice.seller[field] === profile[field])
+  );
+}
+
 /** A copy of `invoice` pointing at the images of `profile`; everything else is kept. */
 export function applyAssetIdsToInvoice(invoice: Invoice, profile: AssetIds): Invoice {
   return { ...invoice, ...pick(profile, ASSET_ID_FIELDS) };

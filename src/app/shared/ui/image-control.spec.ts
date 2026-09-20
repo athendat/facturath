@@ -1,35 +1,49 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ImagesStore } from '../../core/images-store';
-import { ObjectUrls } from '../../core/object-urls';
-import { SettingsStore } from '../../core/settings-store';
-import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
 import { IMAGE_KINDS, type ImageKind } from '../../domain/invoice';
 import { ImageControl } from './image-control';
 
+/** Wires the control the way a store would: a chosen file shows, a removal clears. */
 @Component({
   imports: [ImageControl],
-  template: `<app-image-control [kind]="kind()" />`,
+  template: `
+    <app-image-control
+      [kind]="kind()"
+      [url]="url()"
+      (fileChosen)="onChosen($event)"
+      (removed)="onRemoved()"
+    />
+  `,
 })
 class Host {
   readonly kind = input.required<ImageKind>();
+  readonly url = signal<string | null>(null);
+  readonly chosen: File[] = [];
+  removals = 0;
+
+  onChosen(file: File): void {
+    this.chosen.push(file);
+    this.url.set(`blob:fake/${this.chosen.length}`);
+  }
+
+  onRemoved(): void {
+    this.removals++;
+    this.url.set(null);
+  }
 }
 
 const png = new File(['png-bytes'], 'logo.png', { type: 'image/png' });
 
 describe('ImageControl', () => {
   let fixture: ComponentFixture<Host>;
+  let host: Host;
   let element: HTMLElement;
-  let objectUrls: FakeObjectUrls;
 
   async function render(kind: ImageKind): Promise<void> {
-    objectUrls = new FakeObjectUrls();
-    await TestBed.configureTestingModule({
-      imports: [Host],
-      providers: [{ provide: ObjectUrls, useValue: objectUrls }],
-    }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     fixture = TestBed.createComponent(Host);
     fixture.componentRef.setInput('kind', kind);
+    host = fixture.componentInstance;
     element = fixture.nativeElement as HTMLElement;
     await fixture.whenStable();
   }
@@ -77,17 +91,23 @@ describe('ImageControl', () => {
       expect(removeButton('Quitar logo')).toBeNull();
     });
 
-    it('shows the chosen image in the document and prints it', async () => {
+    it('reports the chosen file and shows the image it is given, which prints', async () => {
       await render('logo');
 
       await choose('Subir logo', png);
 
+      expect(host.chosen).toEqual([png]);
       const image = element.querySelector<HTMLImageElement>('img[alt="Logo"]');
       expect(image?.getAttribute('src')).toBe('blob:fake/1');
       expect(control().hasAttribute('data-print-hide')).toBe(false);
       expect(element.textContent).not.toContain('Subir logo');
-      expect(TestBed.inject(SettingsStore).profile().logoAssetId).toEqual(expect.any(String));
       expect(fileInput('Subir logo').value).toBe('');
+    });
+
+    it('takes its size from --logo-size, spacious when nothing sets it', async () => {
+      await render('logo');
+
+      expect(control().style.getPropertyValue('--size')).toBe('var(--logo-size, 64px)');
     });
 
     it('offers a remove control only while an image is set, and never prints it', async () => {
@@ -99,10 +119,10 @@ describe('ImageControl', () => {
       remove?.click();
       await fixture.whenStable();
 
+      expect(host.removals).toBe(1);
       expect(element.querySelector('img')).toBeNull();
       expect(element.textContent).toContain('Subir logo');
       expect(removeButton('Quitar logo')).toBeNull();
-      expect(objectUrls.revoked).toEqual(['blob:fake/1']);
     });
 
     it('moves focus to the file control when the remove button goes away', async () => {
@@ -136,7 +156,7 @@ describe('ImageControl', () => {
       expect(element.querySelector('img[alt="QR Transfermóvil"]')).not.toBeNull();
       expect(removeButton('Quitar QR de Transfermóvil')).not.toBeNull();
       expect(element.textContent?.trim()).toBe('Transfermóvil');
-      expect(TestBed.inject(ImagesStore).urls().transfermovilQr).toBe('blob:fake/1');
+      expect(control().style.getPropertyValue('--size')).toBe('72px');
     });
 
     it('labels the EnZona control and captions it', async () => {
