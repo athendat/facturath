@@ -73,6 +73,10 @@ const SIGNATURES: readonly { id: string; label: string; field: keyof Signatures 
 
 const SIGNATURES_WHERE = 'Sección Firmas (opcional)';
 
+const CARRIER_LABEL =
+  'Nombre, identidad, matrícula, carta de porte y casilla del ferrocarril del transportista.';
+const CARRIER_WHERE = 'Sección Transportista (opcional)';
+
 /** The 13 entries, always in the resolution's order and with stable ids. */
 export function checkCompliance(invoice: Invoice, options: ComplianceOptions): ComplianceEntry[] {
   const { seller, buyer, carrier, lines, tax, signatures } = invoice;
@@ -103,19 +107,15 @@ export function checkCompliance(invoice: Invoice, options: ComplianceOptions): C
     options.showCarrier
       ? entry(
           'carrier',
-          'Nombre, identidad, matrícula, carta de porte y casilla del ferrocarril del transportista.',
-          'Sección Transportista (opcional)',
+          CARRIER_LABEL,
+          CARRIER_WHERE,
           firstMissing([
             ['carrier.name', carrier.name],
             ['carrier.identityCard', carrier.identityCard],
             ['carrier.plate', carrier.plate],
           ]),
         )
-      : notApplicable(
-          'carrier',
-          'Nombre, identidad, matrícula, carta de porte y casilla del ferrocarril del transportista.',
-          'Sección Transportista (opcional)',
-        ),
+      : notApplicable('carrier', CARRIER_LABEL, CARRIER_WHERE),
     entry(
       'lines',
       'Código, descripción, unidad de medida, cantidad, precio unitario e importe.',
