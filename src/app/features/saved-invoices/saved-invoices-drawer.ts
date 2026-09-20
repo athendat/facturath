@@ -116,7 +116,7 @@ function toRow(summary: InvoiceSummary): SavedInvoiceRow {
     .action {
       min-height: 32px;
       padding: 0 var(--sp-3);
-      border: 1px solid var(--border-2);
+      border: 1px solid var(--border-control);
       border-radius: var(--radius-xs);
       background: var(--bg-0);
       font-size: var(--fs-12);

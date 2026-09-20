@@ -43,6 +43,13 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
+  // axe only reports page-has-heading-one against a whole document, which the jsdom run
+  // above cannot do; a real-browser run on the built app found the page had no h1 (#15).
+  it('names the page with exactly one level-one heading', () => {
+    const headings = (fixture.nativeElement as HTMLElement).querySelectorAll('h1');
+    expect(Array.from(headings).map((heading) => heading.textContent?.trim())).toEqual(['Factura']);
+  });
+
   it('passes axe with the saving-disabled notice shown', async () => {
     TestBed.inject(StorageStatus).markUnavailable();
     await fixture.whenStable();

@@ -44,7 +44,7 @@ const LINES: SignatureLine[] = [
     }
 
     .line {
-      border-bottom: 1px solid var(--border-2);
+      border-bottom: 1px solid var(--border-control);
       font-size: 11px;
     }
 

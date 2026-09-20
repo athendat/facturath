@@ -148,7 +148,7 @@ let nextId = 0;
       width: 100%;
       min-height: 36px;
       padding: 0 var(--sp-2);
-      border: 1px solid var(--border-2);
+      border: 1px solid var(--border-control);
       border-radius: var(--radius-xs);
       background: var(--bg-0);
       font-size: var(--fs-14);
