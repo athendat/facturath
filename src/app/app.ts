@@ -10,6 +10,8 @@ import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
+import { FilePanel } from './features/import-export/file-panel';
+import type { ImportResult } from './features/import-export/import-export-store';
 import { CompliancePanel } from './features/invoice-editor/compliance-panel';
 import { DraftAutosave } from './features/invoice-editor/draft-autosave';
 import { InvoiceEditor } from './features/invoice-editor/invoice-editor';
@@ -24,7 +26,7 @@ export const SAVING_DISABLED_NOTICE =
 
 @Component({
   selector: 'app-root',
-  imports: [CompliancePanel, InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
+  imports: [CompliancePanel, FilePanel, InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -41,6 +43,7 @@ export class App {
   protected readonly drawerOpen = signal(false);
   protected readonly settingsOpen = signal(false);
   protected readonly complianceOpen = signal(false);
+  protected readonly fileOpen = signal(false);
 
   /**
    * Shown in a second toast host of its own, so it neither auto-dismisses nor
@@ -87,6 +90,19 @@ export class App {
     if (invoice !== null) {
       this.store.load(invoice);
       this.drawerOpen.set(false);
+    }
+  }
+
+  /**
+   * An imported invoice opens in the editor like a saved one (its own images kept) and the
+   * panel closes; an imported backup refreshes the saved count and leaves the panel open.
+   */
+  protected async onImported(result: ImportResult): Promise<void> {
+    if (result.kind === 'invoice') {
+      this.store.load(result.invoice);
+      this.fileOpen.set(false);
+    } else if (result.kind === 'backup') {
+      await this.saved.load();
     }
   }
 }

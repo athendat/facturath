@@ -301,6 +301,95 @@ describe('App', () => {
     });
   });
 
+  describe('file panel', () => {
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    async function openPanel(): Promise<HTMLButtonElement | undefined> {
+      const button = findButton(compiled, 'Archivo');
+      button?.focus();
+      button?.click();
+      await fixture.whenStable();
+      return button;
+    }
+
+    /** Picks `file` in the file input whose visible label reads `label`, as a user would. */
+    async function pick(label: string, file: File): Promise<void> {
+      const input = Array.from(dialog()?.querySelectorAll('label') ?? []).find(
+        (candidate) => candidate.textContent?.trim() === label,
+      )?.control as HTMLInputElement;
+      expect(input?.type).toBe('file');
+      Object.defineProperty(input, 'files', { value: [file], configurable: true });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await fixture.whenStable();
+    }
+
+    function exportFile(value: unknown): File {
+      return new File([JSON.stringify(value)], 'factura.json', { type: 'application/json' });
+    }
+
+    it('opens the file panel from the header, print-hidden, with its export and import controls', async () => {
+      const button = await openPanel();
+
+      expect(button?.closest('header')).not.toBeNull();
+      expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Archivo');
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+      expect(findButton(dialog() as HTMLElement, 'Exportar factura')).toBeDefined();
+      expect(findButton(dialog() as HTMLElement, 'Exportar copia de seguridad')).toBeDefined();
+      expect(dialog()?.querySelectorAll('input[type="file"]')).toHaveLength(2);
+    });
+
+    it('replaces the open invoice with an imported invoice file and closes the panel', async () => {
+      const imported = { ...createInvoice('imported-1'), series: 'C', number: '0009', concept: 'Importada' };
+      await openPanel();
+
+      await pick(
+        'Importar factura',
+        exportFile({ format: 'facturath', kind: 'invoice', schemaVersion: 1, invoice: imported, assets: {} }),
+      );
+
+      expect(dialog()).toBeNull();
+      expect(TestBed.inject(InvoiceStore).invoice()).toEqual(imported);
+      expect(compiled.querySelector('.reference')?.textContent).toContain('C-0009');
+      expect(statusText()).toBe('Factura C-0009 importada.');
+    });
+
+    it('refreshes the saved count after importing a backup', async () => {
+      await openPanel();
+
+      await pick(
+        'Importar copia de seguridad',
+        exportFile({
+          format: 'facturath',
+          kind: 'backup',
+          schemaVersion: 1,
+          invoices: [
+            { ...createInvoice('b-1'), number: '0001' },
+            { ...createInvoice('b-2'), number: '0002' },
+          ],
+          profile: createEmptyProfile(),
+          preferences: { schemaVersion: 1, density: 'spacious', showCarrier: true, showSignatures: true, showPaymentQr: true },
+          assets: {},
+        }),
+      );
+
+      expect(findButton(compiled, 'Guardadas (2)')).toBeDefined();
+      expect(statusText()).toBe('Copia importada: 2 facturas.');
+    });
+
+    it('keeps the panel open and the invoice untouched when the file is not an export', async () => {
+      await openPanel();
+      const before = TestBed.inject(InvoiceStore).invoice();
+
+      await pick('Importar factura', new File(['hola'], 'nota.txt', { type: 'text/plain' }));
+
+      expect(dialog()).not.toBeNull();
+      expect(TestBed.inject(InvoiceStore).invoice()).toBe(before);
+      expect(statusText()).toBe('El archivo no es una exportación de FACTURATH.');
+    });
+  });
+
   describe('when the browser cannot save', () => {
     it('shows no notice while saving works', () => {
       expect(notices(compiled)).toHaveLength(0);

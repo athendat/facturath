@@ -70,6 +70,15 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
+  it('passes axe with the file panel open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    findButton(compiled, 'Archivo')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelectorAll('[role="dialog"] input[type="file"]')).toHaveLength(2);
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
   it('passes axe with the compliance panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
     findButton(compiled, 'Res. 55 (11)')?.click();
