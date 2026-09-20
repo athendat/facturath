@@ -42,6 +42,8 @@
 
 .menu.open {
   display: grid;
+  /* The gap of `.actions` does not reach here: a grid container sets its own. */
+  gap: var(--sp-1);
   grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
 }
 
