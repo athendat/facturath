@@ -119,6 +119,22 @@ describe('InvoiceEditor', () => {
     );
   });
 
+  it('stores a chosen logo in the profile and shows it on the sheet', async () => {
+    await render();
+    const input = element.querySelector<HTMLInputElement>('input[aria-label="Subir logo"]');
+    Object.defineProperty(input, 'files', {
+      value: [new File(['png'], 'logo.png', { type: 'image/png' })],
+      configurable: true,
+    });
+
+    input?.dispatchEvent(new Event('change', { bubbles: true }));
+    await fixture.whenStable();
+
+    expect(element.querySelector('img[alt="Logo"]')?.getAttribute('src')).toMatch(/^blob:/);
+    expect(TestBed.inject(SettingsStore).profile().logoAssetId).toEqual(expect.any(String));
+    expect(TestBed.inject(InvoiceStore).invoice().logoAssetId).toEqual(expect.any(String));
+  });
+
   it('shows the remembered images once rendered in the browser', async () => {
     const preferences = new InMemoryPreferencesStore();
     const assets = new InMemoryAssetStore();

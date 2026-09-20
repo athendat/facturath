@@ -2,8 +2,8 @@ import { Component, PendingTasks, afterNextRender, inject } from '@angular/core'
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import { CarrierBlock } from './carrier-block';
+import { ImageControl } from '../../shared/ui/image-control';
 import { DocumentMeta } from './document-meta';
-import { ImageControl } from './image-control';
 import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
@@ -31,7 +31,12 @@ import { TotalsPanel } from './totals-panel';
     <article class="sheet" [attr.data-density]="settings.density()">
       <div class="head">
         <div class="issuer">
-          <app-image-control kind="logo" />
+          <app-image-control
+            kind="logo"
+            [url]="images.urls().logo"
+            (fileChosen)="images.set('logo', $event)"
+            (removed)="images.remove('logo')"
+          />
           <app-party-block class="seller" party="seller" />
         </div>
         <app-document-meta class="meta" />
@@ -179,7 +184,7 @@ import { TotalsPanel } from './totals-panel';
 })
 export class InvoiceEditor {
   protected readonly settings = inject(SettingsStore);
-  private readonly images = inject(ImagesStore);
+  protected readonly images = inject(ImagesStore);
   private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {
