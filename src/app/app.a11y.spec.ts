@@ -57,6 +57,16 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
+  it('passes axe with the header menu open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const toggle = compiled.querySelector<HTMLButtonElement>('.menu-toggle');
+    toggle?.click();
+    await fixture.whenStable();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
   it('passes axe with the saved invoices drawer open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
     findButton(compiled, 'Guardar')?.click();

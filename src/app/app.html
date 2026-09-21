@@ -2,22 +2,42 @@
   <header class="app-header">
     <span class="wordmark">FACTURATH</span>
     <span class="reference">{{ store.headerReference() }}</span>
-    <div class="actions">
-      <button type="button" class="secondary" (click)="save()">Guardar</button>
-      <button type="button" class="secondary" (click)="startNew()">Nueva</button>
-      <button type="button" class="secondary" (click)="drawerOpen.set(true)">
-        Guardadas ({{ saved.count() }})
-      </button>
+    <div #actions class="actions" (keydown.escape)="closeMenu()">
+      <!-- Below the breakpoint the menu collapses and this toggle opens it; above it, CSS hides
+           the toggle and the menu is the header row itself, so each control exists once (#43). -->
       <button
+        #menuToggle
         type="button"
-        class="secondary"
-        [attr.aria-label]="'Datos obligatorios, ' + store.pendingCount() + ' pendientes'"
-        (click)="complianceOpen.set(true)"
+        class="secondary menu-toggle"
+        aria-controls="header-menu"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="menuLabel()"
+        (click)="toggleMenu()"
       >
-        Res. 55 ({{ store.pendingCount() }})
+        Menú
+        <!-- The collapsed menu hides the Res. 55 counter, so the toggle carries it: as a badge
+             for the eye and in its accessible name for a screen reader. -->
+        @if (store.pendingCount() > 0) {
+          <span class="badge" aria-hidden="true">{{ store.pendingCount() }}</span>
+        }
       </button>
-      <button type="button" class="secondary" (click)="fileOpen.set(true)">Archivo</button>
-      <button type="button" class="secondary" (click)="settingsOpen.set(true)">Ajustes</button>
+      <div id="header-menu" class="menu" [class.open]="menuOpen()">
+        <button type="button" class="secondary" (click)="save()">Guardar</button>
+        <button type="button" class="secondary" (click)="startNew()">Nueva</button>
+        <button type="button" class="secondary" (click)="drawerOpen.set(true)">
+          Guardadas ({{ saved.count() }})
+        </button>
+        <button
+          type="button"
+          class="secondary"
+          [attr.aria-label]="pendingLabel()"
+          (click)="complianceOpen.set(true)"
+        >
+          Res. 55 ({{ store.pendingCount() }})
+        </button>
+        <button type="button" class="secondary" (click)="fileOpen.set(true)">Archivo</button>
+        <button type="button" class="secondary" (click)="settingsOpen.set(true)">Ajustes</button>
+      </div>
       <button type="button" class="primary" (click)="printer.print()">PDF / Imprimir</button>
     </div>
   </header>

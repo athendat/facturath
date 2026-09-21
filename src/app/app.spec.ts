@@ -133,6 +133,176 @@ describe('App', () => {
     expect(statusText()).toBe('');
   });
 
+  describe('header menu', () => {
+    function toggle(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.menu-toggle');
+    }
+
+    function menu(): HTMLElement | null {
+      const controls = toggle()?.getAttribute('aria-controls');
+      return controls ? compiled.querySelector<HTMLElement>(`#${controls}`) : null;
+    }
+
+    it('gathers every control but printing behind one toggle', () => {
+      const button = toggle();
+
+      expect(button?.closest('header')).not.toBeNull();
+      expect(button?.getAttribute('aria-expanded')).toBe('false');
+      expect(
+        Array.from(menu()?.querySelectorAll('button') ?? []).map((item) =>
+          item.textContent?.trim(),
+        ),
+      ).toEqual(['Guardar', 'Nueva', 'Guardadas (0)', 'Res. 55 (11)', 'Archivo', 'Ajustes']);
+    });
+
+    it('keeps printing out of the menu and renders each control once', () => {
+      const print = findButton(compiled, 'PDF / Imprimir');
+
+      expect(print?.closest('header')).not.toBeNull();
+      expect(menu()?.contains(print as Node)).toBe(false);
+      // Seven controls plus the toggle: nothing is duplicated for a second layout (#43).
+      expect(compiled.querySelectorAll('.app-header button')).toHaveLength(8);
+    });
+
+    it('opens and closes the menu from the toggle', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
+      expect(menu()?.classList.contains('open')).toBe(true);
+
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+      expect(menu()?.classList.contains('open')).toBe(false);
+    });
+
+    it('surfaces the pending data points on the toggle, which hides them', async () => {
+      const badge = () => toggle()?.querySelector('.badge');
+
+      expect(toggle()?.getAttribute('aria-label')).toBe(
+        'Menú de acciones, 11 datos obligatorios pendientes',
+      );
+      expect(badge()?.textContent?.trim()).toBe('11');
+      expect(badge()?.getAttribute('aria-hidden')).toBe('true');
+
+      typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-label')).toBe(
+        'Menú de acciones, 10 datos obligatorios pendientes',
+      );
+      expect(badge()?.textContent?.trim()).toBe('10');
+    });
+
+    it('says nothing about the count on the toggle once nothing is pending', async () => {
+      const party = {
+        name: 'Nombre',
+        address: 'Calle 1',
+        nit: '12345',
+        identityCard: '80010112345',
+        commercialRegistry: 'RC-1',
+        bankAccount: '9200',
+        bankBranch: 'Sucursal 1',
+      };
+      TestBed.inject(InvoiceStore).load({
+        ...createInvoice('complete-1'),
+        issueDate: '2026-09-19',
+        concept: 'Venta de mercancías',
+        seller: { ...party },
+        buyer: { ...party },
+        lines: [
+          { code: '1', description: 'Servicio', detail: '', unit: 'u', quantity: '2', unitPrice: '10' },
+        ],
+        tax: { name: 'Impuesto sobre ventas', percent: '10' },
+        carrier: { name: 'Portador', identityCard: '80010154321', plate: 'P123', waybill: '', railwayBox: '' },
+        signatures: { delivers: 'Ana', receives: 'Luis', carrier: 'Omar', books: 'Iris' },
+      });
+      await fixture.whenStable();
+      expect(TestBed.inject(InvoiceStore).pendingCount()).toBe(0);
+
+      expect(toggle()?.getAttribute('aria-label')).toBe('Menú de acciones');
+      expect(toggle()?.querySelector('.badge')).toBeNull();
+    });
+
+    it('closes the menu when Escape is pressed outside the header', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+      const field = compiled.querySelector<HTMLElement>('main input');
+      field?.focus();
+
+      field?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+      // The user was typing: closing the menu must not take focus off the field.
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('closes the menu when the pointer goes to the document', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+
+      compiled.querySelector('main')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('leaves the menu open when a panel opened from it closes', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+      const opener = findButton(compiled, 'Ajustes');
+      opener?.focus();
+      opener?.click();
+      await fixture.whenStable();
+      const panel = compiled.querySelector<HTMLElement>('[role="dialog"]');
+      expect(panel).not.toBeNull();
+
+      // Cancelable, the way a real keydown is: the drawer answers Escape with preventDefault.
+      panel?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('[role="dialog"]')).toBeNull();
+      // The drawer gives focus back to its opener, which has to still be there.
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('leaves the menu open when a panel is closed from its own button', async () => {
+      toggle()?.click();
+      await fixture.whenStable();
+      const opener = findButton(compiled, 'Ajustes');
+      opener?.focus();
+      opener?.click();
+      await fixture.whenStable();
+
+      findButton(compiled.querySelector('[role="dialog"]') as HTMLElement, 'Cerrar')?.click();
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('[role="dialog"]')).toBeNull();
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('closes the menu on Escape and puts focus back on the toggle', async () => {
+      toggle()?.focus();
+      toggle()?.click();
+      await fixture.whenStable();
+      const first = menu()?.querySelector('button');
+      first?.focus();
+
+      first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+
+      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(toggle());
+    });
+  });
+
   describe('saved invoices', () => {
     function invoiceStore(): InvoiceStore {
       return TestBed.inject(InvoiceStore);
