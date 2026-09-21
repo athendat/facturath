@@ -2,7 +2,7 @@
   <header class="app-header">
     <span class="wordmark">FACTURATH</span>
     <span class="reference">{{ store.headerReference() }}</span>
-    <div class="actions" (keydown.escape)="closeMenu()">
+    <div #actions class="actions" (keydown.escape)="closeMenu()">
       <!-- Below the breakpoint the menu collapses and this toggle opens it; above it, CSS hides
            the toggle and the menu is the header row itself, so each control exists once (#43). -->
       <button
@@ -11,9 +11,7 @@
         class="secondary menu-toggle"
         aria-controls="header-menu"
         [attr.aria-expanded]="menuOpen()"
-        [attr.aria-label]="
-          'Menú de acciones, ' + store.pendingCount() + ' datos obligatorios pendientes'
-        "
+        [attr.aria-label]="menuLabel()"
         (click)="toggleMenu()"
       >
         Menú
@@ -32,7 +30,7 @@
         <button
           type="button"
           class="secondary"
-          [attr.aria-label]="'Datos obligatorios, ' + store.pendingCount() + ' pendientes'"
+          [attr.aria-label]="pendingLabel()"
           (click)="complianceOpen.set(true)"
         >
           Res. 55 ({{ store.pendingCount() }})

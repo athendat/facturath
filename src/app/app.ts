@@ -31,6 +31,11 @@ export const SAVING_DISABLED_NOTICE =
   imports: [CompliancePanel, FilePanel, InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
   templateUrl: './app.html',
   styleUrl: './app.css',
+  // The open menu covers the document on a phone, so moving on anywhere else dismisses it.
+  host: {
+    '(document:keydown.escape)': 'onDocumentEscape($event)',
+    '(document:click)': 'onDocumentClick($event)',
+  },
 })
 export class App {
   protected readonly store = inject(InvoiceStore);
@@ -42,6 +47,7 @@ export class App {
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
   private readonly menuToggle = viewChild.required<ElementRef<HTMLButtonElement>>('menuToggle');
+  private readonly headerActions = viewChild.required<ElementRef<HTMLElement>>('actions');
 
   /**
    * Whether the collapsed header menu is showing. It only has an effect below the
@@ -53,6 +59,24 @@ export class App {
   protected readonly settingsOpen = signal(false);
   protected readonly complianceOpen = signal(false);
   protected readonly fileOpen = signal(false);
+
+  /** One phrasing of the pending data points, for the panel button and for the menu toggle. */
+  protected readonly pendingLabel = computed(
+    () => `Datos obligatorios, ${this.store.pendingCount()} pendientes`,
+  );
+
+  /** The toggle carries the pending count while the menu hides the button that shows it. */
+  protected readonly menuLabel = computed(() => {
+    const pending = this.store.pendingCount();
+    return pending === 0
+      ? 'Menú de acciones'
+      : `Menú de acciones, ${pending} datos obligatorios pendientes`;
+  });
+
+  /** Whether one of the four panels is over the page. */
+  private readonly panelOpen = computed(
+    () => this.drawerOpen() || this.settingsOpen() || this.complianceOpen() || this.fileOpen(),
+  );
 
   /**
    * Shown in a second toast host of its own, so it neither auto-dismisses nor
@@ -96,6 +120,43 @@ export class App {
     }
     this.menuOpen.set(false);
     this.menuToggle().nativeElement.focus();
+  }
+
+  /**
+   * Escape anywhere else on the page shuts the menu but leaves focus where the user is
+   * working, so it is not a way to lose your place in the invoice.
+   */
+  protected onDocumentEscape(event: Event): void {
+    if (this.dismissable(event)) {
+      this.menuOpen.set(false);
+    }
+  }
+
+  /** A pointer anywhere outside the header actions shuts the menu, leaving focus alone too. */
+  protected onDocumentClick(event: Event): void {
+    const target = event.target;
+    if (!this.dismissable(event) || !(target instanceof Element)) {
+      return;
+    }
+    // A click inside a panel is the panel's own, even the one that closes it: by the time this
+    // runs the panel has already taken itself off and only the clicked node says where it was.
+    if (
+      this.headerActions().nativeElement.contains(target) ||
+      target.closest('[role="dialog"], .backdrop')
+    ) {
+      return;
+    }
+    this.menuOpen.set(false);
+  }
+
+  /**
+   * Whether an event outside the menu should shut it. Never while a panel is over the page:
+   * closing a panel gives focus back to the control that opened it, which is inside the menu
+   * and would be gone. An event a panel already handled is not ours either, and the drawer
+   * calls `preventDefault` on Escape without stopping it from bubbling up to here.
+   */
+  private dismissable(event: Event): boolean {
+    return this.menuOpen() && !this.panelOpen() && !event.defaultPrevented;
   }
 
   /** Saves into history; the draft slot follows so it never lags behind. */
