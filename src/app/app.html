@@ -17,7 +17,7 @@
       </button>
       <button type="button" class="primary" (click)="printer.print()">
         <app-icon name="print" />
-        PDF<span class="wide-only"> / Imprimir</span>
+        <span>PDF<span class="print-rest"> / Imprimir</span></span>
       </button>
       <app-menu-button class="wide-only" label="Más" [items]="moreItems()" (chosen)="run($event)" />
       <button

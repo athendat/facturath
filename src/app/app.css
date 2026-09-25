@@ -33,6 +33,11 @@
   display: none;
 }
 
+/* The " / Imprimir" half of the print label, inline so its leading space stays. */
+.print-rest {
+  display: none;
+}
+
 .divider {
   width: 1px;
   height: 22px;
@@ -54,33 +59,6 @@
   width: 40px;
   padding: 0;
   justify-content: center;
-}
-
-@media (min-width: 960px) {
-  .wide-only {
-    display: inline-flex;
-  }
-
-  .divider.wide-only {
-    display: block;
-  }
-
-  .save-label {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
-  }
-
-  .save {
-    width: auto;
-    padding: 0 12px;
-  }
-
-  .hamburger {
-    display: none;
-  }
 }
 
 .primary,
@@ -117,6 +95,12 @@
 
 .secondary:hover {
   background: var(--bg-2);
+}
+
+/* On a phone Guardar is a bare icon button, like the hamburger beside it. */
+.secondary.save {
+  border-color: transparent;
+  background: transparent;
 }
 
 /* The hamburger: no box of its own, like the icon buttons of the mockup. */
@@ -160,6 +144,43 @@
   font-weight: var(--fw-bold);
   line-height: 16px;
   text-align: center;
+}
+
+/* After the button rules so it wins over their display. */
+@media (min-width: 960px) {
+  .wide-only {
+    display: inline-flex;
+  }
+
+  .print-rest {
+    display: inline;
+  }
+
+  .divider.wide-only {
+    display: block;
+  }
+
+  .save-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .save {
+    width: auto;
+    padding: 0 12px;
+  }
+
+  .secondary.save {
+    border-color: var(--border-control);
+    background: var(--bg-0);
+  }
+
+  .hamburger {
+    display: none;
+  }
 }
 
 .wordmark {

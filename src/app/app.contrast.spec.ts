@@ -149,6 +149,8 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/app.css|.primary:focus-visible|outline': nonText(HEADER),
   'src/app/app.css|.secondary:focus-visible|outline': nonText(HEADER),
   'src/app/app.css|.divider|background': SEPARATOR,
+  'src/app/app.css|.secondary.save|border-color': nonText(HEADER),
+  'src/app/app.css|.secondary.save|background': surface,
   'src/app/app.css|.icon-button|color': nonText([...HEADER, ['--gem-50']]),
   'src/app/app.css|.icon-button:hover|background': surface,
   'src/app/app.css|.icon-button:focus-visible|outline': nonText(HEADER),
