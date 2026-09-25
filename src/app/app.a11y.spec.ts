@@ -5,7 +5,7 @@ import { App } from './app';
 import { ImagesStore } from './core/images-store';
 import { ObjectUrls } from './core/object-urls';
 import { StorageStatus } from './core/storage/storage-status';
-import { findButton } from './core/testing/dom';
+import { findButton, findByText } from './core/testing/dom';
 import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
 import { IMAGE_KINDS } from './domain/invoice';
@@ -24,6 +24,15 @@ describe('App accessibility', () => {
     fixture = TestBed.createComponent(App);
     await fixture.whenStable();
   });
+
+  /** Opens the Más menu and chooses the item whose visible text is `item`. */
+  async function choose(item: string): Promise<void> {
+    const compiled = fixture.nativeElement as HTMLElement;
+    compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]')?.click();
+    await fixture.whenStable();
+    findByText(compiled, '[role="menuitem"]', item)?.click();
+    await fixture.whenStable();
+  }
 
   async function violations(): Promise<string[]> {
     // jsdom has no layout engine, so it cannot compute contrast; every other rule runs.
@@ -57,12 +66,12 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
-  it('passes axe with the header menu open', async () => {
+  it('passes axe with the Más menu open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const toggle = compiled.querySelector<HTMLButtonElement>('.menu-toggle');
-    toggle?.click();
+    const more = compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
+    more?.click();
     await fixture.whenStable();
-    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(more?.getAttribute('aria-expanded')).toBe('true');
 
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
@@ -71,8 +80,7 @@ describe('App accessibility', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     findButton(compiled, 'Guardar')?.click();
     await fixture.whenStable();
-    findButton(compiled, 'Guardadas (1)')?.click();
-    await fixture.whenStable();
+    await choose('Facturas guardadas 1');
     expect(compiled.querySelector('[role="dialog"] li')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
@@ -80,8 +88,7 @@ describe('App accessibility', () => {
 
   it('passes axe with the settings panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    findButton(compiled, 'Ajustes')?.click();
-    await fixture.whenStable();
+    await choose('Ajustes');
     expect(compiled.querySelector('[role="dialog"] h3')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
@@ -89,8 +96,7 @@ describe('App accessibility', () => {
 
   it('passes axe with the file panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    findButton(compiled, 'Archivo')?.click();
-    await fixture.whenStable();
+    await choose('Exportar / importar');
     expect(compiled.querySelectorAll('[role="dialog"] input[type="file"]')).toHaveLength(2);
 
     await expect(violations()).resolves.toEqual([]);
@@ -98,7 +104,7 @@ describe('App accessibility', () => {
 
   it('passes axe with the compliance panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    findButton(compiled, 'Res. 55 (11)')?.click();
+    compiled.querySelector<HTMLButtonElement>('app-compliance-seal button')?.click();
     await fixture.whenStable();
     expect(compiled.querySelectorAll('[role="dialog"] li')).toHaveLength(13);
 
