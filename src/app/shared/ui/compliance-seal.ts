@@ -69,6 +69,14 @@ import { Icon } from './icon';
       box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--gem-900);
     }
 
+    /* Forced colours drop box-shadow, so the ring falls back to a system-colour outline. */
+    @media (forced-colors: active) {
+      .seal:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: 2px;
+      }
+    }
+
     .ring {
       display: inline-grid;
       place-items: center;
