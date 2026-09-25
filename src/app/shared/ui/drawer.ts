@@ -28,6 +28,7 @@ let nextId = 0;
         #panel
         class="panel"
         [class.bare]="bare()"
+        [style.--drawer-width]="width()"
         role="dialog"
         aria-modal="true"
         [attr.aria-labelledby]="bare() ? null : titleId"
@@ -63,16 +64,11 @@ let nextId = 0;
       z-index: 21;
       display: flex;
       flex-direction: column;
-      width: min(400px, 100%);
+      width: min(var(--drawer-width), 100%);
       background: var(--bg-0);
       box-shadow: var(--shadow-md);
       outline: none;
       animation: slide-in var(--dur-3) var(--ease-standard);
-    }
-
-    /* The phone menu is narrower than a panel. */
-    .panel.bare {
-      width: min(288px, 100%);
     }
 
     .panel-header {
@@ -147,6 +143,8 @@ export class Drawer {
    * to close, and lays itself out in the full-height panel. The modal behaviour is the same.
    */
   readonly bare = input(false);
+  /** How wide the panel is; it never grows past the screen. */
+  readonly width = input('400px');
 
   protected readonly titleId = `drawer-title-${nextId++}`;
   private readonly document = inject(DOCUMENT);

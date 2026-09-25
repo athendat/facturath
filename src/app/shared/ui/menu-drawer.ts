@@ -16,7 +16,7 @@ let nextId = 0;
   selector: 'app-menu-drawer',
   imports: [ComplianceSeal, Drawer, Icon],
   template: `
-    <app-drawer [(open)]="open" heading="Menú" [bare]="true">
+    <app-drawer [(open)]="open" heading="Menú" [bare]="true" width="272px">
       <div class="drawer-header">
         <span class="wordmark">FACTURATH</span>
         <button type="button" class="close" aria-label="Cerrar menú" (click)="open.set(false)">

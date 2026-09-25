@@ -67,6 +67,12 @@ describe('Drawer', () => {
     expect(panel?.contains(document.activeElement)).toBe(true);
   });
 
+  it('is 400px wide by default', async () => {
+    await openFromButton();
+
+    expect(dialog()?.style.getPropertyValue('--drawer-width')).toBe('400px');
+  });
+
   it('keeps Tab inside the dialog in both directions', async () => {
     await openFromButton();
     const first = findButton(element, 'Cerrar') as HTMLButtonElement;
@@ -106,7 +112,7 @@ describe('Drawer', () => {
   imports: [Drawer],
   template: `
     <button type="button" (click)="open.set(true)">Abrir</button>
-    <app-drawer [(open)]="open" heading="Menú" [bare]="true">
+    <app-drawer [(open)]="open" heading="Menú" [bare]="true" width="272px">
       <div class="own-header">
         <button type="button" aria-label="Cerrar menú" (click)="open.set(false)">x</button>
       </div>
@@ -148,6 +154,13 @@ describe('Drawer without its own header', () => {
     expect(dialog()?.querySelector('h2')).toBeNull();
     expect(findButton(element, 'Cerrar')).toBeUndefined();
     expect(document.activeElement?.getAttribute('aria-label')).toBe('Cerrar menú');
+  });
+
+  it('takes the width it is given', async () => {
+    findButton(element, 'Abrir')?.click();
+    await fixture.whenStable();
+
+    expect(dialog()?.style.getPropertyValue('--drawer-width')).toBe('272px');
   });
 
   it('still closes on Escape and gives focus back to the opener', async () => {
