@@ -283,26 +283,26 @@ const PAINTED: Record<string, Requirement> = {
     ...SHEET,
   ]),
 
-  // --- the "Más" menu button in the header and its white menu (#61). An item is white at
+  // --- the "Más" menu button in the header and its white menu, a lazy chunk (#61). An item is white at
   // rest and --gem-50 under the pointer or focus.
   'src/app/shared/ui/menu-button.ts|.trigger|border': nonText(HEADER),
   'src/app/shared/ui/menu-button.ts|.trigger|background': surface,
   'src/app/shared/ui/menu-button.ts|.trigger|color': text([['--bg-0'], ['--bg-2']]),
   'src/app/shared/ui/menu-button.ts|.trigger:hover|background': surface,
   'src/app/shared/ui/menu-button.ts|.trigger:focus-visible|outline': nonText(HEADER),
-  'src/app/shared/ui/menu-button.ts|.menu|border': FRAME,
-  'src/app/shared/ui/menu-button.ts|.menu|background': surface,
-  'src/app/shared/ui/menu-button.ts|.menu|box-shadow': decorative(
+  'src/app/shared/ui/menu-list.ts|.menu|border': FRAME,
+  'src/app/shared/ui/menu-list.ts|.menu|background': surface,
+  'src/app/shared/ui/menu-list.ts|.menu|box-shadow': decorative(
     'a drop shadow lifting the menu off the page',
   ),
-  'src/app/shared/ui/menu-button.ts|.separator|background': SEPARATOR,
-  'src/app/shared/ui/menu-button.ts|.item|background': surface,
-  'src/app/shared/ui/menu-button.ts|.item|color': text([['--bg-0'], ['--gem-50']]),
-  'src/app/shared/ui/menu-button.ts|.item app-icon|color': nonText([['--bg-0'], ['--gem-50']]),
-  'src/app/shared/ui/menu-button.ts|.item:hover|background': surface,
-  'src/app/shared/ui/menu-button.ts|.item:focus|background': surface,
-  'src/app/shared/ui/menu-button.ts|.item:focus-visible|outline': nonText([['--gem-50']]),
-  'src/app/shared/ui/menu-button.ts|.detail|color': text([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.separator|background': SEPARATOR,
+  'src/app/shared/ui/menu-list.ts|.item|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item|color': text([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.item app-icon|color': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.item:hover|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item:focus|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item:focus-visible|outline': nonText([['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.detail|color': text([['--bg-0'], ['--gem-50']]),
 
   // --- the phone menu drawer (#61): white, with --gem-50 under the pointer.
   'src/app/shared/ui/menu-drawer.ts|.dhead|border-bottom': SEPARATOR,
