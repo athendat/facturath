@@ -330,8 +330,8 @@ describe('App', () => {
       expect(dialog()?.getAttribute('aria-modal')).toBe('true');
       expect(dialog()?.getAttribute('aria-label')).toBe('Menú');
       expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
-      expect(visibleText(dialog()?.querySelector('.dhead .wordmark'))).toBe('FACTURATH');
-      expect(visibleText(dialog()?.querySelector('.dhead .ref'))).toBe(
+      expect(visibleText(dialog()?.querySelector('.drawer-header .wordmark'))).toBe('FACTURATH');
+      expect(visibleText(dialog()?.querySelector('.drawer-header .reference'))).toBe(
         `Factura ${TestBed.inject(InvoiceStore).headerReference()}`,
       );
       expect(visibleText(dialog()?.querySelector('app-compliance-seal'))).toBe(
@@ -346,7 +346,7 @@ describe('App', () => {
         ['Tus facturas', 'Facturas guardadas 0', 'Exportar / importar'],
         ['App', 'Ajustes'],
       ]);
-      expect(visibleText(dialog()?.querySelector('.dfoot'))).toBe(
+      expect(visibleText(dialog()?.querySelector('.drawer-footer'))).toBe(
         'Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.',
       );
       expect(dialog()?.contains(document.activeElement)).toBe(true);

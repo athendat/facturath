@@ -17,40 +17,40 @@ let nextId = 0;
   imports: [ComplianceSeal, Drawer, Icon],
   template: `
     <app-drawer [(open)]="open" heading="Menú" [bare]="true">
-      <div class="dhead">
+      <div class="drawer-header">
         <span class="wordmark">FACTURATH</span>
         <button type="button" class="close" aria-label="Cerrar menú" (click)="open.set(false)">
           <app-icon name="close" />
         </button>
-        <span class="ref">Factura {{ reference() }}</span>
+        <span class="reference">Factura {{ reference() }}</span>
       </div>
-      <div class="dbody">
+      <div class="drawer-body">
         <app-compliance-seal
-          class="dseal"
+          class="seal-row"
           [pending]="pending()"
           [row]="true"
           (activated)="sealActivated.emit()"
         />
         @for (group of groups(); track group.label; let index = $index) {
           <div role="group" [attr.aria-labelledby]="groupId + '-' + index">
-            <p class="glabel" [id]="groupId + '-' + index">{{ group.label }}</p>
+            <p class="group-label" [id]="groupId + '-' + index">{{ group.label }}</p>
             @for (item of group.items; track item.id) {
-              <button type="button" class="ditem" (click)="chosen.emit(item.id)">
+              <button type="button" class="item" (click)="chosen.emit(item.id)">
                 <app-icon [name]="item.icon" />
                 {{ item.label }}
                 @if (item.detail !== undefined) {
-                  <span class="n">{{ item.detail }}</span>
+                  <span class="count">{{ item.detail }}</span>
                 }
               </button>
             }
           </div>
         }
       </div>
-      <p class="dfoot">Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.</p>
+      <p class="drawer-footer">Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.</p>
     </app-drawer>
   `,
   styles: `
-    .dhead {
+    .drawer-header {
       display: grid;
       grid-template-columns: 1fr auto;
       align-items: center;
@@ -66,7 +66,7 @@ let nextId = 0;
       letter-spacing: var(--tr-snug);
     }
 
-    .ref {
+    .reference {
       grid-column: 1;
       color: var(--fg-2);
       font-size: var(--fs-12);
@@ -93,7 +93,7 @@ let nextId = 0;
       background: var(--gem-50);
     }
 
-    .dbody {
+    .drawer-body {
       flex: 1;
       overflow: auto;
       display: grid;
@@ -102,11 +102,11 @@ let nextId = 0;
       padding: var(--sp-2) var(--sp-2) var(--sp-3);
     }
 
-    .dseal {
+    .seal-row {
       margin: 6px var(--sp-2) var(--sp-2);
     }
 
-    .glabel {
+    .group-label {
       margin: 0;
       padding: var(--sp-3) var(--sp-2) 6px;
       color: var(--fg-2);
@@ -116,7 +116,7 @@ let nextId = 0;
       text-transform: uppercase;
     }
 
-    .ditem {
+    .item {
       display: flex;
       align-items: center;
       gap: var(--sp-3);
@@ -133,30 +133,30 @@ let nextId = 0;
       cursor: pointer;
     }
 
-    .ditem app-icon {
+    .item app-icon {
       width: 18px;
       height: 18px;
       color: var(--gem-900);
     }
 
-    .ditem:hover {
+    .item:hover {
       background: var(--gem-50);
     }
 
     .close:focus-visible,
-    .ditem:focus-visible {
+    .item:focus-visible {
       outline: 2px solid var(--gem-900);
       outline-offset: -2px;
     }
 
-    .n {
+    .count {
       margin-left: auto;
       color: var(--fg-2);
       font-size: var(--fs-12);
       font-variant-numeric: tabular-nums;
     }
 
-    .dfoot {
+    .drawer-footer {
       margin: 0;
       padding: var(--sp-3) var(--sp-4);
       border-top: 1px solid var(--border-1);
