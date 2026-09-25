@@ -34,17 +34,18 @@ describe('ComplianceSeal', () => {
   it('shows the pending count in amber while data points are missing', () => {
     expect(visibleText()).toBe('11 Res. 55 · 11 pendientes');
     expect(seal().classList.contains('complete')).toBe(false);
-    expect(seal().getAttribute('aria-label')).toBe('Datos obligatorios, 11 pendientes');
+    // Label in name (WCAG 2.5.3): the name starts with the visible text, then says what it counts.
+    expect(seal().getAttribute('aria-label')).toBe('Res. 55 · 11 pendientes, datos obligatorios');
   });
 
-  it('turns green with a check once nothing is pending, keeping its accessible name', async () => {
+  it('turns green with a check once nothing is pending, named by what it shows', async () => {
     fixture.componentInstance.pending.set(0);
     await fixture.whenStable();
 
     expect(visibleText()).toBe('Res. 55 completa');
     expect(seal().classList.contains('complete')).toBe(true);
     expect(seal().querySelector('.ring svg')).not.toBeNull();
-    expect(seal().getAttribute('aria-label')).toBe('Datos obligatorios, 0 pendientes');
+    expect(seal().getAttribute('aria-label')).toBe('Res. 55 completa');
   });
 
   it('hides the ring from assistive technology, since the name already says the count', () => {
@@ -57,6 +58,11 @@ describe('ComplianceSeal', () => {
 
     expect(seal().classList.contains('row')).toBe(true);
     expect(visibleText()).toBe('11 Res. 55 · 11 pendientes Ver');
+    expect(seal().getAttribute('aria-label')).toBe('Res. 55 · 11 pendientes, datos obligatorios. Ver');
+
+    fixture.componentInstance.pending.set(0);
+    await fixture.whenStable();
+    expect(seal().getAttribute('aria-label')).toBe('Res. 55 completa. Ver');
   });
 
   it('reports a click', () => {

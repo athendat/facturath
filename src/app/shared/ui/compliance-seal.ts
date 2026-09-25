@@ -1,10 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { Icon } from './icon';
 
 /**
  * The Res. 55 status, stamped like a seal rather than drawn like one more command: amber
  * with the count while data points are missing, green with a check once none is. It opens
- * the compliance panel, so it is a button, named with the same phrasing the panel uses.
+ * the compliance panel, so it is a button. Its name starts with the text it shows, so a
+ * voice user can say what they see (WCAG 2.5.3), and then says what the count is of.
  * As a `row` it fills the width and adds a "Ver" cue, for the phone menu.
  */
 @Component({
@@ -17,7 +18,7 @@ import { Icon } from './icon';
       class="seal"
       [class.complete]="pending() === 0"
       [class.row]="row()"
-      [attr.aria-label]="'Datos obligatorios, ' + pending() + ' pendientes'"
+      [attr.aria-label]="name()"
       (click)="activated.emit()"
     >
       <span class="ring" aria-hidden="true">
@@ -113,4 +114,11 @@ export class ComplianceSeal {
   /** Full width with a "Ver" cue, as the first row of the phone menu. */
   readonly row = input(false);
   readonly activated = output<void>();
+
+  protected readonly name = computed(() => {
+    const pending = this.pending();
+    const status =
+      pending === 0 ? 'Res. 55 completa' : `Res. 55 · ${pending} pendientes, datos obligatorios`;
+    return this.row() ? `${status}. Ver` : status;
+  });
 }

@@ -257,11 +257,11 @@ describe('App', () => {
     });
 
     it('shows the pending count on the seal and opens the compliance panel from it', async () => {
-      expect(seal()?.getAttribute('aria-label')).toBe('Datos obligatorios, 11 pendientes');
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 · 11 pendientes, datos obligatorios');
 
       typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
       await fixture.whenStable();
-      expect(seal()?.getAttribute('aria-label')).toBe('Datos obligatorios, 10 pendientes');
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 · 10 pendientes, datos obligatorios');
       expect(visibleText(seal())).toBe('10 Res. 55 · 10 pendientes');
 
       seal()?.focus();
@@ -279,7 +279,7 @@ describe('App', () => {
 
       expect(visibleText(seal())).toBe('Res. 55 completa');
       expect(seal()?.classList.contains('complete')).toBe(true);
-      expect(seal()?.getAttribute('aria-label')).toBe('Datos obligatorios, 0 pendientes');
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 completa');
     });
   });
 
@@ -550,19 +550,19 @@ describe('App', () => {
 
     // A dated new invoice with its number leaves 11 of the 13 data points pending.
     it('counts the pending data points in the header and follows edits at once', async () => {
-      const button = compiled.querySelector('button[aria-label="Datos obligatorios, 11 pendientes"]');
+      const button = compiled.querySelector('button[aria-label="Res. 55 · 11 pendientes, datos obligatorios"]');
       expect(button?.closest('header')).not.toBeNull();
 
       typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
       await fixture.whenStable();
 
       expect(visibleText(button)).toBe('10 Res. 55 · 10 pendientes');
-      expect(button?.getAttribute('aria-label')).toBe('Datos obligatorios, 10 pendientes');
+      expect(button?.getAttribute('aria-label')).toBe('Res. 55 · 10 pendientes, datos obligatorios');
     });
 
     it('opens the panel from the header, print-hidden, and jumps to a field from it', async () => {
       const button = compiled.querySelector<HTMLButtonElement>(
-        'button[aria-label="Datos obligatorios, 11 pendientes"]',
+        'button[aria-label="Res. 55 · 11 pendientes, datos obligatorios"]',
       );
       button?.focus();
       button?.click();
