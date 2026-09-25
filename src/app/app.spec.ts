@@ -10,12 +10,12 @@ import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-s
 import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
 import { provideStorage } from './core/storage/provide-storage';
 import { StorageStatus } from './core/storage/storage-status';
-import { findButton, typeInto } from './core/testing/dom';
+import { findButton, findByText, typeInto, visibleText } from './core/testing/dom';
 import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
-import { createInvoice } from './domain/invoice';
+import { createInvoice, type Invoice } from './domain/invoice';
 import { createEmptyProfile } from './domain/seller-profile';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
@@ -29,6 +29,55 @@ function notices(root: HTMLElement): Element[] {
   return Array.from(root.querySelectorAll('[role="status"]')).filter(
     (region) => region.textContent?.trim() === SAVING_DISABLED_NOTICE,
   );
+}
+
+/** An invoice with all 13 Res. 55 data points filled in. */
+function completeInvoice(): Invoice {
+  const party = {
+    name: 'Nombre',
+    address: 'Calle 1',
+    nit: '12345',
+    identityCard: '80010112345',
+    commercialRegistry: 'RC-1',
+    bankAccount: '9200',
+    bankBranch: 'Sucursal 1',
+  };
+  return {
+    ...createInvoice('complete-1'),
+    issueDate: '2026-09-19',
+    concept: 'Venta de mercancías',
+    seller: { ...party },
+    buyer: { ...party },
+    lines: [{ code: '1', description: 'Servicio', detail: '', unit: 'u', quantity: '2', unitPrice: '10' }],
+    tax: { name: 'Impuesto sobre ventas', percent: '10' },
+    carrier: { name: 'Portador', identityCard: '80010154321', plate: 'P123', waybill: '', railwayBox: '' },
+    signatures: { delivers: 'Ana', receives: 'Luis', carrier: 'Omar', books: 'Iris' },
+  };
+}
+
+/** The visible text of the items in the header's Más menu, which is left closed again. */
+async function moreItems(fixture: ComponentFixture<App>): Promise<string[]> {
+  const root = fixture.nativeElement as HTMLElement;
+  const more = root.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
+  more?.click();
+  await fixture.whenStable();
+  const items = Array.from(root.querySelectorAll('[role="menuitem"]')).map(visibleText);
+  more?.click();
+  await fixture.whenStable();
+  return items;
+}
+
+/** Opens the header's Más menu and chooses the item whose visible text is `item`. */
+async function chooseFromMore(fixture: ComponentFixture<App>, item: string): Promise<void> {
+  const root = fixture.nativeElement as HTMLElement;
+  const more = root.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
+  more?.focus();
+  more?.click();
+  await fixture.whenStable();
+  const choice = findByText(root, '[role="menuitem"]', item);
+  expect(choice).toBeDefined();
+  choice?.click();
+  await fixture.whenStable();
 }
 
 describe('App', () => {
@@ -133,173 +182,269 @@ describe('App', () => {
     expect(statusText()).toBe('');
   });
 
-  describe('header menu', () => {
-    function toggle(): HTMLButtonElement | null {
-      return compiled.querySelector<HTMLButtonElement>('.menu-toggle');
+  describe('header actions', () => {
+    function more(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
     }
 
-    function menu(): HTMLElement | null {
-      const controls = toggle()?.getAttribute('aria-controls');
-      return controls ? compiled.querySelector<HTMLElement>(`#${controls}`) : null;
+    function seal(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.app-header app-compliance-seal button');
     }
 
-    it('gathers every control but printing behind one toggle', () => {
-      const button = toggle();
-
-      expect(button?.closest('header')).not.toBeNull();
-      expect(button?.getAttribute('aria-expanded')).toBe('false');
-      expect(
-        Array.from(menu()?.querySelectorAll('button') ?? []).map((item) =>
-          item.textContent?.trim(),
-        ),
-      ).toEqual(['Guardar', 'Nueva', 'Guardadas (0)', 'Res. 55 (11)', 'Archivo', 'Ajustes']);
-    });
-
-    it('keeps printing out of the menu and renders each control once', () => {
-      const print = findButton(compiled, 'PDF / Imprimir');
-
-      expect(print?.closest('header')).not.toBeNull();
-      expect(menu()?.contains(print as Node)).toBe(false);
-      // Seven controls plus the toggle: nothing is duplicated for a second layout (#43).
-      expect(compiled.querySelectorAll('.app-header button')).toHaveLength(8);
-    });
-
-    it('opens and closes the menu from the toggle', async () => {
-      toggle()?.click();
+    async function openMore(): Promise<void> {
+      more()?.focus();
+      more()?.click();
       await fixture.whenStable();
+    }
 
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
-      expect(menu()?.classList.contains('open')).toBe(true);
+    it('keeps the seal, Guardar, PDF / Imprimir and Más in the header row', () => {
+      const row = Array.from(compiled.querySelectorAll('.app-header .actions > *')).map(
+        (element) => element.tagName.toLowerCase() + ':' + visibleText(element),
+      );
 
-      toggle()?.click();
-      await fixture.whenStable();
-
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
-      expect(menu()?.classList.contains('open')).toBe(false);
+      expect(row).toEqual([
+        'app-compliance-seal:11 Res. 55 · 11 pendientes',
+        'span:',
+        'button:Guardar',
+        'button:PDF / Imprimir',
+        'app-menu-button:Más',
+        expect.stringMatching(/^button:/),
+      ]);
+      expect(compiled.querySelector('.app-header .divider')?.getAttribute('aria-hidden')).toBe('true');
+      // PDF / Imprimir is the only filled button.
+      expect(compiled.querySelectorAll('.app-header .primary')).toHaveLength(1);
+      expect(findButton(compiled, 'PDF / Imprimir')?.classList.contains('primary')).toBe(true);
     });
 
-    it('surfaces the pending data points on the toggle, which hides them', async () => {
-      const badge = () => toggle()?.querySelector('.badge');
+    it('lists the four other commands in the Más menu, grouped, with the number a new invoice would take and the count', async () => {
+      expect(more()?.getAttribute('aria-expanded')).toBe('false');
 
-      expect(toggle()?.getAttribute('aria-label')).toBe(
+      await openMore();
+
+      const menu = compiled.querySelector('[role="menu"]');
+      // Nothing is saved yet, so a new invoice would take A-0001 again, which is what it shows.
+      expect(Array.from(menu?.querySelectorAll('[role="menuitem"]') ?? []).map(visibleText)).toEqual([
+        'Nueva factura A-0001',
+        'Facturas guardadas 0',
+        'Exportar / importar',
+        'Ajustes',
+      ]);
+      expect(menu?.querySelectorAll('[role="separator"]')).toHaveLength(2);
+      expect(menu?.closest('[data-print-hide]')).not.toBeNull();
+    });
+
+    it('opens each panel from the Más menu and returns focus to Más when it closes', async () => {
+      for (const [item, heading] of [
+        ['Facturas guardadas 0', 'Facturas guardadas'],
+        ['Exportar / importar', 'Archivo'],
+        ['Ajustes', 'Ajustes'],
+      ]) {
+        await openMore();
+        findByText(compiled, '[role="menuitem"]', item)?.click();
+        await fixture.whenStable();
+
+        const dialog = compiled.querySelector<HTMLElement>('[role="dialog"]');
+        expect(dialog?.querySelector('h2')?.textContent?.trim()).toBe(heading);
+        expect(compiled.querySelector('[role="menu"]')).toBeNull();
+
+        dialog?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+        await fixture.whenStable();
+        expect(compiled.querySelector('[role="dialog"]')).toBeNull();
+        expect(document.activeElement).toBe(more());
+      }
+    });
+
+    it('shows the pending count on the seal and opens the compliance panel from it', async () => {
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 · 11 pendientes, datos obligatorios');
+
+      typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
+      await fixture.whenStable();
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 · 10 pendientes, datos obligatorios');
+      expect(visibleText(seal())).toBe('10 Res. 55 · 10 pendientes');
+
+      seal()?.focus();
+      seal()?.click();
+      await fixture.whenStable();
+      expect(compiled.querySelector('[role="dialog"] h2')?.textContent?.trim()).toBe(
+        'Datos obligatorios',
+      );
+    });
+
+    it('turns the seal green once nothing is pending', async () => {
+      TestBed.inject(InvoiceStore).load(completeInvoice());
+      await fixture.whenStable();
+      expect(TestBed.inject(InvoiceStore).pendingCount()).toBe(0);
+
+      expect(visibleText(seal())).toBe('Res. 55 completa');
+      expect(seal()?.classList.contains('complete')).toBe(true);
+      expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 completa');
+    });
+  });
+
+  describe('phone menu', () => {
+    function hamburger(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.app-header .hamburger');
+    }
+
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    async function openMenu(): Promise<void> {
+      hamburger()?.focus();
+      hamburger()?.click();
+      await fixture.whenStable();
+    }
+
+    async function escape(): Promise<void> {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+    }
+
+    it('carries the pending count on the hamburger, in its name and as a badge', async () => {
+      const badge = () => hamburger()?.querySelector('.badge');
+      expect(hamburger()?.getAttribute('aria-label')).toBe(
         'Menú de acciones, 11 datos obligatorios pendientes',
       );
       expect(badge()?.textContent?.trim()).toBe('11');
       expect(badge()?.getAttribute('aria-hidden')).toBe('true');
 
-      typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
+      TestBed.inject(InvoiceStore).load(completeInvoice());
       await fixture.whenStable();
 
-      expect(toggle()?.getAttribute('aria-label')).toBe(
-        'Menú de acciones, 10 datos obligatorios pendientes',
+      expect(hamburger()?.getAttribute('aria-label')).toBe('Menú de acciones');
+      expect(badge()).toBeNull();
+    });
+
+    it('opens a print-hidden modal drawer with the invoice, the seal and the grouped commands', async () => {
+      expect(hamburger()?.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('false');
+
+      await openMenu();
+
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('true');
+      expect(dialog()?.getAttribute('aria-modal')).toBe('true');
+      expect(dialog()?.getAttribute('aria-label')).toBe('Menú');
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+      expect(visibleText(dialog()?.querySelector('.drawer-header .wordmark'))).toBe('FACTURATH');
+      expect(visibleText(dialog()?.querySelector('.drawer-header .reference'))).toBe(
+        `Factura ${TestBed.inject(InvoiceStore).headerReference()}`,
       );
-      expect(badge()?.textContent?.trim()).toBe('10');
-    });
-
-    it('says nothing about the count on the toggle once nothing is pending', async () => {
-      const party = {
-        name: 'Nombre',
-        address: 'Calle 1',
-        nit: '12345',
-        identityCard: '80010112345',
-        commercialRegistry: 'RC-1',
-        bankAccount: '9200',
-        bankBranch: 'Sucursal 1',
-      };
-      TestBed.inject(InvoiceStore).load({
-        ...createInvoice('complete-1'),
-        issueDate: '2026-09-19',
-        concept: 'Venta de mercancías',
-        seller: { ...party },
-        buyer: { ...party },
-        lines: [
-          { code: '1', description: 'Servicio', detail: '', unit: 'u', quantity: '2', unitPrice: '10' },
-        ],
-        tax: { name: 'Impuesto sobre ventas', percent: '10' },
-        carrier: { name: 'Portador', identityCard: '80010154321', plate: 'P123', waybill: '', railwayBox: '' },
-        signatures: { delivers: 'Ana', receives: 'Luis', carrier: 'Omar', books: 'Iris' },
-      });
-      await fixture.whenStable();
-      expect(TestBed.inject(InvoiceStore).pendingCount()).toBe(0);
-
-      expect(toggle()?.getAttribute('aria-label')).toBe('Menú de acciones');
-      expect(toggle()?.querySelector('.badge')).toBeNull();
-    });
-
-    it('closes the menu when Escape is pressed outside the header', async () => {
-      toggle()?.click();
-      await fixture.whenStable();
-      const field = compiled.querySelector<HTMLElement>('main input');
-      field?.focus();
-
-      field?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await fixture.whenStable();
-
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
-      // The user was typing: closing the menu must not take focus off the field.
-      expect(document.activeElement).toBe(field);
-    });
-
-    it('closes the menu when the pointer goes to the document', async () => {
-      toggle()?.click();
-      await fixture.whenStable();
-
-      compiled.querySelector('main')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await fixture.whenStable();
-
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('leaves the menu open when a panel opened from it closes', async () => {
-      toggle()?.click();
-      await fixture.whenStable();
-      const opener = findButton(compiled, 'Ajustes');
-      opener?.focus();
-      opener?.click();
-      await fixture.whenStable();
-      const panel = compiled.querySelector<HTMLElement>('[role="dialog"]');
-      expect(panel).not.toBeNull();
-
-      // Cancelable, the way a real keydown is: the drawer answers Escape with preventDefault.
-      panel?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      expect(visibleText(dialog()?.querySelector('app-compliance-seal'))).toBe(
+        '11 Res. 55 · 11 pendientes Ver',
       );
-      await fixture.whenStable();
-
-      expect(compiled.querySelector('[role="dialog"]')).toBeNull();
-      // The drawer gives focus back to its opener, which has to still be there.
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
-      expect(document.activeElement).toBe(opener);
+      const groups = Array.from(dialog()?.querySelectorAll('[role="group"]') ?? []).map((group) => [
+        document.getElementById(group.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+        ...Array.from(group.querySelectorAll('button')).map(visibleText),
+      ]);
+      expect(groups).toEqual([
+        ['Esta factura', 'Nueva factura A-0001'],
+        ['Tus facturas', 'Facturas guardadas 0', 'Exportar / importar'],
+        ['App', 'Ajustes'],
+      ]);
+      expect(visibleText(dialog()?.querySelector('.drawer-footer'))).toBe(
+        'Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.',
+      );
+      expect(dialog()?.contains(document.activeElement)).toBe(true);
     });
 
-    it('leaves the menu open when a panel is closed from its own button', async () => {
-      toggle()?.click();
+    it('closes from its close button and on Escape, giving focus back to the hamburger', async () => {
+      await openMenu();
+      dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Cerrar menú"]')?.click();
       await fixture.whenStable();
-      const opener = findButton(compiled, 'Ajustes');
-      opener?.focus();
-      opener?.click();
-      await fixture.whenStable();
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
 
-      findButton(compiled.querySelector('[role="dialog"]') as HTMLElement, 'Cerrar')?.click();
-      await fixture.whenStable();
-
-      expect(compiled.querySelector('[role="dialog"]')).toBeNull();
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('true');
-      expect(document.activeElement).toBe(opener);
+      await openMenu();
+      await escape();
+      expect(dialog()).toBeNull();
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(hamburger());
     });
 
-    it('closes the menu on Escape and puts focus back on the toggle', async () => {
-      toggle()?.focus();
-      toggle()?.click();
-      await fixture.whenStable();
-      const first = menu()?.querySelector('button');
-      first?.focus();
+    it('closes itself before opening a panel, and that panel gives focus back to the hamburger', async () => {
+      for (const [item, heading] of [
+        ['Facturas guardadas 0', 'Facturas guardadas'],
+        ['Exportar / importar', 'Archivo'],
+        ['Ajustes', 'Ajustes'],
+        ['11 Res. 55 · 11 pendientes Ver', 'Datos obligatorios'],
+      ]) {
+        await openMenu();
+        findByText(dialog() as HTMLElement, 'button', item)?.click();
+        await fixture.whenStable();
 
-      first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const dialogs = compiled.querySelectorAll('[role="dialog"]');
+        expect(dialogs).toHaveLength(1);
+        expect(dialogs[0].querySelector('h2')?.textContent?.trim()).toBe(heading);
+
+        await escape();
+        expect(dialog()).toBeNull();
+        expect(document.activeElement).toBe(hamburger());
+      }
+    });
+
+    /** Opens `item` from the phone menu, checks focus is in its panel, closes it with Escape. */
+    async function openAndCloseFromMenu(item: string, heading: string): Promise<void> {
+      await openMenu();
+      findByText(dialog() as HTMLElement, 'button', item)?.click();
       await fixture.whenStable();
 
-      expect(toggle()?.getAttribute('aria-expanded')).toBe('false');
-      expect(document.activeElement).toBe(toggle());
+      const panel = dialog();
+      expect(panel?.querySelector('h2')?.textContent?.trim()).toBe(heading);
+      expect(panel?.contains(document.activeElement)).toBe(true);
+
+      await escape();
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
+    }
+
+    it('keeps focus in a panel opened from the drawer, the same one twice and others after it', async () => {
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('Exportar / importar', 'Archivo');
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('11 Res. 55 · 11 pendientes Ver', 'Datos obligatorios');
+    });
+
+    it('keeps focus in a panel that already existed before the drawer was first opened', async () => {
+      // Opened once from Más, the settings panel exists before the menu drawer does, so its
+      // focus hook runs first on the render that swaps the drawer for the panel.
+      await chooseFromMore(fixture, 'Ajustes');
+      await escape();
+      expect(dialog()).toBeNull();
+
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+    });
+
+    it('runs a command once when two taps land before the menu closes', async () => {
+      const startNew = vi.spyOn(TestBed.inject(InvoiceStore), 'startNew');
+      await openMenu();
+      const row = findByText(dialog() as HTMLElement, 'button', 'Nueva factura A-0001');
+
+      // Both taps land before the render that takes the menu away.
+      row?.click();
+      row?.click();
+      await fixture.whenStable();
+
+      expect(startNew).toHaveBeenCalledOnce();
+      expect(dialog()).toBeNull();
+    });
+
+    it('starts a new invoice from the drawer and closes it', async () => {
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+      await openMenu();
+
+      findByText(dialog() as HTMLElement, 'button', 'Nueva factura A-0002')?.click();
+      await fixture.whenStable();
+
+      expect(TestBed.inject(InvoiceStore).invoice().number).toBe('0002');
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
     });
   });
 
@@ -313,13 +458,14 @@ describe('App', () => {
     }
 
     it('saves the open invoice from the header and counts it', async () => {
-      expect(findButton(compiled, 'Guardadas (0)')?.closest('header')).not.toBeNull();
+      expect(findButton(compiled, 'Guardar')?.closest('header')).not.toBeNull();
+      await expect(moreItems(fixture)).resolves.toContain('Facturas guardadas 0');
 
       findButton(compiled, 'Guardar')?.click();
       await fixture.whenStable();
 
       expect(statusText()).toBe('Factura A-0001 guardada.');
-      expect(findButton(compiled, 'Guardadas (1)')).toBeDefined();
+      await expect(moreItems(fixture)).resolves.toContain('Facturas guardadas 1');
     });
 
     it('starts the next invoice of the series from the header', async () => {
@@ -327,8 +473,7 @@ describe('App', () => {
       findButton(compiled, 'Guardar')?.click();
       await fixture.whenStable();
 
-      findButton(compiled, 'Nueva')?.click();
-      await fixture.whenStable();
+      await chooseFromMore(fixture, 'Nueva factura A-0002');
 
       expect(invoiceStore().invoice().number).toBe('0002');
       expect(invoiceStore().invoice().buyer.name).toBe('');
@@ -343,8 +488,7 @@ describe('App', () => {
       await fixture.whenStable();
       await expect(repository.getDraft()).resolves.toMatchObject({ number: '0001', concept: 'Venta' });
 
-      findButton(compiled, 'Nueva')?.click();
-      await fixture.whenStable();
+      await chooseFromMore(fixture, 'Nueva factura A-0002');
       await expect(repository.getDraft()).resolves.toMatchObject({ number: '0002', concept: '' });
     });
 
@@ -353,12 +497,10 @@ describe('App', () => {
       findButton(compiled, 'Guardar')?.click();
       await fixture.whenStable();
       const savedId = invoiceStore().invoice().id;
-      findButton(compiled, 'Nueva')?.click();
-      await fixture.whenStable();
+      await chooseFromMore(fixture, 'Nueva factura A-0002');
       expect(invoiceStore().invoice().concept).toBe('');
 
-      findButton(compiled, 'Guardadas (1)')?.click();
-      await fixture.whenStable();
+      await chooseFromMore(fixture, 'Facturas guardadas 1');
       expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
 
       findButton(dialog() as HTMLElement, 'Abrir')?.click();
@@ -377,8 +519,7 @@ describe('App', () => {
       await fixture.whenStable();
       expect(compiled.querySelector('img[alt="Logo"]')).toBeNull();
 
-      findButton(compiled, 'Guardadas (1)')?.click();
-      await fixture.whenStable();
+      await chooseFromMore(fixture, 'Facturas guardadas 1');
       findButton(dialog() as HTMLElement, 'Abrir')?.click();
       await fixture.whenStable();
 
@@ -392,12 +533,10 @@ describe('App', () => {
       return compiled.querySelector<HTMLElement>('[role="dialog"]');
     }
 
-    async function openSettings(): Promise<HTMLButtonElement | undefined> {
-      const button = findButton(compiled, 'Ajustes');
-      button?.focus();
-      button?.click();
-      await fixture.whenStable();
-      return button;
+    /** Opens the panel from the Más menu, which is where focus returns when it closes. */
+    async function openSettings(): Promise<HTMLButtonElement | null> {
+      await chooseFromMore(fixture, 'Ajustes');
+      return compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
     }
 
     it('opens the settings panel from the header and closes it with Escape, focus restored', async () => {
@@ -458,20 +597,20 @@ describe('App', () => {
 
     // A dated new invoice with its number leaves 11 of the 13 data points pending.
     it('counts the pending data points in the header and follows edits at once', async () => {
-      const button = findButton(compiled, 'Res. 55 (11)');
+      const button = compiled.querySelector('button[aria-label="Res. 55 · 11 pendientes, datos obligatorios"]');
       expect(button?.closest('header')).not.toBeNull();
-      expect(button?.getAttribute('aria-label')).toBe('Datos obligatorios, 11 pendientes');
 
       typeInto(compiled, 'Concepto de la operación', 'Venta de mercancías');
       await fixture.whenStable();
 
-      expect(findButton(compiled, 'Res. 55 (10)')?.getAttribute('aria-label')).toBe(
-        'Datos obligatorios, 10 pendientes',
-      );
+      expect(visibleText(button)).toBe('10 Res. 55 · 10 pendientes');
+      expect(button?.getAttribute('aria-label')).toBe('Res. 55 · 10 pendientes, datos obligatorios');
     });
 
     it('opens the panel from the header, print-hidden, and jumps to a field from it', async () => {
-      const button = findButton(compiled, 'Res. 55 (11)');
+      const button = compiled.querySelector<HTMLButtonElement>(
+        'button[aria-label="Res. 55 · 11 pendientes, datos obligatorios"]',
+      );
       button?.focus();
       button?.click();
       await fixture.whenStable();
@@ -502,12 +641,9 @@ describe('App', () => {
       return compiled.querySelector<HTMLElement>('[role="dialog"]');
     }
 
-    async function openPanel(): Promise<HTMLButtonElement | undefined> {
-      const button = findButton(compiled, 'Archivo');
-      button?.focus();
-      button?.click();
-      await fixture.whenStable();
-      return button;
+    async function openPanel(): Promise<HTMLButtonElement | null> {
+      await chooseFromMore(fixture, 'Exportar / importar');
+      return compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]');
     }
 
     /** Picks `file` in the file input whose visible label reads `label`, as a user would. */
@@ -594,7 +730,7 @@ describe('App', () => {
         }),
       );
 
-      expect(findButton(compiled, 'Guardadas (2)')).toBeDefined();
+      await expect(moreItems(fixture)).resolves.toContain('Facturas guardadas 2');
       expect(statusText()).toBe('Copia importada: 2 facturas.');
     });
 
@@ -709,7 +845,7 @@ describe('App with invoices already saved', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
 
-    expect(findButton(fixture.nativeElement as HTMLElement, 'Guardadas (2)')).toBeDefined();
+    await expect(moreItems(fixture)).resolves.toContain('Facturas guardadas 2');
   });
 });
 

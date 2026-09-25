@@ -148,6 +148,12 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/app.css|.secondary:hover|background': surface,
   'src/app/app.css|.primary:focus-visible|outline': nonText(HEADER),
   'src/app/app.css|.secondary:focus-visible|outline': nonText(HEADER),
+  'src/app/app.css|.divider|background': SEPARATOR,
+  'src/app/app.css|.secondary.save|border-color': nonText(HEADER),
+  'src/app/app.css|.secondary.save|background': surface,
+  'src/app/app.css|.icon-button|color': nonText([...HEADER, ['--gem-50']]),
+  'src/app/app.css|.icon-button:hover|background': surface,
+  'src/app/app.css|.icon-button:focus-visible|outline': nonText(HEADER),
   'src/app/app.css|.badge|background': surface,
   'src/app/app.css|.badge|color': text([['--warning-bg']]),
   'src/app/app.css|.wordmark|color': text(HEADER),
@@ -267,6 +273,56 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/features/settings/settings-panel.ts|.legend|color': text(SHEET),
   'src/app/features/settings/settings-panel.ts|.choice input|accent-color': nonText(SHEET),
   'src/app/features/settings/settings-panel.ts|.choice input:focus-visible|outline': nonText(SHEET),
+
+  // --- the Res. 55 seal, in the header and as the first row of the white phone menu (#61).
+  // Its dashed stamp line and the ring are currentColor, so the text rows cover them.
+  'src/app/shared/ui/compliance-seal.ts|.seal|background': surface,
+  'src/app/shared/ui/compliance-seal.ts|.seal|color': text([['--warning-bg']]),
+  'src/app/shared/ui/compliance-seal.ts|.seal.complete|background': surface,
+  'src/app/shared/ui/compliance-seal.ts|.seal.complete|color': text([['--success-bg']]),
+  'src/app/shared/ui/compliance-seal.ts|.seal:focus-visible|box-shadow': nonText([
+    ...HEADER,
+    ...SHEET,
+  ]),
+
+  // --- the "Más" menu button in the header and its white menu, a lazy chunk (#61). An item is white at
+  // rest and --gem-50 under the pointer or focus.
+  'src/app/shared/ui/menu-button.ts|.trigger|border': nonText(HEADER),
+  'src/app/shared/ui/menu-button.ts|.trigger|background': surface,
+  'src/app/shared/ui/menu-button.ts|.trigger|color': text([['--bg-0'], ['--bg-2']]),
+  'src/app/shared/ui/menu-button.ts|.trigger:hover|background': surface,
+  'src/app/shared/ui/menu-button.ts|.trigger:focus-visible|outline': nonText(HEADER),
+  'src/app/shared/ui/menu-list.ts|.menu|border': FRAME,
+  'src/app/shared/ui/menu-list.ts|.menu|background': surface,
+  'src/app/shared/ui/menu-list.ts|.menu|box-shadow': decorative(
+    'a drop shadow lifting the menu off the page',
+  ),
+  'src/app/shared/ui/menu-list.ts|.separator|background': SEPARATOR,
+  'src/app/shared/ui/menu-list.ts|.item|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item|color': text([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.item app-icon|color': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.item:hover|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item:focus|background': surface,
+  'src/app/shared/ui/menu-list.ts|.item:focus-visible|outline': nonText([['--gem-50']]),
+  'src/app/shared/ui/menu-list.ts|.detail|color': text([['--bg-0'], ['--gem-50']]),
+
+  // --- the phone menu drawer (#61): white, with --gem-50 under the pointer.
+  'src/app/shared/ui/menu-drawer.ts|.drawer-header|border-bottom': SEPARATOR,
+  'src/app/shared/ui/menu-drawer.ts|.wordmark|color': text(SHEET),
+  'src/app/shared/ui/menu-drawer.ts|.reference|color': text(SHEET),
+  'src/app/shared/ui/menu-drawer.ts|.close|background': surface,
+  'src/app/shared/ui/menu-drawer.ts|.close|color': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.close:hover|background': surface,
+  'src/app/shared/ui/menu-drawer.ts|.group-label|color': text(SHEET),
+  'src/app/shared/ui/menu-drawer.ts|.item|background': surface,
+  'src/app/shared/ui/menu-drawer.ts|.item|color': text([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.item app-icon|color': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.item:hover|background': surface,
+  'src/app/shared/ui/menu-drawer.ts|.close:focus-visible|outline': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.item:focus-visible|outline': nonText([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.count|color': text([['--bg-0'], ['--gem-50']]),
+  'src/app/shared/ui/menu-drawer.ts|.drawer-footer|border-top': SEPARATOR,
+  'src/app/shared/ui/menu-drawer.ts|.drawer-footer|color': text(SHEET),
 
   // --- the drawer shell every panel sits in.
   'src/app/shared/ui/drawer.ts|.backdrop|background': surface,

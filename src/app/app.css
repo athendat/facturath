@@ -11,70 +11,69 @@
 
 .app-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
   max-width: 960px;
+  min-height: 54px;
   margin: 0 auto;
   padding: var(--sp-2) var(--sp-3);
 }
 
-/* A row of its own under the wordmark while the menu is collapsed, so the open menu has the
-   full header width; from 960px up it shares the row with the wordmark again. */
 .actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--sp-1);
-  flex-basis: 100%;
   margin-left: auto;
 }
 
-/* Collapsed by default and opened by the toggle: the six secondary controls become a panel
-   of their own under the header row. Mobile first, so there is no width between the two
-   layouts that matches neither (a fractional viewport falls in such a gap). */
-.menu {
+/* Phone first: the seal, the divider, the Más menu and the " / Imprimir" half of the print
+   label only show from 960px, where the header has room for them; the hamburger and its
+   drawer stand in for them below that (#61). */
+.wide-only {
   display: none;
-  /* Last in `.actions`, on a line of its own. */
-  order: 1;
-  flex-basis: 100%;
 }
 
-.menu.open {
-  display: grid;
-  /* The gap of `.actions` does not reach here: a grid container sets its own. */
-  gap: var(--sp-1);
-  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+/* The " / Imprimir" half of the print label, inline so its leading space stays. */
+.print-rest {
+  display: none;
 }
 
-/* The seven controls need 922px on one row (measured in Chrome), and the header stops
-   growing at its 960px max-width, so 960px is the width from which the row always fits.
-   There the menu stops being a container at all and its buttons lay themselves out in
-   `.actions` as if they were written there, and the toggle goes away. Below it only
-   PDF / Imprimir stays out of the menu, since printing is what the app is for (#43). */
-@media (min-width: 960px) {
-  .menu,
-  .menu.open {
-    display: contents;
-  }
+.divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 var(--sp-1);
+  background: var(--border-1);
+}
 
-  .menu-toggle {
-    display: none;
-  }
+/* On a phone Guardar is an icon button; its label stays for screen readers. */
+.save-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
-  .actions {
-    flex-basis: auto;
-  }
+.save {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
 }
 
 .primary,
-.secondary {
-  min-height: 38px;
-  padding: 0 14px;
+.secondary,
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
   border: 0;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: var(--fw-bold);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -98,26 +97,90 @@
   background: var(--bg-2);
 }
 
+/* On a phone Guardar is a bare icon button, like the hamburger beside it. */
+.secondary.save {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* The hamburger: no box of its own, like the icon buttons of the mockup. */
+.icon-button {
+  position: relative;
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+  background: transparent;
+  color: var(--gem-900);
+}
+
+.icon-button app-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-button:hover {
+  background: var(--gem-50);
+}
+
 .primary:focus-visible,
-.secondary:focus-visible {
+.secondary:focus-visible,
+.icon-button:focus-visible {
   outline: 2px solid var(--gem-900);
   outline-offset: 2px;
 }
 
-/* The Res. 55 counter, shown on the toggle while the menu hides the button that carries it. */
+/* The Res. 55 counter on the hamburger, standing in for the seal the phone header has no room for. */
 .badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: var(--sp-1);
-  padding: 0 5px;
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: var(--radius-full);
   background: var(--warning-bg);
   color: var(--warning-fg);
-  font-size: var(--fs-12);
+  font-size: 10px;
   font-weight: var(--fw-bold);
+  line-height: 16px;
+  text-align: center;
+}
+
+/* After the button rules so it wins over their display. */
+@media (min-width: 960px) {
+  .wide-only {
+    display: inline-flex;
+  }
+
+  .print-rest {
+    display: inline;
+  }
+
+  .divider.wide-only {
+    display: block;
+  }
+
+  .save-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .save {
+    width: auto;
+    padding: 0 12px;
+  }
+
+  .secondary.save {
+    border-color: var(--border-control);
+    background: var(--bg-0);
+  }
+
+  .hamburger {
+    display: none;
+  }
 }
 
 .wordmark {

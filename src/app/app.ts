@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   PendingTasks,
   afterNextRender,
   computed,
@@ -12,6 +13,7 @@ import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
+import { formatReference } from './domain/format';
 import { FilePanel } from './features/import-export/file-panel';
 import type { ImportResult } from './features/import-export/import-export-store';
 import { CompliancePanel } from './features/invoice-editor/compliance-panel';
@@ -21,21 +23,37 @@ import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesDrawer } from './features/saved-invoices/saved-invoices-drawer';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
 import { SettingsPanel } from './features/settings/settings-panel';
+import { ComplianceSeal } from './shared/ui/compliance-seal';
+import { Icon } from './shared/ui/icon';
+import { MenuButton, type MenuItem } from './shared/ui/menu-button';
+import { MenuDrawer } from './shared/ui/menu-drawer';
 import { ToastHost } from './shared/ui/toast-host';
+
+/** Everything the header can do beyond saving and printing. */
+type HeaderCommand = 'compliance' | 'new' | 'saved' | 'file' | 'settings';
+
+/** The commands listed under "Más" and in the phone menu; the seal runs `compliance`. */
+type MenuCommand = Exclude<HeaderCommand, 'compliance'>;
 
 export const SAVING_DISABLED_NOTICE =
   'Este navegador no permite guardar. Puedes imprimir, pero la factura y tus datos se perderán al cerrar.';
 
 @Component({
   selector: 'app-root',
-  imports: [CompliancePanel, FilePanel, InvoiceEditor, SavedInvoicesDrawer, SettingsPanel, ToastHost],
+  imports: [
+    ComplianceSeal,
+    CompliancePanel,
+    FilePanel,
+    Icon,
+    InvoiceEditor,
+    MenuButton,
+    MenuDrawer,
+    SavedInvoicesDrawer,
+    SettingsPanel,
+    ToastHost,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  // The open menu covers the document on a phone, so moving on anywhere else dismisses it.
-  host: {
-    '(document:keydown.escape)': 'onDocumentEscape($event)',
-    '(document:click)': 'onDocumentClick($event)',
-  },
 })
 export class App {
   protected readonly store = inject(InvoiceStore);
@@ -46,13 +64,10 @@ export class App {
   private readonly updateNotifier = inject(UpdateNotifier);
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
-  private readonly menuToggle = viewChild.required<ElementRef<HTMLButtonElement>>('menuToggle');
-  private readonly headerActions = viewChild.required<ElementRef<HTMLElement>>('actions');
+  private readonly injector = inject(Injector);
+  private readonly hamburger = viewChild.required<ElementRef<HTMLButtonElement>>('hamburger');
 
-  /**
-   * Whether the collapsed header menu is showing. It only has an effect below the
-   * breakpoint; above it, CSS lays the menu out as the header row and hides the toggle.
-   */
+  /** Whether the phone menu drawer is open. */
   protected readonly menuOpen = signal(false);
 
   protected readonly drawerOpen = signal(false);
@@ -60,12 +75,7 @@ export class App {
   protected readonly complianceOpen = signal(false);
   protected readonly fileOpen = signal(false);
 
-  /** One phrasing of the pending data points, for the panel button and for the menu toggle. */
-  protected readonly pendingLabel = computed(
-    () => `Datos obligatorios, ${this.store.pendingCount()} pendientes`,
-  );
-
-  /** The toggle carries the pending count while the menu hides the button that shows it. */
+  /** The phone's hamburger carries the pending count, since its header has no seal. */
   protected readonly menuLabel = computed(() => {
     const pending = this.store.pendingCount();
     return pending === 0
@@ -73,10 +83,34 @@ export class App {
       : `Menú de acciones, ${pending} datos obligatorios pendientes`;
   });
 
-  /** Whether one of the four panels is over the page. */
-  private readonly panelOpen = computed(
-    () => this.drawerOpen() || this.settingsOpen() || this.complianceOpen() || this.fileOpen(),
-  );
+  /** The number the next invoice of the open series gets, as the header writes it. */
+  protected readonly nextReference = computed(() => {
+    const series = this.store.invoice().series;
+    return formatReference(series, this.saved.nextNumber(series));
+  });
+
+  /**
+   * The commands behind "Más" on a wide screen and in the phone menu, one list for both,
+   * grouped by what they act on.
+   */
+  protected readonly menuItems = computed<readonly MenuItem<MenuCommand>[]>(() => [
+    {
+      id: 'new',
+      label: 'Nueva factura',
+      icon: 'new',
+      detail: this.nextReference(),
+      group: 'Esta factura',
+    },
+    {
+      id: 'saved',
+      label: 'Facturas guardadas',
+      icon: 'list',
+      detail: String(this.saved.count()),
+      group: 'Tus facturas',
+    },
+    { id: 'file', label: 'Exportar / importar', icon: 'file', group: 'Tus facturas' },
+    { id: 'settings', label: 'Ajustes', icon: 'settings', group: 'App' },
+  ]);
 
   /**
    * Shown in a second toast host of its own, so it neither auto-dismisses nor
@@ -104,59 +138,43 @@ export class App {
     });
   }
 
-  /** Shows or hides the collapsed menu. */
-  protected toggleMenu(): void {
-    this.menuOpen.update((open) => !open);
+  /** Runs a header command: the same action or panel as before #61, wherever it was chosen. */
+  protected run(command: HeaderCommand): void {
+    switch (command) {
+      case 'compliance':
+        this.complianceOpen.set(true);
+        break;
+      case 'new':
+        this.startNew();
+        break;
+      case 'saved':
+        this.drawerOpen.set(true);
+        break;
+      case 'file':
+        this.fileOpen.set(true);
+        break;
+      case 'settings':
+        this.settingsOpen.set(true);
+        break;
+    }
   }
 
   /**
-   * Closes the menu and takes focus back to the toggle, the way a disclosure should.
-   * It stays open while a panel is up, so the panel can return focus to the control
-   * that opened it. Above the breakpoint nothing is collapsed and this does nothing.
+   * Runs a command from the phone menu. The menu closes and focus goes back to the hamburger
+   * first; the command runs only after the render that takes the menu away, once its drawer
+   * has handed focus back. Run in the same render, the closing drawer and an opening panel
+   * would both move focus, and whichever ran last would win: the hamburger could take focus
+   * out of the panel that just opened. Opened afterwards, the panel takes the hamburger as the
+   * control to return focus to.
    */
-  protected closeMenu(): void {
+  protected runFromMenu(command: HeaderCommand): void {
+    // A second tap before the closing render would queue the command again.
     if (!this.menuOpen()) {
       return;
     }
     this.menuOpen.set(false);
-    this.menuToggle().nativeElement.focus();
-  }
-
-  /**
-   * Escape anywhere else on the page shuts the menu but leaves focus where the user is
-   * working, so it is not a way to lose your place in the invoice.
-   */
-  protected onDocumentEscape(event: Event): void {
-    if (this.dismissable(event)) {
-      this.menuOpen.set(false);
-    }
-  }
-
-  /** A pointer anywhere outside the header actions shuts the menu, leaving focus alone too. */
-  protected onDocumentClick(event: Event): void {
-    const target = event.target;
-    if (!this.dismissable(event) || !(target instanceof Element)) {
-      return;
-    }
-    // A click inside a panel is the panel's own, even the one that closes it: by the time this
-    // runs the panel has already taken itself off and only the clicked node says where it was.
-    if (
-      this.headerActions().nativeElement.contains(target) ||
-      target.closest('[role="dialog"], .backdrop')
-    ) {
-      return;
-    }
-    this.menuOpen.set(false);
-  }
-
-  /**
-   * Whether an event outside the menu should shut it. Never while a panel is over the page:
-   * closing a panel gives focus back to the control that opened it, which is inside the menu
-   * and would be gone. An event a panel already handled is not ours either, and the drawer
-   * calls `preventDefault` on Escape without stopping it from bubbling up to here.
-   */
-  private dismissable(event: Event): boolean {
-    return this.menuOpen() && !this.panelOpen() && !event.defaultPrevented;
+    this.hamburger().nativeElement.focus();
+    afterNextRender(() => this.run(command), { injector: this.injector });
   }
 
   /** Saves into history; the draft slot follows so it never lags behind. */

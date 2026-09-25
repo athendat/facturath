@@ -3,7 +3,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { App } from './app';
 import { ImagesStore } from './core/images-store';
 import { ObjectUrls } from './core/object-urls';
-import { findButton } from './core/testing/dom';
+import { findButton, findByText } from './core/testing/dom';
 import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
 import { IMAGE_KINDS } from './domain/invoice';
@@ -108,8 +108,16 @@ describe('App accessible names', () => {
     return [...duplicates];
   }
 
-  async function open(button: string): Promise<void> {
-    findButton(compiled, button)?.click();
+  async function openMore(): Promise<void> {
+    compiled.querySelector<HTMLButtonElement>('.app-header button[aria-haspopup="menu"]')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="menu"]')).not.toBeNull();
+  }
+
+  /** Opens a panel from the item of the Más menu whose visible text is `item`. */
+  async function open(item: string): Promise<void> {
+    await openMore();
+    findByText(compiled, '[role="menuitem"]', item)?.click();
     await fixture.whenStable();
     expect(compiled.querySelector('[role="dialog"]')).not.toBeNull();
   }
@@ -135,10 +143,26 @@ describe('App accessible names', () => {
     expect(duplicateIds()).toEqual([]);
   });
 
+  it('names every control with the Más menu open', async () => {
+    await openMore();
+
+    expect(unnamed()).toEqual([]);
+    expect(duplicateIds()).toEqual([]);
+  });
+
+  it('names every control with the phone menu open', async () => {
+    compiled.querySelector<HTMLButtonElement>('.app-header .hamburger')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"]')).not.toBeNull();
+
+    expect(unnamed()).toEqual([]);
+    expect(duplicateIds()).toEqual([]);
+  });
+
   it('names every control of the saved invoices drawer', async () => {
     findButton(compiled, 'Guardar')?.click();
     await fixture.whenStable();
-    await open('Guardadas (1)');
+    await open('Facturas guardadas 1');
     expect(compiled.querySelector('[role="dialog"] li')).not.toBeNull();
 
     expect(unnamed()).toEqual([]);
@@ -153,7 +177,7 @@ describe('App accessible names', () => {
   });
 
   it('names every control of the file panel', async () => {
-    await open('Archivo');
+    await open('Exportar / importar');
     expect(compiled.querySelectorAll('[role="dialog"] input[type="file"]')).toHaveLength(2);
 
     expect(unnamed()).toEqual([]);
@@ -161,7 +185,8 @@ describe('App accessible names', () => {
   });
 
   it('names every control of the compliance panel', async () => {
-    await open('Res. 55 (11)');
+    compiled.querySelector<HTMLButtonElement>('app-compliance-seal button')?.click();
+    await fixture.whenStable();
     expect(compiled.querySelectorAll('[role="dialog"] li')).toHaveLength(13);
 
     expect(unnamed()).toEqual([]);

@@ -27,16 +27,21 @@ let nextId = 0;
       <section
         #panel
         class="panel"
+        [class.bare]="bare()"
+        [style.--drawer-width]="width()"
         role="dialog"
         aria-modal="true"
-        [attr.aria-labelledby]="titleId"
+        [attr.aria-labelledby]="bare() ? null : titleId"
+        [attr.aria-label]="bare() ? heading() : null"
         tabindex="-1"
         (keydown)="onKeydown($event)"
       >
-        <div class="panel-header">
-          <h2 class="panel-title" [id]="titleId">{{ heading() }}</h2>
-          <button type="button" class="close" (click)="close()">Cerrar</button>
-        </div>
+        @if (!bare()) {
+          <div class="panel-header">
+            <h2 class="panel-title" [id]="titleId">{{ heading() }}</h2>
+            <button type="button" class="close" (click)="close()">Cerrar</button>
+          </div>
+        }
         <div class="panel-body">
           <ng-content />
         </div>
@@ -59,7 +64,7 @@ let nextId = 0;
       z-index: 21;
       display: flex;
       flex-direction: column;
-      width: min(400px, 100%);
+      width: min(var(--drawer-width), 100%);
       background: var(--bg-0);
       box-shadow: var(--shadow-md);
       outline: none;
@@ -107,6 +112,12 @@ let nextId = 0;
       padding: var(--sp-3) var(--sp-4);
     }
 
+    .bare .panel-body {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
     @keyframes slide-in {
       from {
         transform: translateX(100%);
@@ -125,8 +136,15 @@ let nextId = 0;
 })
 export class Drawer {
   readonly open = model(false);
-  /** The dialog's accessible name, shown as its heading. */
+  /** The dialog's accessible name, shown as its heading unless the drawer is `bare`. */
   readonly heading = input.required<string>();
+  /**
+   * No heading, close button or padded body: the content brings its own header and a way
+   * to close, and lays itself out in the full-height panel. The modal behaviour is the same.
+   */
+  readonly bare = input(false);
+  /** How wide the panel is; it never grows past the screen. */
+  readonly width = input('400px');
 
   protected readonly titleId = `drawer-title-${nextId++}`;
   private readonly document = inject(DOCUMENT);

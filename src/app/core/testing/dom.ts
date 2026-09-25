@@ -19,3 +19,22 @@ export function typeInto(root: ParentNode, label: string, text: string): void {
   field.value = text;
   field.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+/** The text of `node` with its whitespace collapsed, the way it reads on screen. */
+export function visibleText(node: Node | null | undefined): string {
+  return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * The first element under `root` matching `selector` whose visible text is exactly `label`,
+ * for controls whose text spans several nodes (an icon, a label and a count).
+ */
+export function findByText<T extends HTMLElement = HTMLElement>(
+  root: ParentNode,
+  selector: string,
+  label: string,
+): T | undefined {
+  return Array.from(root.querySelectorAll<T>(selector)).find(
+    (element) => visibleText(element) === label,
+  );
+}
