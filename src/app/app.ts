@@ -26,8 +26,14 @@ import { SettingsPanel } from './features/settings/settings-panel';
 import { ComplianceSeal } from './shared/ui/compliance-seal';
 import { Icon } from './shared/ui/icon';
 import { MenuButton, type MenuItem } from './shared/ui/menu-button';
-import { MenuDrawer, type MenuDrawerCommand } from './shared/ui/menu-drawer';
+import { MenuDrawer } from './shared/ui/menu-drawer';
 import { ToastHost } from './shared/ui/toast-host';
+
+/** Everything the header can do beyond saving and printing. */
+type HeaderCommand = 'compliance' | 'new' | 'saved' | 'file' | 'settings';
+
+/** The commands listed under "Más" and in the phone menu; the seal runs `compliance`. */
+type MenuCommand = Exclude<HeaderCommand, 'compliance'>;
 
 export const SAVING_DISABLED_NOTICE =
   'Este navegador no permite guardar. Puedes imprimir, pero la factura y tus datos se perderán al cerrar.';
@@ -83,18 +89,27 @@ export class App {
     return formatReference(series, this.saved.nextNumber(series));
   });
 
-  /** The commands behind "Más" on a wide screen, grouped by what they act on. */
-  protected readonly moreItems = computed<readonly MenuItem[]>(() => [
-    { id: 'new', label: 'Nueva factura', icon: 'new', detail: this.nextReference() },
+  /**
+   * The commands behind "Más" on a wide screen and in the phone menu, one list for both,
+   * grouped by what they act on.
+   */
+  protected readonly menuItems = computed<readonly MenuItem<MenuCommand>[]>(() => [
+    {
+      id: 'new',
+      label: 'Nueva factura',
+      icon: 'new',
+      detail: this.nextReference(),
+      group: 'Esta factura',
+    },
     {
       id: 'saved',
       label: 'Facturas guardadas',
       icon: 'list',
       detail: String(this.saved.count()),
-      separatorBefore: true,
+      group: 'Tus facturas',
     },
-    { id: 'file', label: 'Exportar / importar', icon: 'file' },
-    { id: 'settings', label: 'Ajustes', icon: 'settings', separatorBefore: true },
+    { id: 'file', label: 'Exportar / importar', icon: 'file', group: 'Tus facturas' },
+    { id: 'settings', label: 'Ajustes', icon: 'settings', group: 'App' },
   ]);
 
   /**
@@ -123,9 +138,12 @@ export class App {
     });
   }
 
-  /** Runs the command chosen in the "Más" menu: the same action or panel as before #61. */
-  protected run(command: string): void {
+  /** Runs a header command: the same action or panel as before #61, wherever it was chosen. */
+  protected run(command: HeaderCommand): void {
     switch (command) {
+      case 'compliance':
+        this.complianceOpen.set(true);
+        break;
       case 'new':
         this.startNew();
         break;
@@ -149,19 +167,10 @@ export class App {
    * out of the panel that just opened. Opened afterwards, the panel takes the hamburger as the
    * control to return focus to.
    */
-  protected runFromMenu(command: MenuDrawerCommand): void {
+  protected runFromMenu(command: HeaderCommand): void {
     this.menuOpen.set(false);
     this.hamburger().nativeElement.focus();
-    afterNextRender(
-      () => {
-        if (command === 'compliance') {
-          this.complianceOpen.set(true);
-        } else {
-          this.run(command);
-        }
-      },
-      { injector: this.injector },
-    );
+    afterNextRender(() => this.run(command), { injector: this.injector });
   }
 
   /** Saves into history; the draft slot follows so it never lags behind. */

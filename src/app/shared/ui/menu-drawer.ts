@@ -1,16 +1,16 @@
-import { Component, input, model, output } from '@angular/core';
+import { Component, computed, input, model, output } from '@angular/core';
 import { ComplianceSeal } from './compliance-seal';
 import { Drawer } from './drawer';
 import { Icon } from './icon';
+import type { MenuItem } from './menu-list';
 
-/** What the phone menu reports when the user picks a row. */
-export type MenuDrawerCommand = 'compliance' | 'new' | 'saved' | 'file' | 'settings';
+let nextId = 0;
 
 /**
  * The phone header's menu: a right-hand modal drawer with the open invoice at the top,
  * the Res. 55 seal as the first row, then the same commands as the "Más" menu of a wide
- * screen in 48px rows, grouped by what they act on. The parent owns `open` and runs the
- * chosen command; the drawer only reports it.
+ * screen in 48px rows, one labelled group per `MenuItem.group`. The parent owns `open` and
+ * runs the chosen command; the drawer only reports it.
  */
 @Component({
   selector: 'app-menu-drawer',
@@ -29,35 +29,22 @@ export type MenuDrawerCommand = 'compliance' | 'new' | 'saved' | 'file' | 'setti
           class="dseal"
           [pending]="pending()"
           [row]="true"
-          (activated)="chosen.emit('compliance')"
+          (activated)="sealActivated.emit()"
         />
-        <div role="group" aria-labelledby="menu-group-invoice">
-          <p class="glabel" id="menu-group-invoice">Esta factura</p>
-          <button type="button" class="ditem" (click)="chosen.emit('new')">
-            <app-icon name="new" />
-            Nueva factura
-            <span class="n">{{ nextReference() }}</span>
-          </button>
-        </div>
-        <div role="group" aria-labelledby="menu-group-invoices">
-          <p class="glabel" id="menu-group-invoices">Tus facturas</p>
-          <button type="button" class="ditem" (click)="chosen.emit('saved')">
-            <app-icon name="list" />
-            Facturas guardadas
-            <span class="n">{{ savedCount() }}</span>
-          </button>
-          <button type="button" class="ditem" (click)="chosen.emit('file')">
-            <app-icon name="file" />
-            Exportar / importar
-          </button>
-        </div>
-        <div role="group" aria-labelledby="menu-group-app">
-          <p class="glabel" id="menu-group-app">App</p>
-          <button type="button" class="ditem" (click)="chosen.emit('settings')">
-            <app-icon name="settings" />
-            Ajustes
-          </button>
-        </div>
+        @for (group of groups(); track group.label; let index = $index) {
+          <div role="group" [attr.aria-labelledby]="groupId + '-' + index">
+            <p class="glabel" [id]="groupId + '-' + index">{{ group.label }}</p>
+            @for (item of group.items; track item.id) {
+              <button type="button" class="ditem" (click)="chosen.emit(item.id)">
+                <app-icon [name]="item.icon" />
+                {{ item.label }}
+                @if (item.detail !== undefined) {
+                  <span class="n">{{ item.detail }}</span>
+                }
+              </button>
+            }
+          </div>
+        }
       </div>
       <p class="dfoot">Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.</p>
     </app-drawer>
@@ -179,13 +166,30 @@ export type MenuDrawerCommand = 'compliance' | 'new' | 'saved' | 'file' | 'setti
     }
   `,
 })
-export class MenuDrawer {
+export class MenuDrawer<T extends string = string> {
   readonly open = model(false);
   /** The open invoice as the header writes it, e.g. `A-0001 · 0.00 CUP`. */
   readonly reference = input.required<string>();
   readonly pending = input.required<number>();
-  readonly savedCount = input.required<number>();
-  /** The number a new invoice would take, e.g. `A-0002`. */
-  readonly nextReference = input.required<string>();
-  readonly chosen = output<MenuDrawerCommand>();
+  /** The same commands as the "Más" menu, in order; consecutive items of a group sit together. */
+  readonly items = input.required<readonly MenuItem<T>[]>();
+  readonly chosen = output<T>();
+  /** The Res. 55 seal row was chosen. */
+  readonly sealActivated = output<void>();
+
+  protected readonly groupId = `menu-drawer-group-${nextId++}`;
+
+  /** The items split into runs of one group each, in order. */
+  protected readonly groups = computed(() => {
+    const groups: { label: string; items: MenuItem<T>[] }[] = [];
+    for (const item of this.items()) {
+      const last = groups[groups.length - 1];
+      if (last?.label === item.group) {
+        last.items.push(item);
+      } else {
+        groups.push({ label: item.group, items: [item] });
+      }
+    }
+    return groups;
+  });
 }

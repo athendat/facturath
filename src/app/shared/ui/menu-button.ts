@@ -79,12 +79,12 @@ let nextId = 0;
     }
   `,
 })
-export class MenuButton {
+export class MenuButton<T extends string = string> {
   /** The button's visible text and accessible name. */
   readonly label = input.required<string>();
-  readonly items = input.required<readonly MenuItem[]>();
+  readonly items = input.required<readonly MenuItem<T>[]>();
   /** The id of the item the user chose. */
-  readonly chosen = output<string>();
+  readonly chosen = output<T>();
 
   protected readonly open = signal(false);
   /** Which item the menu focuses as it opens. */
@@ -107,7 +107,7 @@ export class MenuButton {
     }
   }
 
-  protected choose(id: string): void {
+  protected choose(id: T): void {
     this.close(true);
     this.chosen.emit(id);
   }

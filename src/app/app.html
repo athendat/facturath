@@ -8,7 +8,7 @@
       <app-compliance-seal
         class="wide-only"
         [pending]="store.pendingCount()"
-        (activated)="complianceOpen.set(true)"
+        (activated)="run('compliance')"
       />
       <span class="divider wide-only" aria-hidden="true"></span>
       <button type="button" class="secondary save" (click)="save()">
@@ -19,7 +19,7 @@
         <app-icon name="print" />
         <span>PDF<span class="print-rest"> / Imprimir</span></span>
       </button>
-      <app-menu-button class="wide-only" label="Más" [items]="moreItems()" (chosen)="run($event)" />
+      <app-menu-button class="wide-only" label="Más" [items]="menuItems()" (chosen)="run($event)" />
       <button
         #hamburger
         type="button"
@@ -59,9 +59,9 @@
     [(open)]="menuOpen"
     [reference]="store.headerReference()"
     [pending]="store.pendingCount()"
-    [savedCount]="saved.count()"
-    [nextReference]="nextReference()"
+    [items]="menuItems()"
     (chosen)="runFromMenu($event)"
+    (sealActivated)="runFromMenu('compliance')"
     data-print-hide
   />
 }

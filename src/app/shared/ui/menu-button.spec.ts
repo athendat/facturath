@@ -10,11 +10,11 @@ import { MenuButton, type MenuItem } from './menu-button';
   `,
 })
 class Host {
-  readonly items: readonly MenuItem[] = [
-    { id: 'new', label: 'Nueva factura', icon: 'new', detail: 'A-0002' },
-    { id: 'saved', label: 'Facturas guardadas', icon: 'list', detail: '0', separatorBefore: true },
-    { id: 'file', label: 'Exportar / importar', icon: 'file' },
-    { id: 'settings', label: 'Ajustes', icon: 'settings', separatorBefore: true },
+  readonly items: readonly MenuItem<'new' | 'saved' | 'file' | 'settings'>[] = [
+    { id: 'new', label: 'Nueva factura', icon: 'new', detail: 'A-0002', group: 'Esta factura' },
+    { id: 'saved', label: 'Facturas guardadas', icon: 'list', detail: '0', group: 'Tus facturas' },
+    { id: 'file', label: 'Exportar / importar', icon: 'file', group: 'Tus facturas' },
+    { id: 'settings', label: 'Ajustes', icon: 'settings', group: 'App' },
   ];
   readonly chosen: string[] = [];
 }
@@ -68,7 +68,7 @@ describe('MenuButton', () => {
     expect(menu()).toBeNull();
   });
 
-  it('opens a labelled menu of items and separators on click, focusing the first item', async () => {
+  it('opens a labelled menu with a separator between groups on click, focusing the first item', async () => {
     await open();
 
     expect(button().getAttribute('aria-expanded')).toBe('true');

@@ -9,16 +9,19 @@ import {
 } from '@angular/core';
 import { Icon, type IconName } from './icon';
 
-/** One entry of a `MenuButton` menu. */
-export interface MenuItem {
+/** One command of a menu; `T` is the set of commands, so a choice reports a known one. */
+export interface MenuItem<T extends string = string> {
   /** What `chosen` reports. */
-  readonly id: string;
+  readonly id: T;
   readonly label: string;
   readonly icon: IconName;
   /** A short value after the label, such as a count or the next number. */
   readonly detail?: string;
-  /** Draws a separator above the item, to group the ones below it. */
-  readonly separatorBefore?: boolean;
+  /**
+   * What the command acts on. Consecutive items of one group sit together: a menu draws a
+   * separator between groups, the phone menu a labelled group.
+   */
+  readonly group: string;
 }
 
 /** Which item of a menu takes focus as it opens. */
@@ -41,7 +44,7 @@ export type MenuStart = 'first' | 'last';
       (keydown)="onKeydown($event)"
     >
       @for (item of items(); track item.id; let index = $index) {
-        @if (item.separatorBefore) {
+        @if (index > 0 && item.group !== items()[index - 1].group) {
           <div class="separator" role="separator"></div>
         }
         <button
@@ -122,14 +125,14 @@ export type MenuStart = 'first' | 'last';
     }
   `,
 })
-export class MenuList {
-  readonly items = input.required<readonly MenuItem[]>();
+export class MenuList<T extends string = string> {
+  readonly items = input.required<readonly MenuItem<T>[]>();
   readonly menuId = input.required<string>();
   /** The id of the button that names the menu. */
   readonly labelledBy = input.required<string>();
   /** Which item takes focus as the menu appears. */
   readonly start = input<MenuStart>('first');
-  readonly chosen = output<string>();
+  readonly chosen = output<T>();
   /** The menu asks to close; `true` when focus should go back to the button (Escape). */
   readonly dismissed = output<boolean>();
 
