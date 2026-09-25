@@ -387,6 +387,39 @@ describe('App', () => {
       }
     });
 
+    /** Opens `item` from the phone menu, checks focus is in its panel, closes it with Escape. */
+    async function openAndCloseFromMenu(item: string, heading: string): Promise<void> {
+      await openMenu();
+      findByText(dialog() as HTMLElement, 'button', item)?.click();
+      await fixture.whenStable();
+
+      const panel = dialog();
+      expect(panel?.querySelector('h2')?.textContent?.trim()).toBe(heading);
+      expect(panel?.contains(document.activeElement)).toBe(true);
+
+      await escape();
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
+    }
+
+    it('keeps focus in a panel opened from the drawer, the same one twice and others after it', async () => {
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('Exportar / importar', 'Archivo');
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+      await openAndCloseFromMenu('11 Res. 55 · 11 pendientes Ver', 'Datos obligatorios');
+    });
+
+    it('keeps focus in a panel that already existed before the drawer was first opened', async () => {
+      // Opened once from Más, the settings panel exists before the menu drawer does, so its
+      // focus hook runs first on the render that swaps the drawer for the panel.
+      await chooseFromMore(fixture, 'Ajustes');
+      await escape();
+      expect(dialog()).toBeNull();
+
+      await openAndCloseFromMenu('Ajustes', 'Ajustes');
+    });
+
     it('starts a new invoice from the drawer and closes it', async () => {
       findButton(compiled, 'Guardar')?.click();
       await fixture.whenStable();

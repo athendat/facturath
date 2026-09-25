@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   PendingTasks,
   afterNextRender,
   computed,
@@ -57,6 +58,7 @@ export class App {
   private readonly updateNotifier = inject(UpdateNotifier);
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
+  private readonly injector = inject(Injector);
   private readonly hamburger = viewChild.required<ElementRef<HTMLButtonElement>>('hamburger');
 
   /** Whether the phone menu drawer is open. */
@@ -140,18 +142,26 @@ export class App {
   }
 
   /**
-   * Runs a command from the phone menu. The menu closes first and focus goes back to the
-   * hamburger before any panel opens, so the panel takes the hamburger as the control to
-   * return focus to, not a row of a menu that is no longer there.
+   * Runs a command from the phone menu. The menu closes and focus goes back to the hamburger
+   * first; the command runs only after the render that takes the menu away, once its drawer
+   * has handed focus back. Run in the same render, the closing drawer and an opening panel
+   * would both move focus, and whichever ran last would win: the hamburger could take focus
+   * out of the panel that just opened. Opened afterwards, the panel takes the hamburger as the
+   * control to return focus to.
    */
   protected runFromMenu(command: MenuDrawerCommand): void {
     this.menuOpen.set(false);
     this.hamburger().nativeElement.focus();
-    if (command === 'compliance') {
-      this.complianceOpen.set(true);
-    } else {
-      this.run(command);
-    }
+    afterNextRender(
+      () => {
+        if (command === 'compliance') {
+          this.complianceOpen.set(true);
+        } else {
+          this.run(command);
+        }
+      },
+      { injector: this.injector },
+    );
   }
 
   /** Saves into history; the draft slot follows so it never lags behind. */
