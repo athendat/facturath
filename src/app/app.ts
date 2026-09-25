@@ -1,4 +1,13 @@
-import { Component, PendingTasks, afterNextRender, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  PendingTasks,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
@@ -16,6 +25,7 @@ import { SettingsPanel } from './features/settings/settings-panel';
 import { ComplianceSeal } from './shared/ui/compliance-seal';
 import { Icon } from './shared/ui/icon';
 import { MenuButton, type MenuItem } from './shared/ui/menu-button';
+import { MenuDrawer, type MenuDrawerCommand } from './shared/ui/menu-drawer';
 import { ToastHost } from './shared/ui/toast-host';
 
 export const SAVING_DISABLED_NOTICE =
@@ -30,6 +40,7 @@ export const SAVING_DISABLED_NOTICE =
     Icon,
     InvoiceEditor,
     MenuButton,
+    MenuDrawer,
     SavedInvoicesDrawer,
     SettingsPanel,
     ToastHost,
@@ -46,6 +57,10 @@ export class App {
   private readonly updateNotifier = inject(UpdateNotifier);
   private readonly autosave = inject(DraftAutosave);
   private readonly pendingTasks = inject(PendingTasks);
+  private readonly hamburger = viewChild.required<ElementRef<HTMLButtonElement>>('hamburger');
+
+  /** Whether the phone menu drawer is open. */
+  protected readonly menuOpen = signal(false);
 
   protected readonly drawerOpen = signal(false);
   protected readonly settingsOpen = signal(false);
@@ -121,6 +136,21 @@ export class App {
       case 'settings':
         this.settingsOpen.set(true);
         break;
+    }
+  }
+
+  /**
+   * Runs a command from the phone menu. The menu closes first and focus goes back to the
+   * hamburger before any panel opens, so the panel takes the hamburger as the control to
+   * return focus to, not a row of a menu that is no longer there.
+   */
+  protected runFromMenu(command: MenuDrawerCommand): void {
+    this.menuOpen.set(false);
+    this.hamburger().nativeElement.focus();
+    if (command === 'compliance') {
+      this.complianceOpen.set(true);
+    } else {
+      this.run(command);
     }
   }
 

@@ -21,9 +21,13 @@
       </button>
       <app-menu-button class="wide-only" label="Más" [items]="moreItems()" (chosen)="run($event)" />
       <button
+        #hamburger
         type="button"
         class="icon-button hamburger"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="menuOpen()"
         [attr.aria-label]="menuLabel()"
+        (click)="menuOpen.set(true)"
       >
         <app-icon name="menu" />
         <!-- The phone header has no seal, so the hamburger carries the count: as a badge for
@@ -48,8 +52,19 @@
   FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce
   <a href="https://balanc.athendat.site" target="_blank" rel="noopener">BALANC</a>.
 </footer>
-<!-- Each panel is its own chunk, fetched the first time it opens (the service worker prefetches
+<!-- The phone menu and each panel are a chunk of their own, fetched the first time it opens (the service worker prefetches
      them for offline use), so the initial bundle stays under budget (#41). -->
+@defer (when menuOpen()) {
+  <app-menu-drawer
+    [(open)]="menuOpen"
+    [reference]="store.headerReference()"
+    [pending]="store.pendingCount()"
+    [savedCount]="saved.count()"
+    [nextReference]="nextReference()"
+    (chosen)="runFromMenu($event)"
+    data-print-hide
+  />
+}
 @defer (when drawerOpen()) {
   <app-saved-invoices-drawer [(open)]="drawerOpen" (opened)="openSaved($event)" data-print-hide />
 }

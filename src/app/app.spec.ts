@@ -283,6 +283,124 @@ describe('App', () => {
     });
   });
 
+  describe('phone menu', () => {
+    function hamburger(): HTMLButtonElement | null {
+      return compiled.querySelector<HTMLButtonElement>('.app-header .hamburger');
+    }
+
+    function dialog(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('[role="dialog"]');
+    }
+
+    async function openMenu(): Promise<void> {
+      hamburger()?.focus();
+      hamburger()?.click();
+      await fixture.whenStable();
+    }
+
+    async function escape(): Promise<void> {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+    }
+
+    it('carries the pending count on the hamburger, in its name and as a badge', async () => {
+      const badge = () => hamburger()?.querySelector('.badge');
+      expect(hamburger()?.getAttribute('aria-label')).toBe(
+        'Menú de acciones, 11 datos obligatorios pendientes',
+      );
+      expect(badge()?.textContent?.trim()).toBe('11');
+      expect(badge()?.getAttribute('aria-hidden')).toBe('true');
+
+      TestBed.inject(InvoiceStore).load(completeInvoice());
+      await fixture.whenStable();
+
+      expect(hamburger()?.getAttribute('aria-label')).toBe('Menú de acciones');
+      expect(badge()).toBeNull();
+    });
+
+    it('opens a print-hidden modal drawer with the invoice, the seal and the grouped commands', async () => {
+      expect(hamburger()?.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('false');
+
+      await openMenu();
+
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('true');
+      expect(dialog()?.getAttribute('aria-modal')).toBe('true');
+      expect(dialog()?.getAttribute('aria-label')).toBe('Menú');
+      expect(dialog()?.closest('[data-print-hide]')).not.toBeNull();
+      expect(visibleText(dialog()?.querySelector('.dhead .wordmark'))).toBe('FACTURATH');
+      expect(visibleText(dialog()?.querySelector('.dhead .ref'))).toBe(
+        `Factura ${TestBed.inject(InvoiceStore).headerReference()}`,
+      );
+      expect(visibleText(dialog()?.querySelector('app-compliance-seal'))).toBe(
+        '11 Res. 55 · 11 pendientes Ver',
+      );
+      const groups = Array.from(dialog()?.querySelectorAll('[role="group"]') ?? []).map((group) => [
+        document.getElementById(group.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+        ...Array.from(group.querySelectorAll('button')).map(visibleText),
+      ]);
+      expect(groups).toEqual([
+        ['Esta factura', 'Nueva factura A-0001'],
+        ['Tus facturas', 'Facturas guardadas 0', 'Exportar / importar'],
+        ['App', 'Ajustes'],
+      ]);
+      expect(visibleText(dialog()?.querySelector('.dfoot'))).toBe(
+        'Funciona sin conexión. Tus facturas se guardan solo en este dispositivo.',
+      );
+      expect(dialog()?.contains(document.activeElement)).toBe(true);
+    });
+
+    it('closes from its close button and on Escape, giving focus back to the hamburger', async () => {
+      await openMenu();
+      dialog()?.querySelector<HTMLButtonElement>('button[aria-label="Cerrar menú"]')?.click();
+      await fixture.whenStable();
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
+
+      await openMenu();
+      await escape();
+      expect(dialog()).toBeNull();
+      expect(hamburger()?.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(hamburger());
+    });
+
+    it('closes itself before opening a panel, and that panel gives focus back to the hamburger', async () => {
+      for (const [item, heading] of [
+        ['Facturas guardadas 0', 'Facturas guardadas'],
+        ['Exportar / importar', 'Archivo'],
+        ['Ajustes', 'Ajustes'],
+        ['11 Res. 55 · 11 pendientes Ver', 'Datos obligatorios'],
+      ]) {
+        await openMenu();
+        findByText(dialog() as HTMLElement, 'button', item)?.click();
+        await fixture.whenStable();
+
+        const dialogs = compiled.querySelectorAll('[role="dialog"]');
+        expect(dialogs).toHaveLength(1);
+        expect(dialogs[0].querySelector('h2')?.textContent?.trim()).toBe(heading);
+
+        await escape();
+        expect(dialog()).toBeNull();
+        expect(document.activeElement).toBe(hamburger());
+      }
+    });
+
+    it('starts a new invoice from the drawer and closes it', async () => {
+      findButton(compiled, 'Guardar')?.click();
+      await fixture.whenStable();
+      await openMenu();
+
+      findByText(dialog() as HTMLElement, 'button', 'Nueva factura A-0002')?.click();
+      await fixture.whenStable();
+
+      expect(TestBed.inject(InvoiceStore).invoice().number).toBe('0002');
+      expect(dialog()).toBeNull();
+      expect(document.activeElement).toBe(hamburger());
+    });
+  });
+
   describe('saved invoices', () => {
     function invoiceStore(): InvoiceStore {
       return TestBed.inject(InvoiceStore);

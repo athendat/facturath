@@ -150,6 +150,15 @@ describe('App accessible names', () => {
     expect(duplicateIds()).toEqual([]);
   });
 
+  it('names every control with the phone menu open', async () => {
+    compiled.querySelector<HTMLButtonElement>('.app-header .hamburger')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"]')).not.toBeNull();
+
+    expect(unnamed()).toEqual([]);
+    expect(duplicateIds()).toEqual([]);
+  });
+
   it('names every control of the saved invoices drawer', async () => {
     findButton(compiled, 'Guardar')?.click();
     await fixture.whenStable();

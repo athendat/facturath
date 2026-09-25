@@ -76,6 +76,15 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, 30_000);
 
+  it('passes axe with the phone menu open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    compiled.querySelector<HTMLButtonElement>('.app-header .hamburger')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"] [role="group"]')).not.toBeNull();
+
+    await expect(violations()).resolves.toEqual([]);
+  }, 30_000);
+
   it('passes axe with the saved invoices drawer open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
     findButton(compiled, 'Guardar')?.click();
