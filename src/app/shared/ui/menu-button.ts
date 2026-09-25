@@ -1,6 +1,6 @@
 import { Component, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { Icon } from './icon';
-import { MenuList, type MenuItem } from './menu-list';
+import { MenuList, type MenuItem, type MenuStart } from './menu-list';
 
 export type { MenuItem } from './menu-list';
 
@@ -88,14 +88,14 @@ export class MenuButton {
 
   protected readonly open = signal(false);
   /** Which item the menu focuses as it opens. */
-  protected readonly start = signal<'first' | 'last'>('first');
+  protected readonly start = signal<MenuStart>('first');
   protected readonly buttonId = `menu-button-${nextId}`;
   protected readonly menuId = `menu-${nextId++}`;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
 
-  protected openAt(start: 'first' | 'last'): void {
+  protected openAt(start: MenuStart): void {
     this.start.set(start);
     this.open.set(true);
   }

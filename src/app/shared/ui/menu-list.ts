@@ -21,6 +21,9 @@ export interface MenuItem {
   readonly separatorBefore?: boolean;
 }
 
+/** Which item of a menu takes focus as it opens. */
+export type MenuStart = 'first' | 'last';
+
 /**
  * The open menu of a `MenuButton`, a chunk of its own so the header's initial bundle only
  * carries the button. It focuses its first or last item as it appears and handles the keys
@@ -125,7 +128,7 @@ export class MenuList {
   /** The id of the button that names the menu. */
   readonly labelledBy = input.required<string>();
   /** Which item takes focus as the menu appears. */
-  readonly start = input<'first' | 'last'>('first');
+  readonly start = input<MenuStart>('first');
   readonly chosen = output<string>();
   /** The menu asks to close; `true` when focus should go back to the button (Escape). */
   readonly dismissed = output<boolean>();
