@@ -268,6 +268,17 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/features/settings/settings-panel.ts|.choice input|accent-color': nonText(SHEET),
   'src/app/features/settings/settings-panel.ts|.choice input:focus-visible|outline': nonText(SHEET),
 
+  // --- the Res. 55 seal, in the header and as the first row of the white phone menu (#61).
+  // Its dashed stamp line and the ring are currentColor, so the text rows cover them.
+  'src/app/shared/ui/compliance-seal.ts|.seal|background': surface,
+  'src/app/shared/ui/compliance-seal.ts|.seal|color': text([['--warning-bg']]),
+  'src/app/shared/ui/compliance-seal.ts|.seal.complete|background': surface,
+  'src/app/shared/ui/compliance-seal.ts|.seal.complete|color': text([['--success-bg']]),
+  'src/app/shared/ui/compliance-seal.ts|.seal:focus-visible|outline': nonText([
+    ...HEADER,
+    ...SHEET,
+  ]),
+
   // --- the drawer shell every panel sits in.
   'src/app/shared/ui/drawer.ts|.backdrop|background': surface,
   'src/app/shared/ui/drawer.ts|.panel|background': surface,
