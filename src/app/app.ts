@@ -168,6 +168,10 @@ export class App {
    * control to return focus to.
    */
   protected runFromMenu(command: HeaderCommand): void {
+    // A second tap before the closing render would queue the command again.
+    if (!this.menuOpen()) {
+      return;
+    }
     this.menuOpen.set(false);
     this.hamburger().nativeElement.focus();
     afterNextRender(() => this.run(command), { injector: this.injector });

@@ -420,6 +420,20 @@ describe('App', () => {
       await openAndCloseFromMenu('Ajustes', 'Ajustes');
     });
 
+    it('runs a command once when two taps land before the menu closes', async () => {
+      const startNew = vi.spyOn(TestBed.inject(InvoiceStore), 'startNew');
+      await openMenu();
+      const row = findByText(dialog() as HTMLElement, 'button', 'Nueva factura A-0001');
+
+      // Both taps land before the render that takes the menu away.
+      row?.click();
+      row?.click();
+      await fixture.whenStable();
+
+      expect(startNew).toHaveBeenCalledOnce();
+      expect(dialog()).toBeNull();
+    });
+
     it('starts a new invoice from the drawer and closes it', async () => {
       findButton(compiled, 'Guardar')?.click();
       await fixture.whenStable();
