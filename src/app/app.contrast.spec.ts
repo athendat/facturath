@@ -280,7 +280,7 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/shared/ui/compliance-seal.ts|.seal|color': text([['--warning-bg']]),
   'src/app/shared/ui/compliance-seal.ts|.seal.complete|background': surface,
   'src/app/shared/ui/compliance-seal.ts|.seal.complete|color': text([['--success-bg']]),
-  'src/app/shared/ui/compliance-seal.ts|.seal:focus-visible|outline': nonText([
+  'src/app/shared/ui/compliance-seal.ts|.seal:focus-visible|box-shadow': nonText([
     ...HEADER,
     ...SHEET,
   ]),

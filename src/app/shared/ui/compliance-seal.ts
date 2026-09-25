@@ -68,9 +68,9 @@ import { Icon } from './icon';
       color: var(--success-fg);
     }
 
+    /* The focus ring is a shadow, so the dashed stamp stays visible under it. */
     .seal:focus-visible {
-      outline: 2px solid var(--gem-900);
-      outline-offset: 2px;
+      box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--gem-900);
     }
 
     .ring {
