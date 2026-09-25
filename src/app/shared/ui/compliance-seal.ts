@@ -28,11 +28,7 @@ import { Icon } from './icon';
           {{ pending() }}
         }
       </span>
-      @if (pending() === 0) {
-        Res. 55 completa
-      } @else {
-        Res. 55 · {{ pending() }} pendientes
-      }
+      {{ status() }}
       @if (row()) {
         <span class="go">Ver</span>
       }
@@ -115,10 +111,13 @@ export class ComplianceSeal {
   readonly row = input(false);
   readonly activated = output<void>();
 
+  /** What the seal shows, and where its accessible name starts. */
+  protected readonly status = computed(() =>
+    this.pending() === 0 ? 'Res. 55 completa' : `Res. 55 · ${this.pending()} pendientes`,
+  );
+
   protected readonly name = computed(() => {
-    const pending = this.pending();
-    const status =
-      pending === 0 ? 'Res. 55 completa' : `Res. 55 · ${pending} pendientes, datos obligatorios`;
-    return this.row() ? `${status}. Ver` : status;
+    const name = this.pending() === 0 ? this.status() : `${this.status()}, datos obligatorios`;
+    return this.row() ? `${name}. Ver` : name;
   });
 }
