@@ -10,6 +10,13 @@ import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { FakeSwUpdate } from './core/testing/fake-sw-update';
 import { IMAGE_KINDS } from './domain/invoice';
 
+/**
+ * One full axe run over the whole app in jsdom takes about 30 s on a slower machine, so the
+ * old 30 s limit timed out at random, a different state each run (#61). 120 s leaves room
+ * without hiding a run that hangs.
+ */
+const AXE_TIMEOUT = 120_000;
+
 describe('App accessibility', () => {
   let fixture: ComponentFixture<App>;
 
@@ -50,7 +57,7 @@ describe('App accessibility', () => {
 
   it('passes axe with no violations', async () => {
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   // axe only reports page-has-heading-one against a whole document, which the jsdom run
   // above cannot do; a real-browser run on the built app found the page had no h1 (#15).
@@ -64,7 +71,7 @@ describe('App accessibility', () => {
     await fixture.whenStable();
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the Más menu open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -74,7 +81,7 @@ describe('App accessibility', () => {
     expect(more?.getAttribute('aria-expanded')).toBe('true');
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the phone menu open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -83,7 +90,7 @@ describe('App accessibility', () => {
     expect(compiled.querySelector('[role="dialog"] [role="group"]')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the saved invoices drawer open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -93,7 +100,7 @@ describe('App accessibility', () => {
     expect(compiled.querySelector('[role="dialog"] li')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the settings panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -101,7 +108,7 @@ describe('App accessibility', () => {
     expect(compiled.querySelector('[role="dialog"] h3')).not.toBeNull();
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the file panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -109,7 +116,7 @@ describe('App accessibility', () => {
     expect(compiled.querySelectorAll('[role="dialog"] input[type="file"]')).toHaveLength(2);
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the compliance panel open', async () => {
     const compiled = fixture.nativeElement as HTMLElement;
@@ -118,7 +125,7 @@ describe('App accessibility', () => {
     expect(compiled.querySelectorAll('[role="dialog"] li')).toHaveLength(13);
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 
   it('passes axe with the logo and both payment QR codes set', async () => {
     const images = TestBed.inject(ImagesStore);
@@ -129,5 +136,5 @@ describe('App accessibility', () => {
     expect(fixture.nativeElement.querySelectorAll('img').length).toBe(3);
 
     await expect(violations()).resolves.toEqual([]);
-  }, 30_000);
+  }, AXE_TIMEOUT);
 });
