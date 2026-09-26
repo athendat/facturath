@@ -9,11 +9,12 @@ import { LegalFooter } from './legal-footer';
 import { LineItemsTable } from './line-items-table';
 import { PartyBlock } from './party-block';
 import { PaymentQrControls } from './payment-qr-controls';
+import { PhoneDocument } from './phone-document';
 import { SignaturesBlock } from './signatures-block';
 import { TextBlock } from './text-block';
 import { TotalsPanel } from './totals-panel';
 
-/** The editable invoice sheet. */
+/** The editable invoice sheet, and the phone document that stands in for it on a phone screen. */
 @Component({
   selector: 'app-invoice-editor',
   imports: [
@@ -24,6 +25,7 @@ import { TotalsPanel } from './totals-panel';
     LineItemsTable,
     PartyBlock,
     PaymentQrControls,
+    PhoneDocument,
     SignaturesBlock,
     TextBlock,
     TotalsPanel,
@@ -69,6 +71,11 @@ import { TotalsPanel } from './totals-panel';
       }
       <app-legal-footer />
     </article>
+    <!-- A chunk of its own, fetched right after the first render, so the initial bundle stays
+         under budget; until it is there a phone shows the sheet (#64). -->
+    @defer (on immediate) {
+      <app-phone-document />
+    }
   `,
   styles: `
     /* Density only switches these; spacious is the layout the sheet has always had. */
@@ -168,6 +175,14 @@ import { TotalsPanel } from './totals-panel';
 
     .band > app-payment-qr-controls {
       flex: none;
+    }
+
+    /* A phone screen shows the phone document instead, once it has loaded; print always
+       shows the sheet (#64). */
+    @media screen and (max-width: 639.98px) {
+      :host:has(app-phone-document) .sheet {
+        display: none;
+      }
     }
 
     @media print {

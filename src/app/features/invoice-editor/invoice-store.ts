@@ -66,6 +66,9 @@ export class InvoiceStore {
 
   readonly totals = computed(() => formatTotals(this.rawTotals(), this.state().currency));
 
+  /** The total as an amount alone, for places that show the currency apart from it. */
+  readonly totalAmount = computed(() => formatAmount(this.rawTotals().total));
+
   /** Whether the exchange rate field is shown. */
   readonly needsExchangeRate = computed(() => needsExchangeRate(this.state().currency));
 
