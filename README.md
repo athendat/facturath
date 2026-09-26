@@ -36,10 +36,24 @@ The workflow needs two repository secrets:
 | `CLOUDFLARE_API_TOKEN`  | An API token created in the Cloudflare dashboard from the **Edit Cloudflare Workers** template (Workers Scripts: Edit on the account). |
 | `CLOUDFLARE_ACCOUNT_ID` | The account id shown in the Workers & Pages overview of the Cloudflare dashboard.                                                      |
 
-The first deploy creates a Worker named `facturath`; its public URL is
-`https://facturath.<account-subdomain>.workers.dev` and is also shown
-in the `production` environment of the repository. A custom domain is a
-later step.
+The public URL is **https://facturath.athendat.site**. The first deploy
+creates a Worker named `facturath` and attaches that custom domain
+(`routes` in `wrangler.jsonc`), which needs the `athendat.site` zone on
+the same Cloudflare account and the API token scoped to it. The
+`workers.dev` and preview URLs are turned off so search engines only
+see one copy of the site; a path that is not a file gets
+`public/404.html` with a 404 status.
+
+## Search engines
+
+Everything a crawler reads is static and costs no JavaScript: the head
+tags and JSON-LD in `src/index.html`, the About section after
+`<app-root>` in the same file (the page's only `h1`), and
+`public/robots.txt`, `public/sitemap.xml`, `public/og-image.png` and
+`public/404.html`. `src/app/index-html.spec.ts` keeps the Res. 55 list
+in step with `domain/compliance.ts` and the FAQ JSON-LD in step with
+the visible FAQ. After a deploy that changes any of it, check the page
+in Google's Rich Results Test and the link preview in a chat app.
 
 To deploy from a local machine instead, run `npx wrangler login` once
 and then `npm run build && npm run deploy`.

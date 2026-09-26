@@ -44,3 +44,13 @@
 
 /icons/*
   Cache-Control: public, max-age=86400
+
+# Crawl files and the link-preview image (#72): not hashed, a day is enough.
+/robots.txt
+  Cache-Control: public, max-age=86400
+
+/sitemap.xml
+  Cache-Control: public, max-age=86400
+
+/og-image.png
+  Cache-Control: public, max-age=86400

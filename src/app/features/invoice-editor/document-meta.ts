@@ -7,7 +7,7 @@ import { InvoiceStore } from './invoice-store';
   selector: 'app-document-meta',
   imports: [InlineInput],
   template: `
-    <h1 class="title">Factura</h1>
+    <h2 class="title">Factura</h2>
     <div class="row">
       <span class="label">No.</span>
       <app-inline-input
@@ -66,8 +66,9 @@ import { InvoiceStore } from './invoice-store';
       text-align: right;
     }
 
-    /* The document title is the page's only h1 (#15). Margin, size and weight are all
-       set here, so the user-agent h1 styles change nothing and the sheet stays identical. */
+    /* The document title is an h2: the page's h1 is the About section in index.html (#72;
+       it was the h1 since #15). Margin, size and weight are all set here, so the user-agent
+       heading styles change nothing and the sheet stays identical. */
     .title {
       margin: 0 0 var(--sp-1);
       font-size: var(--fs-14);
