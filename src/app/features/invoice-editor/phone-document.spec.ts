@@ -410,6 +410,19 @@ describe('PhoneDocument', () => {
     });
   });
 
+  // Safari on iOS does not focus a button on a tap, which would leave nothing to go back to.
+  it('gives focus back to the zone even when the tap that opened it did not focus it', async () => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    zone('Editar notas')?.click();
+    await fixture.whenStable();
+    expect(sheet()).not.toBeNull();
+
+    sheet()?.querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')?.click();
+    await fixture.whenStable();
+
+    expect(document.activeElement).toBe(zone('Editar notas'));
+  });
+
   it('closes on Listo and gives focus back to the zone that opened it', async () => {
     const opener = await openZone('Editar comprador');
 

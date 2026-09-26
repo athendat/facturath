@@ -17,7 +17,7 @@ import { Icon } from './icon';
       [id]="'zone-' + key()"
       [attr.aria-label]="name()"
       [attr.aria-describedby]="summaryId()"
-      (click)="activated.emit()"
+      (click)="onClick($event)"
     >
       <span class="summary" [id]="summaryId()">
         <ng-content />
@@ -100,4 +100,13 @@ export class ZoneButton {
   readonly activated = output<void>();
 
   protected readonly summaryId = computed(() => `zone-${this.key()}-summary`);
+
+  /**
+   * Takes focus before reporting the tap: Safari on iOS does not focus a tapped button, and
+   * whatever the zone opens gives focus back to it on close.
+   */
+  protected onClick(event: MouseEvent): void {
+    (event.currentTarget as HTMLElement).focus();
+    this.activated.emit();
+  }
 }

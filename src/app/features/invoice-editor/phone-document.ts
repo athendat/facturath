@@ -117,7 +117,7 @@ function joined(...parts: string[]): string {
             </span>
           </app-zone-button>
         }
-        <button type="button" id="add-line" class="add" (click)="addLine()">
+        <button type="button" id="add-line" class="add" (click)="addLine($event)">
           <app-icon name="new" /> Añadir renglón
         </button>
       </div>
@@ -211,6 +211,10 @@ function joined(...parts: string[]): string {
 
     .doc > * + * {
       border-top: 1px solid var(--border-1);
+    }
+
+    .doc > h1 + * {
+      border-top: 0;
     }
 
     .doc > .head {
@@ -372,8 +376,10 @@ export class PhoneDocument {
   protected readonly invoice = this.store.invoice;
   protected readonly notes = computed(() => pendingByZone(this.store.compliance()));
 
-  /** Adds a line at the end and opens its sheet. */
-  protected addLine(): void {
+  /** Adds a line at the end and opens its sheet, which gives focus back to this button. */
+  protected addLine(event: MouseEvent): void {
+    // Safari on iOS does not focus a tapped button.
+    (event.currentTarget as HTMLElement).focus();
     this.store.addLine();
     this.sheets.open(this.lineKey(this.invoice().lines.length - 1));
   }
