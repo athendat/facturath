@@ -71,11 +71,8 @@ import { TotalsPanel } from './totals-panel';
       }
       <app-legal-footer />
     </article>
-    <!-- A chunk of its own, fetched right after the first render, so the initial bundle stays
-         under budget; until it is there a phone shows the sheet (#64). -->
-    @defer (on immediate) {
-      <app-phone-document />
-    }
+    <!-- Prerendered with the sheet, so a phone paints its zones first (#69). -->
+    <app-phone-document />
   `,
   styles: `
     /* Density only switches these; spacious is the layout the sheet has always had. */
@@ -177,11 +174,10 @@ import { TotalsPanel } from './totals-panel';
       flex: none;
     }
 
-    /* A phone screen shows the phone document instead, once it has loaded; print always
-       shows the sheet (#64). */
-    /* The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
+    /* A phone screen shows the phone document instead; print always shows the sheet (#64).
+       The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
     @media screen and (max-width: 639.98px) {
-      :host:has(app-phone-document) .sheet {
+      .sheet {
         display: none;
       }
     }

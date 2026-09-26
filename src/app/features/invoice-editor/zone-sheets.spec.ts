@@ -34,9 +34,9 @@ describe('ZoneSheets on a phone', () => {
     expect(sheets.current()).toBe('buyer');
   });
 
-  // Until its chunk arrives the phone shows the inline sheet, so the field is there to focus;
-  // a sheet opened now would pop up by itself once the zones load.
-  it('falls back to the inline field while the phone document has not loaded yet', () => {
+  // The zones are prerendered with the page (#69), so this guards a state a phone should not
+  // reach: no sheet is opened with no zone to give focus back to.
+  it('falls back to the inline field when the zone is not in the page', () => {
     const inline = add('input', 'field-buyer-name');
 
     sheets.reveal('buyer.name');

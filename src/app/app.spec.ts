@@ -1,5 +1,5 @@
 import type { Provider } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockBehavior, TestBed } from '@angular/core/testing';
 import { SwUpdate } from '@angular/service-worker';
 import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
@@ -988,3 +988,27 @@ function completeInvoiceWithout(field: 'unit'): Invoice {
   const invoice = completeInvoice();
   return { ...invoice, lines: [{ ...invoice.lines[0], [field]: '' }] };
 }
+
+// The prerender and the first client render are the same template: what is there before any
+// `@defer` block loads is what a phone paints first (#69).
+describe('App before any lazy chunk loads', () => {
+  it('already has the phone zones and the action bar, and no zone sheet yet', async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        { provide: SwUpdate, useValue: new FakeSwUpdate() },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+      ],
+      deferBlockBehavior: DeferBlockBehavior.Manual,
+    }).compileComponents();
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(
+      compiled.querySelector('app-phone-document button[aria-label="Editar comprador"]'),
+    ).not.toBeNull();
+    expect(compiled.querySelector('app-action-bar button[aria-label="Guardar"]')).not.toBeNull();
+    expect(compiled.querySelector('app-zone-sheet')).toBeNull();
+  });
+});

@@ -50,18 +50,15 @@
 <main class="app-main">
   <app-invoice-editor />
 </main>
-<!-- Below 640px only: Guardar and PDF within the thumb's reach (#64). A chunk of its own, fetched
-     right after the first render to keep the initial bundle under budget; until it is there the
-     phone header keeps Guardar and PDF. -->
-@defer (on immediate) {
-  <app-action-bar
-    [currency]="store.invoice().currency"
-    [amount]="store.totalAmount()"
-    (saved)="save()"
-    (printed)="printer.print()"
-    data-print-hide
-  />
-}
+<!-- Below 640px only: Guardar and PDF within the thumb's reach (#64), there from the first
+     paint (#69). -->
+<app-action-bar
+  [currency]="store.invoice().currency"
+  [amount]="store.totalAmount()"
+  (saved)="save()"
+  (printed)="printer.print()"
+  data-print-hide
+/>
 <footer class="app-footer" data-print-hide>
   FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce
   <a href="https://balanc.athendat.site" target="_blank" rel="noopener">BALANC</a>.

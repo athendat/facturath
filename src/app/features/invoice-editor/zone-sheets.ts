@@ -28,9 +28,10 @@ export class ZoneSheets {
   /**
    * Puts the cursor on `field` wherever the screen shows it: in the inline sheet, or on a
    * phone in the bottom sheet of the zone that owns it. That zone takes focus first, so it is
-   * where focus goes back to when the sheet closes. Until the phone document has loaded a
-   * phone still shows the inline sheet, so the field is focused there and no sheet is left
-   * to pop open later. Browser only, from an event handler.
+   * where focus goes back to when the sheet closes. The zones are prerendered with the page
+   * (#69), so a phone always has the zone; should it ever be missing, the field is focused in
+   * the inline sheet and no sheet is left open with nothing to return to. Browser only, from
+   * an event handler.
    */
   reveal(field: FieldId): void {
     const zone = zoneOfField(field);
