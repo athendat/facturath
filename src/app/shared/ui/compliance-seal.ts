@@ -28,7 +28,8 @@ import { Icon } from './icon';
           {{ pending() }}
         }
       </span>
-      {{ status() }}<span class="rest">{{ rest() }}</span>
+      <!-- One flex item, so the seal's gap does not open between the two parts. -->
+      <span>{{ status() }}<span class="rest">{{ rest() }}</span></span>
       @if (row()) {
         &ngsp;<span class="go">Ver</span>
       }
