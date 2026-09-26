@@ -38,7 +38,7 @@ describe('pendingByZone', () => {
   it('says what each zone of a new invoice still needs, in the order its sheet asks for it', () => {
     expect(notes(createInvoice('new-1'))).toEqual({
       document: 'Falta fecha',
-      seller: 'Falta nombre, dirección, NIT, registro comercial, cuenta bancaria y sucursal bancaria',
+      seller: 'Falta nombre, NIT, dirección, registro comercial, cuenta bancaria y sucursal bancaria',
       buyer: 'Falta nombre, NIT o carné y dirección',
       concept: 'Falta concepto',
       carrier: 'Falta nombre, carné y matrícula',
@@ -67,7 +67,7 @@ describe('pendingByZone', () => {
       { code: '', description: 'Galletas', detail: '', unit: '', quantity: '0', unitPrice: '5' },
     ];
 
-    expect(notes(invoice)).toEqual({ 'line-1': 'Falta unidad y cantidad' });
+    expect(notes(invoice)).toEqual({ 'line-1': 'Falta cantidad y unidad' });
   });
 
   it('points a zero total at the totals, and the series and number at the document', () => {

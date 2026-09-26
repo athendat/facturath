@@ -3,13 +3,20 @@ import { Component, ElementRef, effect, input, model, viewChild } from '@angular
 /**
  * A full-size labelled field for a bottom sheet (#64): a visible label over a 48px control
  * with 16px text, which also keeps iOS from zooming in when it takes focus. Multiline makes
- * it a textarea. The parent gives the control its id, unique in the page.
+ * it a textarea, and a list of options a select. The parent gives the control its id,
+ * unique in the page.
  */
 @Component({
   selector: 'app-sheet-field',
   template: `
     <label class="label" [for]="inputId()">{{ label() }}</label>
-    @if (multiline()) {
+    @if (options(); as options) {
+      <select #field class="control" [id]="inputId()" (change)="onInput($event)">
+        @for (option of options; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    } @else if (multiline()) {
       <textarea
         #field
         class="control"
@@ -76,9 +83,12 @@ export class SheetField {
   /** The keyboard a phone shows: digits only, digits with a decimal separator, or text. */
   readonly inputMode = input<'numeric' | 'decimal' | null>(null);
   readonly multiline = input(false);
+  /** The values to pick from, which makes the field a select. */
+  readonly options = input<readonly string[] | null>(null);
 
   /** Inside an `@if`, so it only resolves once the view has rendered. */
-  private readonly field = viewChild<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('field');
+  private readonly field =
+    viewChild<ElementRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>('field');
 
   constructor() {
     // Only written when the control does not already hold the value, as in `InlineInput`:
@@ -93,6 +103,8 @@ export class SheetField {
   }
 
   protected onInput(event: Event): void {
-    this.value.set((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+    this.value.set(
+      (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value,
+    );
   }
 }

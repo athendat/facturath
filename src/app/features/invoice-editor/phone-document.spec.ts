@@ -34,7 +34,14 @@ function sample(): Invoice {
       bankBranch: '',
     },
     lines: [
-      { code: '', description: 'Pan de molde 500 g', detail: '', unit: 'u', quantity: '40', unitPrice: '120' },
+      {
+        code: '',
+        description: 'Pan de molde 500 g',
+        detail: '',
+        unit: 'u',
+        quantity: '40',
+        unitPrice: '120',
+      },
       { code: '', description: '', detail: '', unit: 'paq', quantity: '25', unitPrice: '85' },
     ],
     tax: { name: 'Impuesto sobre las ventas', percent: '10' },
@@ -110,7 +117,9 @@ describe('PhoneDocument', () => {
     expect(visibleText(zone('Editar comprador'))).toContain('Comprador Cafetería Los Pinos');
     expect(visibleText(zone('Editar concepto'))).toBe('Concepto de la operación Venta de pan');
     expect(visibleText(zone('Editar renglón 1'))).toBe('Pan de molde 500 g 40 u × 120 4,800.00');
-    expect(visibleText(zone('Editar renglón 2'))).toContain('Renglón sin descripción 25 paq × 85 2,125.00');
+    expect(visibleText(zone('Editar renglón 2'))).toContain(
+      'Renglón sin descripción 25 paq × 85 2,125.00',
+    );
     expect(visibleText(zone('Editar totales'))).toBe(
       'Subtotal 6,925.00 Descuento 0.00 Envío 0.00 Impuesto sobre las ventas 10 % 692.50 Total CUP 7,617.50',
     );
@@ -129,9 +138,9 @@ describe('PhoneDocument', () => {
     const pending = (name: string) => visibleText(zone(name)?.querySelector('.pending'));
     expect(pending('Editar comprador')).toBe('Falta NIT o carné y dirección');
     expect(pending('Editar renglón 2')).toBe('Falta descripción');
-    expect(zone('Editar comprador')?.querySelector('.pending .dot')?.getAttribute('aria-hidden')).toBe(
-      'true',
-    );
+    expect(
+      zone('Editar comprador')?.querySelector('.pending .dot')?.getAttribute('aria-hidden'),
+    ).toBe('true');
     expect(description(zone('Editar comprador'))).toContain('Falta NIT o carné y dirección');
     expect(zone('Editar renglón 1')?.querySelector('.pending')).toBeNull();
     expect(zone('Editar documento')?.querySelector('.pending')).toBeNull();
@@ -164,6 +173,11 @@ describe('PhoneDocument', () => {
     await fixture.whenStable();
   }
 
+  async function closeSheet(): Promise<void> {
+    sheet()?.querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')?.click();
+    await fixture.whenStable();
+  }
+
   async function openZone(name: string): Promise<HTMLButtonElement> {
     const button = zone(name) as HTMLButtonElement;
     button.focus();
@@ -177,7 +191,9 @@ describe('PhoneDocument', () => {
 
     expect(sheet()?.getAttribute('aria-modal')).toBe('true');
     expect(visibleText(sheet()?.querySelector('h2'))).toBe('Comprador');
-    expect(Array.from(sheet()?.querySelectorAll('label') ?? []).map(visibleText)).toEqual([
+    expect(
+      Array.from(sheet()?.querySelectorAll('app-sheet-field label') ?? []).map(visibleText),
+    ).toEqual([
       'Nombre o razón social',
       'NIT',
       'Carné de identidad',
@@ -203,6 +219,122 @@ describe('PhoneDocument', () => {
     expect(store.invoice().buyer).toMatchObject({ nit: '01234567891', address: 'Calle 5' });
     expect(visibleText(zone('Editar comprador'))).toContain('NIT 01234567891 · Calle 5');
     expect(zone('Editar comprador')?.querySelector('.pending')).toBeNull();
+  });
+
+  // Each zone, its sheet heading, the labels in order, and one edit with where it lands.
+  const SHEETS: [
+    zone: string,
+    heading: string,
+    labels: string[],
+    edit: [string, string, (i: Invoice) => string],
+  ][] = [
+    [
+      'Editar emisor',
+      'Emisor',
+      [
+        'Nombre o razón social',
+        'NIT',
+        'Dirección',
+        'Registro comercial',
+        'Cuenta bancaria',
+        'Sucursal bancaria',
+      ],
+      ['Dirección', 'Calle 9', (i) => i.seller.address],
+    ],
+    [
+      'Editar documento',
+      'Documento',
+      ['Serie', 'Número', 'Fecha de emisión', 'Moneda'],
+      ['Número', '0007', (i) => i.number],
+    ],
+    [
+      'Editar concepto',
+      'Concepto',
+      ['Concepto de la operación'],
+      ['Concepto de la operación', 'Venta', (i) => i.concept],
+    ],
+    [
+      'Editar totales',
+      'Totales',
+      ['Descuento', 'Envío', 'Nombre del impuesto', 'Porcentaje del impuesto'],
+      ['Porcentaje del impuesto', '10', (i) => i.tax.percent],
+    ],
+    ['Editar notas', 'Notas', ['Notas'], ['Notas', 'Entregar antes del lunes', (i) => i.notes]],
+    [
+      'Editar condiciones y QR',
+      'Condiciones y QR',
+      ['Términos'],
+      ['Términos', 'Pago a 30 días', (i) => i.terms],
+    ],
+    [
+      'Editar transportista',
+      'Transportista',
+      ['Nombre', 'Carné de identidad', 'Matrícula', 'Carta de porte', 'Casilla del ferrocarril'],
+      ['Matrícula', 'P123456', (i) => i.carrier.plate],
+    ],
+    [
+      'Editar firmas',
+      'Firmas',
+      ['Quien entrega', 'Quien recibe', 'Transportador', 'Quien contabiliza'],
+      ['Quien recibe', 'Luis', (i) => i.signatures.receives],
+    ],
+  ];
+
+  it.each(SHEETS)(
+    'opens its sheet from %s and edits the invoice there',
+    async (name, heading, labels, edit) => {
+      await openZone(name);
+
+      expect(visibleText(sheet()?.querySelector('h2'))).toBe(heading);
+      expect(
+        Array.from(sheet()?.querySelectorAll('app-sheet-field label') ?? []).map(visibleText),
+      ).toEqual(labels);
+      const [label, text, read] = edit;
+      await type(label, text);
+      expect(read(store.invoice())).toBe(text);
+    },
+  );
+
+  it('puts the logo in the seller sheet and the payment QR codes in the terms sheet', async () => {
+    await openZone('Editar emisor');
+    expect(sheet()?.querySelector('input[type="file"][aria-label="Subir logo"]')).not.toBeNull();
+    await closeSheet();
+
+    await openZone('Editar condiciones y QR');
+    expect(
+      Array.from(sheet()?.querySelectorAll('input[type="file"]') ?? []).map((input) =>
+        input.getAttribute('aria-label'),
+      ),
+    ).toEqual(['Subir QR Transfermóvil', 'Subir QR EnZona']);
+  });
+
+  it('uses full-size text areas for the free text, and decimal keyboards for amounts', async () => {
+    await openZone('Editar notas');
+    expect(field('Notas')?.tagName).toBe('TEXTAREA');
+    await closeSheet();
+
+    await openZone('Editar totales');
+    for (const label of ['Descuento', 'Envío', 'Porcentaje del impuesto']) {
+      expect(field(label)?.getAttribute('inputmode'), label).toBe('decimal');
+    }
+    await type('Descuento', '5');
+    expect(visibleText(zone('Editar totales'))).toContain('Descuento 5.00');
+  });
+
+  it('picks the currency in the document sheet, asking for the exchange rate when it is not CUP', async () => {
+    await openZone('Editar documento');
+    expect(field('Fecha de emisión')?.type).toBe('date');
+    const currency = field('Moneda') as unknown as HTMLSelectElement;
+    expect(currency.tagName).toBe('SELECT');
+
+    currency.value = 'USD';
+    currency.dispatchEvent(new Event('change', { bubbles: true }));
+    await fixture.whenStable();
+    await type('Tasa de cambio a CUP', '120');
+
+    expect(store.invoice()).toMatchObject({ currency: 'USD', exchangeRate: '120' });
+    expect(field('Tasa de cambio a CUP')?.getAttribute('inputmode')).toBe('decimal');
+    expect(visibleText(zone('Editar documento'))).toContain('Moneda USD');
   });
 
   it('closes on Listo and gives focus back to the zone that opened it', async () => {
