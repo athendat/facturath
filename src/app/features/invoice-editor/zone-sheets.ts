@@ -2,7 +2,7 @@ import { DOCUMENT, Service, inject, signal } from '@angular/core';
 import { FieldFocus } from '../../core/field-focus';
 import { PhoneLayout } from '../../core/phone-layout';
 import type { FieldId } from '../../domain/compliance';
-import { sheetFieldId, zoneOfField, type ZoneKey } from './zones';
+import { sheetFieldId, zoneElementId, zoneOfField, type ZoneKey } from './zones';
 
 /** Which zone of the phone document has its bottom sheet open, if any (#64). */
 @Service()
@@ -28,15 +28,18 @@ export class ZoneSheets {
   /**
    * Puts the cursor on `field` wherever the screen shows it: in the inline sheet, or on a
    * phone in the bottom sheet of the zone that owns it. That zone takes focus first, so it is
-   * where focus goes back to when the sheet closes. Browser only, from an event handler.
+   * where focus goes back to when the sheet closes. Until the phone document has loaded a
+   * phone still shows the inline sheet, so the field is focused there and no sheet is left
+   * to pop open later. Browser only, from an event handler.
    */
   reveal(field: FieldId): void {
-    if (!this.layout.active()) {
+    const zone = zoneOfField(field);
+    const zoneButton = this.layout.active() && this.document.getElementById(zoneElementId(zone));
+    if (!zoneButton) {
       this.fieldFocus.focus(field);
       return;
     }
-    const zone = zoneOfField(field);
-    this.document.getElementById(`zone-${zone}`)?.focus();
+    zoneButton.focus();
     this.focusRequest = sheetFieldId(field);
     this.open(zone);
   }

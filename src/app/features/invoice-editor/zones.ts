@@ -63,21 +63,39 @@ export function sheetFieldId(field: FieldId): string {
   return `sheet-${fieldElementId(field)}`;
 }
 
+/** The DOM id of a zone's button; a sheet gives focus back to it. */
+export function zoneElementId(zone: ZoneKey): string {
+  return `zone-${zone}`;
+}
+
+/** The DOM id of Añadir renglón, where focus goes after the last line is removed. */
+export const ADD_LINE_ELEMENT_ID = 'add-line';
+
+/** What the terms zone and its sheet are called: the payment QR codes are edited there too. */
+export function termsTitle(showPaymentQr: boolean): string {
+  return showPaymentQr ? 'Condiciones y QR' : 'Condiciones';
+}
+
+/** The first part of a field id, e.g. `buyer` for `buyer.nit` and `lines` for `lines.0.unit`. */
+type Section = FieldId extends infer F ? (F extends `${infer S}.${string}` ? S : F) : never;
+
+/** Every section but the lines, which get a zone each; a new section fails to compile here. */
+const ZONE_OF_SECTION: Record<Exclude<Section, 'lines'>, ZoneKey> = {
+  issueDate: 'document',
+  series: 'document',
+  number: 'document',
+  concept: 'concept',
+  seller: 'seller',
+  buyer: 'buyer',
+  carrier: 'carrier',
+  signatures: 'signatures',
+  tax: 'totals',
+};
+
 /** The zone whose sheet edits `field`. */
 export function zoneOfField(field: FieldId): ZoneKey {
-  const [section, index] = field.split('.');
-  switch (section) {
-    case 'issueDate':
-    case 'series':
-    case 'number':
-      return 'document';
-    case 'lines':
-      return `line-${Number(index)}`;
-    case 'tax':
-      return 'totals';
-    default:
-      return section as 'seller' | 'buyer' | 'concept' | 'carrier' | 'signatures';
-  }
+  const [section, index] = field.split('.') as [Section, string?];
+  return section === 'lines' ? `line-${Number(index)}` : ZONE_OF_SECTION[section];
 }
 
 /** The key `field` has in `NOUNS`: its section and name, without a line index. */
