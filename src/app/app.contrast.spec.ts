@@ -326,6 +326,8 @@ const PAINTED: Record<string, Requirement> = {
 
   // --- the drawer shell every panel sits in.
   'src/app/shared/ui/drawer.ts|.backdrop|background': surface,
+  // The bottom sheet's scrim is darker than the side panels' (#64).
+  'src/app/shared/ui/drawer.ts|.backdrop.bottom|background': surface,
   'src/app/shared/ui/drawer.ts|.panel|background': surface,
   'src/app/shared/ui/drawer.ts|.panel|box-shadow': decorative(
     'a drop shadow separating the panel from the page',
@@ -335,6 +337,18 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/shared/ui/drawer.ts|.close|background': surface,
   'src/app/shared/ui/drawer.ts|.close:hover|background': surface,
   'src/app/shared/ui/drawer.ts|.close:focus-visible|outline': nonText(SHEET),
+
+  // --- the bottom sheet a phone zone opens (#64): white, its close button tinted under the pointer.
+  'src/app/shared/ui/bottom-sheet.ts|.handle|background': decorative(
+    'a grip hinting that the sheet rises from the bottom; the close button and Listo close it',
+  ),
+  'src/app/shared/ui/bottom-sheet.ts|.close|color': nonText([['--bg-0'], ['--bg-2']]),
+  'src/app/shared/ui/bottom-sheet.ts|.close:hover|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.done|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.done|color': text([['--bg-brand'], ['--gem-800']]),
+  'src/app/shared/ui/bottom-sheet.ts|.done:hover|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.close:focus-visible|outline': nonText(SHEET),
+  'src/app/shared/ui/bottom-sheet.ts|.done:focus-visible|outline': nonText(SHEET),
 
   // --- image control: the upload box is identified by its dashed boundary alone.
   'src/app/shared/ui/image-control.ts|.pick:focus-within|box-shadow': nonText(SHEET),
