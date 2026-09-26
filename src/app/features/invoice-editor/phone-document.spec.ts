@@ -337,6 +337,79 @@ describe('PhoneDocument', () => {
     expect(visibleText(zone('Editar documento'))).toContain('Moneda USD');
   });
 
+  describe('lines', () => {
+    function lineOf(description: string) {
+      return { code: '', description, detail: '', unit: 'u', quantity: '1', unitPrice: '10' };
+    }
+
+    function button(text: string): HTMLButtonElement | undefined {
+      return Array.from(element.querySelectorAll('button')).find((b) => visibleText(b) === text);
+    }
+
+    async function loadLines(...descriptions: string[]): Promise<void> {
+      store.load({ ...createInvoice('lines-1'), lines: descriptions.map(lineOf) });
+      await fixture.whenStable();
+    }
+
+    it('edits a line in its sheet, with the amount worked out live', async () => {
+      await openZone('Editar renglón 1');
+
+      expect(visibleText(sheet()?.querySelector('h2'))).toBe('Renglón 1');
+      expect(
+        Array.from(sheet()?.querySelectorAll('app-sheet-field label') ?? []).map(visibleText),
+      ).toEqual(['Descripción', 'Cantidad', 'Unidad', 'Precio unitario', 'Código', 'Detalle']);
+      expect(field('Cantidad')?.getAttribute('inputmode')).toBe('decimal');
+      expect(field('Precio unitario')?.getAttribute('inputmode')).toBe('decimal');
+
+      await type('Descripción', 'Pan');
+      await type('Cantidad', '3');
+      await type('Precio unitario', '2.5');
+
+      expect(store.invoice().lines[0]).toMatchObject({
+        description: 'Pan',
+        quantity: '3',
+        unitPrice: '2.5',
+      });
+      expect(visibleText(sheet()?.querySelector('.amount'))).toBe('Importe 7.50');
+      expect(visibleText(zone('Editar renglón 1'))).toContain('Pan 3 u × 2.5 7.50');
+    });
+
+    it('adds a line from Añadir renglón and opens its sheet', async () => {
+      button('Añadir renglón')?.click();
+      await fixture.whenStable();
+
+      expect(store.invoice().lines).toHaveLength(2);
+      expect(zone('Editar renglón 2')).not.toBeNull();
+      expect(visibleText(sheet()?.querySelector('h2'))).toBe('Renglón 2');
+    });
+
+    it('removes the line from Eliminar and puts focus on the line that takes its place', async () => {
+      await loadLines('Pan', 'Galletas', 'Transporte');
+      await openZone('Editar renglón 2');
+
+      const remove = button('Eliminar');
+      expect(remove?.closest('.footer')).not.toBeNull();
+      remove?.click();
+      await fixture.whenStable();
+
+      expect(store.invoice().lines.map((line) => line.description)).toEqual(['Pan', 'Transporte']);
+      expect(sheet()).toBeNull();
+      expect(document.activeElement).toBe(zone('Editar renglón 2'));
+      expect(visibleText(zone('Editar renglón 2'))).toContain('Transporte');
+    });
+
+    it('puts focus on Añadir renglón after removing the last line', async () => {
+      await loadLines('Pan', 'Galletas');
+      await openZone('Editar renglón 2');
+
+      button('Eliminar')?.click();
+      await fixture.whenStable();
+
+      expect(store.invoice().lines).toHaveLength(1);
+      expect(document.activeElement).toBe(button('Añadir renglón'));
+    });
+  });
+
   it('closes on Listo and gives focus back to the zone that opened it', async () => {
     const opener = await openZone('Editar comprador');
 

@@ -236,6 +236,18 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/features/invoice-editor/phone-document.ts|.total|border-top': SEPARATOR,
   'src/app/features/invoice-editor/phone-document.ts|.total|color': text(ZONE),
 
+  // --- the line sheet (#64): the live amount on a --bg-1 panel and a quiet Eliminar.
+  'src/app/features/invoice-editor/zone-sheet.ts|.amount|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.amount|color': text([['--bg-1']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.value|color': text([['--bg-1']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove|color': text([['--bg-0'], ['--danger-bg']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:hover|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:active|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:focus-visible|outline': nonText([
+    ['--bg-0'],
+    ['--danger-bg'],
+  ]),
+
   // --- legal footer.
   'src/app/features/invoice-editor/legal-footer.ts|:host|border-top': SEPARATOR,
   'src/app/features/invoice-editor/legal-footer.ts|p|color': text(SHEET),

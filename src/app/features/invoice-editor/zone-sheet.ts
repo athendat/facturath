@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, DOCUMENT, Injector, afterNextRender, computed, inject } from '@angular/core';
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import type { FieldId } from '../../domain/compliance';
@@ -7,6 +7,7 @@ import {
   isCurrency,
   type Carrier,
   type Invoice,
+  type LineItem,
   type Party,
   type PartyRole,
   type Signatures,
@@ -63,6 +64,15 @@ const CARRIER_LABELS: [keyof Carrier, string, 'numeric'?][] = [
   ['railwayBox', 'Casilla del ferrocarril'],
 ];
 
+const LINE_LABELS: [keyof LineItem, string, 'decimal'?][] = [
+  ['description', 'Descripción'],
+  ['quantity', 'Cantidad', 'decimal'],
+  ['unit', 'Unidad'],
+  ['unitPrice', 'Precio unitario', 'decimal'],
+  ['code', 'Código'],
+  ['detail', 'Detalle'],
+];
+
 const SIGNATURE_LABELS: [keyof Signatures, string][] = [
   ['delivers', 'Quien entrega'],
   ['receives', 'Quien recibe'],
@@ -105,10 +115,22 @@ const SIGNATURE_LABELS: [keyof Signatures, string][] = [
             (valueChange)="field.set($event)"
           />
         }
+        @if (lineIndex(); as index) {
+          <p class="amount">
+            <span>Importe</span>&ngsp;<span class="value">{{
+              store.lineAmounts()[index - 1]
+            }}</span>
+          </p>
+        }
         @if (zone() === 'terms' && settings.showPaymentQr()) {
           <app-payment-qr-controls />
         }
       </div>
+      @if (lineIndex(); as index) {
+        <button type="button" class="remove" sheetAction (click)="removeLine(index - 1)">
+          Eliminar
+        </button>
+      }
     </app-bottom-sheet>
   `,
   styles: `
@@ -117,19 +139,72 @@ const SIGNATURE_LABELS: [keyof Signatures, string][] = [
       flex-direction: column;
       gap: 14px;
     }
+
+    .amount {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 0;
+      padding: var(--sp-3);
+      border-radius: var(--radius-sm);
+      background: var(--bg-1);
+      color: var(--fg-2);
+      font-size: var(--fs-14);
+    }
+
+    .value {
+      color: var(--fg-1);
+      font-size: var(--fs-20);
+      font-weight: var(--fw-bold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .remove {
+      min-height: 48px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--danger-fg);
+      font-size: 15px;
+      font-weight: var(--fw-bold);
+      cursor: pointer;
+    }
+
+    .remove:hover,
+    .remove:active {
+      background: var(--danger-bg);
+    }
+
+    .remove:focus-visible {
+      outline: 2px solid var(--gem-900);
+      outline-offset: 2px;
+    }
   `,
 })
 export class ZoneSheet {
-  private readonly store = inject(InvoiceStore);
+  protected readonly store = inject(InvoiceStore);
   private readonly sheets = inject(ZoneSheets);
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
   protected readonly settings = inject(SettingsStore);
   protected readonly images = inject(ImagesStore);
 
   protected readonly zone = this.sheets.current;
   protected readonly invoice = this.store.invoice;
 
+  /** The open line, counted from 1 so it is truthy in the template; null for any other zone. */
+  protected readonly lineIndex = computed(() => {
+    const match = /^line-(\d+)$/.exec(this.zone() ?? '');
+    return match ? Number(match[1]) + 1 : null;
+  });
+
   protected readonly heading = computed(() => {
     const zone = this.zone();
+    const line = this.lineIndex();
+    if (line !== null) {
+      return `Renglón ${line}`;
+    }
     if (zone === 'terms') {
       return this.settings.showPaymentQr() ? 'Condiciones y QR' : 'Condiciones';
     }
@@ -166,7 +241,7 @@ export class ZoneSheet {
           ),
         );
       default:
-        return [];
+        return this.lineFields(invoice);
     }
   });
 
@@ -174,6 +249,38 @@ export class ZoneSheet {
     if (!open) {
       this.sheets.close();
     }
+  }
+
+  /**
+   * Removes the line and closes the sheet. Focus goes to the line that takes its place, or
+   * to Añadir renglón when it was the last; it runs after the drawer hands focus back to
+   * the opener, which may be the zone of the line just removed.
+   */
+  protected removeLine(index: number): void {
+    this.store.removeLine(index);
+    this.sheets.close();
+    const target = index < this.invoice().lines.length ? `zone-line-${index}` : 'add-line';
+    afterNextRender(() => this.document.getElementById(target)?.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  private lineFields(invoice: Invoice): SheetFieldSpec[] {
+    const line = this.lineIndex();
+    if (line === null) {
+      return [];
+    }
+    const index = line - 1;
+    return LINE_LABELS.map(([key, label, inputMode]) => ({
+      id:
+        key === 'code' || key === 'detail'
+          ? `sheet-field-line-${key}`
+          : sheetFieldId(`lines.${index}.${key}`),
+      label,
+      value: invoice.lines[index]?.[key] ?? '',
+      inputMode,
+      set: (value: string) => this.store.updateLine(index, key, value),
+    }));
   }
 
   /** The seller has no identity card field: a seller identifies by NIT. */

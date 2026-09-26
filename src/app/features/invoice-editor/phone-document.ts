@@ -117,7 +117,9 @@ function joined(...parts: string[]): string {
             </span>
           </app-zone-button>
         }
-        <button type="button" class="add"><app-icon name="new" /> Añadir renglón</button>
+        <button type="button" id="add-line" class="add" (click)="addLine()">
+          <app-icon name="new" /> Añadir renglón
+        </button>
       </div>
       <app-zone-button
         key="totals"
@@ -369,6 +371,12 @@ export class PhoneDocument {
 
   protected readonly invoice = this.store.invoice;
   protected readonly notes = computed(() => pendingByZone(this.store.compliance()));
+
+  /** Adds a line at the end and opens its sheet. */
+  protected addLine(): void {
+    this.store.addLine();
+    this.sheets.open(this.lineKey(this.invoice().lines.length - 1));
+  }
 
   protected lineKey(index: number): ZoneKey {
     return `line-${index}`;
