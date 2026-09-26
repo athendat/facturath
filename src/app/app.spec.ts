@@ -284,6 +284,38 @@ describe('App', () => {
     });
   });
 
+  describe('phone action bar', () => {
+    function bar(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('app-action-bar');
+    }
+
+    it('shows the total with its currency, an icon-only Guardar and PDF, kept off paper', async () => {
+      expect(bar()?.hasAttribute('data-print-hide')).toBe(true);
+      expect(visibleText(bar()?.querySelector('.total'))).toBe('Total CUP 0.00');
+      const save = bar()?.querySelector<HTMLButtonElement>('button[aria-label="Guardar"]');
+      expect(visibleText(save)).toBe('');
+      expect(findButton(bar() as HTMLElement, 'PDF')?.classList.contains('primary')).toBe(true);
+
+      TestBed.inject(InvoiceStore).load(completeInvoice());
+      await fixture.whenStable();
+      expect(visibleText(bar()?.querySelector('.total'))).toBe('Total CUP 22.00');
+    });
+
+    it('saves and prints from the bar', async () => {
+      bar()?.querySelector<HTMLButtonElement>('button[aria-label="Guardar"]')?.click();
+      await fixture.whenStable();
+      expect(statusText()).toBe('Factura A-0001 guardada.');
+
+      findButton(bar() as HTMLElement, 'PDF')?.click();
+      expect(print).toHaveBeenCalledOnce();
+    });
+
+    it('follows the document, so its buttons come after the zones in the tab order', () => {
+      const main = compiled.querySelector('main');
+      expect(main?.nextElementSibling).toBe(bar());
+    });
+  });
+
   describe('phone menu', () => {
     function hamburger(): HTMLButtonElement | null {
       return compiled.querySelector<HTMLButtonElement>('.app-header .hamburger');

@@ -1,21 +1,23 @@
 <div class="app-top" data-print-hide>
   <header class="app-header">
     <span class="wordmark">FACTURATH</span>
-    <span class="reference wide-only">{{ store.headerReference() }}</span>
+    <span class="reference phone-and-wide">{{ store.headerReference() }}</span>
     <!-- One row for both widths: below 960px the seal and the Más menu give way to the
-         hamburger, Guardar keeps only its icon and PDF / Imprimir shortens to PDF (#61). -->
+         hamburger, Guardar keeps only its icon and PDF / Imprimir shortens to PDF (#61).
+         Below 640px the seal comes back as a compact chip and Guardar and PDF move to the
+         action bar at the bottom (#64). -->
     <div class="actions">
       <app-compliance-seal
-        class="wide-only"
+        class="phone-and-wide"
         [pending]="store.pendingCount()"
         (activated)="run('compliance')"
       />
       <span class="divider wide-only" aria-hidden="true"></span>
-      <button type="button" class="secondary save" (click)="save()">
+      <button type="button" class="secondary save not-phone" (click)="save()">
         <app-icon name="save" />
         <span class="save-label">Guardar</span>
       </button>
-      <button type="button" class="primary" (click)="printer.print()">
+      <button type="button" class="primary not-phone" (click)="printer.print()">
         <app-icon name="print" />
         <span>PDF<span class="print-rest"> / Imprimir</span></span>
       </button>
@@ -30,8 +32,8 @@
         (click)="menuOpen.set(true)"
       >
         <app-icon name="menu" />
-        <!-- The phone header has no seal, so the hamburger carries the count: as a badge for
-             the eye and in its accessible name for a screen reader. -->
+        <!-- From 640px to 959px the header has no seal, so the hamburger carries the count: as
+             a badge for the eye and in its accessible name for a screen reader. -->
         @if (store.pendingCount() > 0) {
           <span class="badge" aria-hidden="true">{{ store.pendingCount() }}</span>
         }
@@ -48,6 +50,18 @@
 <main class="app-main">
   <app-invoice-editor />
 </main>
+<!-- Below 640px only: Guardar and PDF within the thumb's reach (#64). A chunk of its own, fetched
+     right after the first render to keep the initial bundle under budget; until it is there the
+     phone header keeps Guardar and PDF. -->
+@defer (on immediate) {
+  <app-action-bar
+    [currency]="store.invoice().currency"
+    [amount]="store.totalAmount()"
+    (saved)="save()"
+    (printed)="printer.print()"
+    data-print-hide
+  />
+}
 <footer class="app-footer" data-print-hide>
   FACTURATH es gratis y funciona sin conexión. Para contabilidad completa, conoce
   <a href="https://balanc.athendat.site" target="_blank" rel="noopener">BALANC</a>.

@@ -387,6 +387,19 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/shared/ui/bottom-sheet.ts|.close:focus-visible|outline': nonText(SHEET),
   'src/app/shared/ui/bottom-sheet.ts|.done:focus-visible|outline': nonText(SHEET),
 
+  // --- the phone action bar (#64): white, fixed to the bottom of the screen.
+  'src/app/shared/ui/action-bar.ts|:host|border-top': SEPARATOR,
+  'src/app/shared/ui/action-bar.ts|:host|background': surface,
+  'src/app/shared/ui/action-bar.ts|.label|color': text(SHEET),
+  'src/app/shared/ui/action-bar.ts|.save|border': nonText(SHEET),
+  'src/app/shared/ui/action-bar.ts|.save|background': surface,
+  'src/app/shared/ui/action-bar.ts|.save|color': nonText([['--bg-0'], ['--bg-2']]),
+  'src/app/shared/ui/action-bar.ts|.save:active|background': surface,
+  'src/app/shared/ui/action-bar.ts|.primary|background': surface,
+  'src/app/shared/ui/action-bar.ts|.primary|color': text([['--bg-brand'], ['--gem-800']]),
+  'src/app/shared/ui/action-bar.ts|.primary:active|background': surface,
+  'src/app/shared/ui/action-bar.ts|button:focus-visible|outline': nonText(SHEET),
+
   // --- a full-size field in a white bottom sheet (#64).
   'src/app/shared/ui/sheet-field.ts|.label|color': text(SHEET),
   'src/app/shared/ui/sheet-field.ts|.control|border': nonText(SHEET),
