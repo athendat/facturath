@@ -52,6 +52,15 @@ describe('ComplianceSeal', () => {
     expect(seal().querySelector('.ring')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('keeps the words after the count apart, for the compact chip of a phone header to drop (#64)', async () => {
+    const rest = () => (seal().querySelector('.rest')?.textContent ?? '').trim();
+    expect(rest()).toBe('pendientes');
+
+    fixture.componentInstance.pending.set(0);
+    await fixture.whenStable();
+    expect(rest()).toBe('completa');
+  });
+
   it('adds a "Ver" cue as a full-width row', async () => {
     fixture.componentInstance.row.set(true);
     await fixture.whenStable();

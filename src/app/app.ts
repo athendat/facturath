@@ -23,6 +23,7 @@ import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesDrawer } from './features/saved-invoices/saved-invoices-drawer';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
 import { SettingsPanel } from './features/settings/settings-panel';
+import { ActionBar } from './shared/ui/action-bar';
 import { ComplianceSeal } from './shared/ui/compliance-seal';
 import { Icon } from './shared/ui/icon';
 import { MenuButton, type MenuItem } from './shared/ui/menu-button';
@@ -41,6 +42,7 @@ export const SAVING_DISABLED_NOTICE =
 @Component({
   selector: 'app-root',
   imports: [
+    ActionBar,
     ComplianceSeal,
     CompliancePanel,
     FilePanel,
@@ -75,7 +77,7 @@ export class App {
   protected readonly complianceOpen = signal(false);
   protected readonly fileOpen = signal(false);
 
-  /** The phone's hamburger carries the pending count, since its header has no seal. */
+  /** From 640px to 959px the hamburger carries the pending count, since that header has no seal. */
   protected readonly menuLabel = computed(() => {
     const pending = this.store.pendingCount();
     return pending === 0

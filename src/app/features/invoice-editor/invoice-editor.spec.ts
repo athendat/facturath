@@ -145,6 +145,17 @@ describe('InvoiceEditor', () => {
 
   // Dating the invoice and filling the seller block from the profile happen at the shell's
   // startup together with the draft restore; see app.spec.ts.
+  it('follows the sheet with the phone document, kept off paper, with its own field-free zones', async () => {
+    await render();
+
+    const sheet = element.querySelector('article.sheet');
+    const phone = element.querySelector('app-phone-document');
+    expect(sheet?.nextElementSibling).toBe(phone);
+    expect(phone?.hasAttribute('data-print-hide')).toBe(true);
+    // Only the sheet carries the field ids the compliance panel focuses, so no id is doubled.
+    expect(phone?.querySelector('[id^="field-"]')).toBeNull();
+  });
+
   it('leaves the seller block empty when nothing was remembered', async () => {
     await render();
 

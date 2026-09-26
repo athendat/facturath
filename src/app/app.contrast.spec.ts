@@ -113,6 +113,8 @@ const HEADER = [
   ['rgba(255, 255, 255, 0.94)', '--gray-100'],
   ['rgba(255, 255, 255, 0.94)', '--bg-0'],
 ] as const;
+/** A zone of the phone document (#64): white, and --gem-50 while pressed. */
+const ZONE = [['--bg-0'], ['--gem-50']] as const;
 /** An inline field: white at rest and on focus, tinted while the pointer is over it. */
 const FIELD = [['--bg-0'], ['--gray-100']] as const;
 
@@ -210,6 +212,41 @@ const PAINTED: Record<string, Requirement> = {
   ),
   'src/app/features/invoice-editor/invoice-editor.ts|.head|border-bottom': SEPARATOR,
   'src/app/features/invoice-editor/invoice-editor.ts|.band|border-top': SEPARATOR,
+
+  // --- the phone document (#64): a white sheet of zones, each --gem-50 while pressed.
+  'src/app/features/invoice-editor/phone-document.ts|.doc|border': FRAME,
+  'src/app/features/invoice-editor/phone-document.ts|.doc|background': surface,
+  'src/app/features/invoice-editor/phone-document.ts|.doc|box-shadow': decorative(
+    'a drop shadow lifting the document off the page',
+  ),
+  'src/app/features/invoice-editor/phone-document.ts|.doc > * + *|border-top': SEPARATOR,
+  'src/app/features/invoice-editor/phone-document.ts|.doc > .head|border-top': SEPARATOR,
+  'src/app/features/invoice-editor/phone-document.ts|.label|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.sub|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.text|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.hint|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.initials|background': surface,
+  'src/app/features/invoice-editor/phone-document.ts|.initials|color': text([['--gem-50']]),
+  'src/app/features/invoice-editor/phone-document.ts|.add|border': nonText(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.add|background': surface,
+  'src/app/features/invoice-editor/phone-document.ts|.add|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.add:active|background': surface,
+  'src/app/features/invoice-editor/phone-document.ts|.add:focus-visible|outline': nonText(SHEET),
+  'src/app/features/invoice-editor/phone-document.ts|.row|color': text(ZONE),
+  'src/app/features/invoice-editor/phone-document.ts|.total|border-top': SEPARATOR,
+  'src/app/features/invoice-editor/phone-document.ts|.total|color': text(ZONE),
+
+  // --- the line sheet (#64): the live amount on a --bg-1 panel and a quiet Eliminar.
+  'src/app/features/invoice-editor/zone-sheet.ts|.amount|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.amount|color': text([['--bg-1']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.value|color': text([['--bg-1']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove|color': text([['--bg-0'], ['--danger-bg']]),
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:hover|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:active|background': surface,
+  'src/app/features/invoice-editor/zone-sheet.ts|.remove:focus-visible|outline': nonText([
+    ['--bg-0'],
+    ['--danger-bg'],
+  ]),
 
   // --- legal footer.
   'src/app/features/invoice-editor/legal-footer.ts|:host|border-top': SEPARATOR,
@@ -326,6 +363,8 @@ const PAINTED: Record<string, Requirement> = {
 
   // --- the drawer shell every panel sits in.
   'src/app/shared/ui/drawer.ts|.backdrop|background': surface,
+  // The bottom sheet's scrim is darker than the side panels' (#64).
+  'src/app/shared/ui/drawer.ts|.backdrop.bottom|background': surface,
   'src/app/shared/ui/drawer.ts|.panel|background': surface,
   'src/app/shared/ui/drawer.ts|.panel|box-shadow': decorative(
     'a drop shadow separating the panel from the page',
@@ -335,6 +374,44 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/shared/ui/drawer.ts|.close|background': surface,
   'src/app/shared/ui/drawer.ts|.close:hover|background': surface,
   'src/app/shared/ui/drawer.ts|.close:focus-visible|outline': nonText(SHEET),
+
+  // --- the bottom sheet a phone zone opens (#64): white, its close button tinted under the pointer.
+  'src/app/shared/ui/bottom-sheet.ts|.handle|background': decorative(
+    'a grip hinting that the sheet rises from the bottom; the close button and Listo close it',
+  ),
+  'src/app/shared/ui/bottom-sheet.ts|.close|color': nonText([['--bg-0'], ['--bg-2']]),
+  'src/app/shared/ui/bottom-sheet.ts|.close:hover|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.done|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.done|color': text([['--bg-brand'], ['--gem-800']]),
+  'src/app/shared/ui/bottom-sheet.ts|.done:hover|background': surface,
+  'src/app/shared/ui/bottom-sheet.ts|.close:focus-visible|outline': nonText(SHEET),
+  'src/app/shared/ui/bottom-sheet.ts|.done:focus-visible|outline': nonText(SHEET),
+
+  // --- the phone action bar (#64): white, fixed to the bottom of the screen.
+  'src/app/shared/ui/action-bar.ts|:host|border-top': SEPARATOR,
+  'src/app/shared/ui/action-bar.ts|:host|background': surface,
+  'src/app/shared/ui/action-bar.ts|.label|color': text(SHEET),
+  'src/app/shared/ui/action-bar.ts|.save|border': nonText(SHEET),
+  'src/app/shared/ui/action-bar.ts|.save|background': surface,
+  'src/app/shared/ui/action-bar.ts|.save|color': nonText([['--bg-0'], ['--bg-2']]),
+  'src/app/shared/ui/action-bar.ts|.save:active|background': surface,
+  'src/app/shared/ui/action-bar.ts|.primary|background': surface,
+  'src/app/shared/ui/action-bar.ts|.primary|color': text([['--bg-brand'], ['--gem-800']]),
+  'src/app/shared/ui/action-bar.ts|.primary:active|background': surface,
+  'src/app/shared/ui/action-bar.ts|button:focus-visible|outline': nonText(SHEET),
+
+  // --- a full-size field in a white bottom sheet (#64).
+  'src/app/shared/ui/sheet-field.ts|.label|color': text(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control|border': nonText(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control|background': surface,
+  'src/app/shared/ui/sheet-field.ts|.control:focus|border-color': nonText(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control:focus|box-shadow': nonText(SHEET),
+
+  // --- a zone of the phone document (#64): the pressed state, the amber note and the pencil.
+  'src/app/shared/ui/zone-button.ts|.zone:active|background': surface,
+  'src/app/shared/ui/zone-button.ts|.zone:focus-visible|outline': nonText(ZONE),
+  'src/app/shared/ui/zone-button.ts|.pending|color': text(ZONE),
+  'src/app/shared/ui/zone-button.ts|.pen|color': nonText(ZONE),
 
   // --- image control: the upload box is identified by its dashed boundary alone.
   'src/app/shared/ui/image-control.ts|.pick:focus-within|box-shadow': nonText(SHEET),
