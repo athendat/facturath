@@ -18,6 +18,7 @@ import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
 import { createInvoice, type Invoice } from './domain/invoice';
 import { createEmptyProfile } from './domain/seller-profile';
+import { DRAFT_DELAY_MS } from './features/invoice-editor/draft-autosave';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
 
@@ -949,6 +950,22 @@ describe('App on a phone', () => {
 
     expect(dialog()).toBeNull();
     expect(document.activeElement?.getAttribute('aria-label')).toBe('Editar comprador');
+  });
+
+  it('keeps a sheet edit in the draft, so it survives a reload', async () => {
+    compiled.querySelector<HTMLButtonElement>('button[aria-label="Editar comprador"]')?.click();
+    await fixture.whenStable();
+    const name = document.getElementById('sheet-field-buyer-name') as HTMLInputElement;
+    name.value = 'Cafetería Los Pinos';
+    name.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+
+    await new Promise((resolve) => setTimeout(resolve, DRAFT_DELAY_MS + 50));
+    await fixture.whenStable();
+
+    await expect(TestBed.inject(INVOICE_REPOSITORY).getDraft()).resolves.toMatchObject({
+      buyer: { name: 'Cafetería Los Pinos' },
+    });
   });
 
   it('opens the line sheet for a line field', async () => {

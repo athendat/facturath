@@ -134,6 +134,44 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, AXE_TIMEOUT);
 
+  it('passes axe with a zone sheet of the phone document open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    compiled.querySelector<HTMLButtonElement>('button[aria-label="Editar comprador"]')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"] h2')?.textContent?.trim()).toBe('Comprador');
+
+    await expect(violations()).resolves.toEqual([]);
+  }, AXE_TIMEOUT);
+
+  // The whole page with one sheet open is checked above; each sheet on its own here, which is
+  // what changes from one to the next, keeps the run short.
+  it('passes axe inside every zone sheet', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const openers = [
+      ...Array.from(compiled.querySelectorAll<HTMLButtonElement>('app-zone-button button')),
+      findButton(compiled, 'Añadir renglón') as HTMLButtonElement,
+    ];
+    const found: string[] = [];
+    for (const opener of openers) {
+      opener.click();
+      await fixture.whenStable();
+      const sheet = compiled.querySelector<HTMLElement>('[role="dialog"]');
+      expect(sheet).not.toBeNull();
+      const results = await axe.run(sheet as HTMLElement, {
+        rules: { 'color-contrast': { enabled: false } },
+      });
+      found.push(
+        ...results.violations.map(
+          (violation) => `${sheet?.getAttribute('aria-label')}: ${violation.id}: ${violation.help}`,
+        ),
+      );
+      sheet?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+    }
+    expect(openers.length).toBeGreaterThanOrEqual(11);
+    expect(found).toEqual([]);
+  }, AXE_TIMEOUT);
+
   it('passes axe with the logo and both payment QR codes set', async () => {
     const images = TestBed.inject(ImagesStore);
     for (const kind of IMAGE_KINDS) {
