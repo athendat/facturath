@@ -108,7 +108,8 @@ import { Icon } from './icon';
 
     /* The compact chip of a phone header (#64): taller to tap, without the words after the
        count, which the accessible name still carries. */
-    @media (max-width: 639.98px) {
+    /* The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
+    @media screen and (max-width: 639.98px) {
       :host(:not(.row)) .seal {
         min-height: 36px;
         font-size: 13px;

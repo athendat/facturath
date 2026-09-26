@@ -179,6 +179,7 @@ import { TotalsPanel } from './totals-panel';
 
     /* A phone screen shows the phone document instead, once it has loaded; print always
        shows the sheet (#64). */
+    /* The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
     @media screen and (max-width: 639.98px) {
       :host:has(app-phone-document) .sheet {
         display: none;

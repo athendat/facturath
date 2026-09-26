@@ -14,7 +14,7 @@ import { Icon } from './icon';
     <button
       type="button"
       class="zone"
-      [id]="'zone-' + key()"
+      [id]="elementId()"
       [attr.aria-label]="name()"
       [attr.aria-describedby]="summaryId()"
       (click)="onClick($event)"
@@ -91,15 +91,15 @@ import { Icon } from './icon';
   `,
 })
 export class ZoneButton {
-  /** Names the zone in element ids: the button is `zone-<key>`. */
-  readonly key = input.required<string>();
+  /** The button's DOM id; its summary takes the same id with `-summary`. */
+  readonly elementId = input.required<string>();
   /** The accessible name, `Editar <zona>`. */
   readonly name = input.required<string>();
   /** What Res. 55 still needs here, e.g. `Falta dirección`; nothing when complete. */
   readonly note = input<string | undefined>(undefined);
   readonly activated = output<void>();
 
-  protected readonly summaryId = computed(() => `zone-${this.key()}-summary`);
+  protected readonly summaryId = computed(() => `${this.elementId()}-summary`);
 
   /**
    * Takes focus before reporting the tap: Safari on iOS does not focus a tapped button, and

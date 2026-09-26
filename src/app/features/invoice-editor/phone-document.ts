@@ -7,7 +7,13 @@ import { ZoneButton } from '../../shared/ui/zone-button';
 import { InvoiceStore } from './invoice-store';
 import { ZoneSheet } from './zone-sheet';
 import { ZoneSheets } from './zone-sheets';
-import { pendingByZone, type ZoneKey } from './zones';
+import {
+  ADD_LINE_ELEMENT_ID,
+  pendingByZone,
+  termsTitle,
+  zoneElementId,
+  type ZoneKey,
+} from './zones';
 
 /** `NIT 0123 · Calle 23`: the filled parts of a summary line, joined. */
 function joined(...parts: string[]): string {
@@ -26,7 +32,7 @@ function joined(...parts: string[]): string {
     <article class="doc" aria-labelledby="phone-document-title">
       <h1 id="phone-document-title" class="sr-only">Factura</h1>
       <app-zone-button
-        key="seller"
+        [elementId]="zoneId('seller')"
         (activated)="sheets.open('seller')"
         name="Editar emisor"
         [note]="notes().get('seller')"
@@ -51,7 +57,7 @@ function joined(...parts: string[]): string {
       </app-zone-button>
       <app-zone-button
         class="head"
-        key="document"
+        [elementId]="zoneId('document')"
         (activated)="sheets.open('document')"
         name="Editar documento"
         [note]="notes().get('document')"
@@ -71,7 +77,7 @@ function joined(...parts: string[]): string {
         </span>
       </app-zone-button>
       <app-zone-button
-        key="buyer"
+        [elementId]="zoneId('buyer')"
         (activated)="sheets.open('buyer')"
         name="Editar comprador"
         [note]="notes().get('buyer')"
@@ -82,7 +88,7 @@ function joined(...parts: string[]): string {
         <span class="sub">{{ buyerLine() }}</span>
       </app-zone-button>
       <app-zone-button
-        key="concept"
+        [elementId]="zoneId('concept')"
         (activated)="sheets.open('concept')"
         name="Editar concepto"
         [note]="notes().get('concept')"
@@ -100,7 +106,7 @@ function joined(...parts: string[]): string {
         </p>
         @for (line of invoice().lines; track $index) {
           <app-zone-button
-            [key]="lineKey($index)"
+            [elementId]="zoneId(lineKey($index))"
             (activated)="sheets.open(lineKey($index))"
             [name]="'Editar renglón ' + ($index + 1)"
             [note]="notes().get(lineKey($index))"
@@ -117,12 +123,12 @@ function joined(...parts: string[]): string {
             </span>
           </app-zone-button>
         }
-        <button type="button" id="add-line" class="add" (click)="addLine($event)">
+        <button type="button" [id]="addLineId" class="add" (click)="addLine($event)">
           <app-icon name="new" /> Añadir renglón
         </button>
       </div>
       <app-zone-button
-        key="totals"
+        [elementId]="zoneId('totals')"
         (activated)="sheets.open('totals')"
         name="Editar totales"
         [note]="notes().get('totals')"
@@ -145,14 +151,22 @@ function joined(...parts: string[]): string {
           >&ngsp;<span class="num">{{ store.totalAmount() }}</span>
         </span>
       </app-zone-button>
-      <app-zone-button key="notes" (activated)="sheets.open('notes')" name="Editar notas">
+      <app-zone-button
+        [elementId]="zoneId('notes')"
+        (activated)="sheets.open('notes')"
+        name="Editar notas"
+      >
         <span class="label">Notas</span>&ngsp; <span class="text">{{ invoice().notes }}</span
         >&ngsp;
         @if (invoice().notes === '') {
           <span class="hint">Toca para añadir notas</span>
         }
       </app-zone-button>
-      <app-zone-button key="terms" (activated)="sheets.open('terms')" [name]="termsName()">
+      <app-zone-button
+        [elementId]="zoneId('terms')"
+        (activated)="sheets.open('terms')"
+        [name]="termsName()"
+      >
         <span class="label">{{ termsTitle() }}</span
         >&ngsp; <span class="text">{{ invoice().terms }}</span
         >&ngsp;
@@ -162,7 +176,7 @@ function joined(...parts: string[]): string {
       </app-zone-button>
       @if (settings.showCarrier()) {
         <app-zone-button
-          key="carrier"
+          [elementId]="zoneId('carrier')"
           (activated)="sheets.open('carrier')"
           name="Editar transportista"
           [note]="notes().get('carrier')"
@@ -173,7 +187,7 @@ function joined(...parts: string[]): string {
       }
       @if (settings.showSignatures()) {
         <app-zone-button
-          key="signatures"
+          [elementId]="zoneId('signatures')"
           (activated)="sheets.open('signatures')"
           name="Editar firmas"
           [note]="notes().get('signatures')"
@@ -193,6 +207,7 @@ function joined(...parts: string[]): string {
       display: none;
     }
 
+    /* The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
     @media screen and (max-width: 639.98px) {
       :host {
         display: block;
@@ -384,6 +399,9 @@ export class PhoneDocument {
     this.sheets.open(this.lineKey(this.invoice().lines.length - 1));
   }
 
+  protected readonly zoneId = zoneElementId;
+  protected readonly addLineId = ADD_LINE_ELEMENT_ID;
+
   protected lineKey(index: number): ZoneKey {
     return `line-${index}`;
   }
@@ -418,12 +436,11 @@ export class PhoneDocument {
     return `${name || 'Impuesto'} ${percent || '0'} %`;
   });
 
-  protected readonly termsTitle = computed(() =>
-    this.settings.showPaymentQr() ? 'Condiciones y QR' : 'Condiciones',
-  );
+  protected readonly termsTitle = computed(() => termsTitle(this.settings.showPaymentQr()));
 
-  protected readonly termsName = computed(() =>
-    this.settings.showPaymentQr() ? 'Editar condiciones y QR' : 'Editar condiciones',
+  /** `Editar condiciones y QR`: the title, lowercased after its first word. */
+  protected readonly termsName = computed(
+    () => `Editar ${this.termsTitle()[0].toLowerCase()}${this.termsTitle().slice(1)}`,
   );
 
   protected readonly carrierLine = computed(() => {
