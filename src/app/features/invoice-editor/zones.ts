@@ -1,4 +1,4 @@
-import type { ComplianceEntry, FieldId } from '../../domain/compliance';
+import { fieldElementId, type ComplianceEntry, type FieldId } from '../../domain/compliance';
 
 /**
  * One tappable part of the phone document (#64), each edited in its own bottom sheet:
@@ -54,6 +54,14 @@ const ORDER = Object.keys(NOUNS);
 
 /** A total that is not above zero; it follows every field of the totals zone. */
 const TOTAL_NOUN = 'importe total';
+
+/**
+ * The id a sheet gives the control of `field`. Never the id the inline sheet uses, since
+ * both are in the page while a sheet is open and FieldFocus finds a control by its id.
+ */
+export function sheetFieldId(field: FieldId): string {
+  return `sheet-${fieldElementId(field)}`;
+}
 
 /** The zone whose sheet edits `field`. */
 export function zoneOfField(field: FieldId): ZoneKey {

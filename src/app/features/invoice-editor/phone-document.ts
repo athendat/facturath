@@ -5,6 +5,8 @@ import { formatIsoDate, formatReference } from '../../domain/format';
 import { Icon } from '../../shared/ui/icon';
 import { ZoneButton } from '../../shared/ui/zone-button';
 import { InvoiceStore } from './invoice-store';
+import { ZoneSheet } from './zone-sheet';
+import { ZoneSheets } from './zone-sheets';
 import { pendingByZone, type ZoneKey } from './zones';
 
 /** `NIT 0123 · Calle 23`: the filled parts of a summary line, joined. */
@@ -19,20 +21,27 @@ function joined(...parts: string[]): string {
  */
 @Component({
   selector: 'app-phone-document',
-  imports: [Icon, ZoneButton],
+  imports: [Icon, ZoneButton, ZoneSheet],
   template: `
     <article class="doc" aria-labelledby="phone-document-title">
       <h1 id="phone-document-title" class="sr-only">Factura</h1>
-      <app-zone-button key="seller" name="Editar emisor" [note]="notes().get('seller')">
+      <app-zone-button
+        key="seller"
+        (activated)="sheets.open('seller')"
+        name="Editar emisor"
+        [note]="notes().get('seller')"
+      >
         <span class="issuer">
           @if (logoUrl(); as src) {
             <img class="logo" [src]="src" alt="" />
           } @else if (initials() !== '') {
-            <span class="logo initials">{{ initials() }}</span>&ngsp;
+            <span class="logo initials">{{ initials() }}</span
+            >&ngsp;
           }
           <span class="stack">
             @if (invoice().seller.name !== '') {
-              <span class="title">{{ invoice().seller.name }}</span>&ngsp;
+              <span class="title">{{ invoice().seller.name }}</span
+              >&ngsp;
             } @else {
               <span class="hint">Toca para escribir tus datos</span>&ngsp;
             }
@@ -40,80 +49,142 @@ function joined(...parts: string[]): string {
           </span>
         </span>
       </app-zone-button>
-      <app-zone-button class="head" key="document" name="Editar documento" [note]="notes().get('document')">
+      <app-zone-button
+        class="head"
+        key="document"
+        (activated)="sheets.open('document')"
+        name="Editar documento"
+        [note]="notes().get('document')"
+      >
         <span class="cols">
-          <span class="col"><span class="label">Número</span>&ngsp;<span class="num">{{ reference() }}</span></span>&ngsp;
-          <span class="col"><span class="label">Fecha</span>&ngsp;<span class="num">{{ date() }}</span></span>&ngsp;
-          <span class="col"><span class="label">Moneda</span>&ngsp;<span class="num">{{ invoice().currency }}</span></span>
+          <span class="col"
+            ><span class="label">Número</span>&ngsp;<span class="num">{{ reference() }}</span></span
+          >&ngsp;
+          <span class="col"
+            ><span class="label">Fecha</span>&ngsp;<span class="num">{{ date() }}</span></span
+          >&ngsp;
+          <span class="col"
+            ><span class="label">Moneda</span>&ngsp;<span class="num">{{
+              invoice().currency
+            }}</span></span
+          >
         </span>
       </app-zone-button>
-      <app-zone-button key="buyer" name="Editar comprador" [note]="notes().get('buyer')">
+      <app-zone-button
+        key="buyer"
+        (activated)="sheets.open('buyer')"
+        name="Editar comprador"
+        [note]="notes().get('buyer')"
+      >
         <span class="label">Comprador</span>&ngsp;
-        <span class="title">{{ invoice().buyer.name || 'Sin nombre' }}</span>&ngsp;
+        <span class="title">{{ invoice().buyer.name || 'Sin nombre' }}</span
+        >&ngsp;
         <span class="sub">{{ buyerLine() }}</span>
       </app-zone-button>
-      <app-zone-button key="concept" name="Editar concepto" [note]="notes().get('concept')">
+      <app-zone-button
+        key="concept"
+        (activated)="sheets.open('concept')"
+        name="Editar concepto"
+        [note]="notes().get('concept')"
+      >
         <span class="label">Concepto de la operación</span>&ngsp;
-        <span class="text">{{ invoice().concept }}</span>&ngsp;
+        <span class="text">{{ invoice().concept }}</span
+        >&ngsp;
         @if (invoice().concept === '') {
           <span class="hint">Toca para escribir el concepto</span>
         }
       </app-zone-button>
       <div class="lines">
-        <p class="lines-head" aria-hidden="true"><span class="label">Productos y servicios</span><span class="label">Importe</span></p>
+        <p class="lines-head" aria-hidden="true">
+          <span class="label">Productos y servicios</span><span class="label">Importe</span>
+        </p>
         @for (line of invoice().lines; track $index) {
           <app-zone-button
             [key]="lineKey($index)"
+            (activated)="sheets.open(lineKey($index))"
             [name]="'Editar renglón ' + ($index + 1)"
             [note]="notes().get(lineKey($index))"
           >
             <span class="line">
               <span class="stack">
-                <span class="title">{{ line.description || 'Renglón sin descripción' }}</span>&ngsp;
-                <span class="sub num">{{ line.quantity || '0' }} {{ line.unit }} × {{ line.unitPrice || '0' }}</span>
-              </span>&ngsp;
+                <span class="title">{{ line.description || 'Renglón sin descripción' }}</span
+                >&ngsp;
+                <span class="sub num"
+                  >{{ line.quantity || '0' }} {{ line.unit }} × {{ line.unitPrice || '0' }}</span
+                > </span
+              >&ngsp;
               <span class="amount num">{{ store.lineAmounts()[$index] }}</span>
             </span>
           </app-zone-button>
         }
         <button type="button" class="add"><app-icon name="new" /> Añadir renglón</button>
       </div>
-      <app-zone-button key="totals" name="Editar totales" [note]="notes().get('totals')">
-        <span class="row"><span>Subtotal</span>&ngsp;<span class="num">{{ store.totals().subtotal }}</span></span>&ngsp;
-        <span class="row"><span>Descuento</span>&ngsp;<span class="num">{{ store.totals().discount }}</span></span>&ngsp;
-        <span class="row"><span>Envío</span>&ngsp;<span class="num">{{ store.totals().shipping }}</span></span>&ngsp;
-        <span class="row"><span>{{ taxLabel() }}</span>&ngsp;<span class="num">{{ store.totals().tax }}</span></span>&ngsp;
+      <app-zone-button
+        key="totals"
+        (activated)="sheets.open('totals')"
+        name="Editar totales"
+        [note]="notes().get('totals')"
+      >
+        <span class="row"
+          ><span>Subtotal</span>&ngsp;<span class="num">{{ store.totals().subtotal }}</span></span
+        >&ngsp;
+        <span class="row"
+          ><span>Descuento</span>&ngsp;<span class="num">{{ store.totals().discount }}</span></span
+        >&ngsp;
+        <span class="row"
+          ><span>Envío</span>&ngsp;<span class="num">{{ store.totals().shipping }}</span></span
+        >&ngsp;
+        <span class="row"
+          ><span>{{ taxLabel() }}</span
+          >&ngsp;<span class="num">{{ store.totals().tax }}</span></span
+        >&ngsp;
         <span class="row total">
-          <span>Total {{ invoice().currency }}</span>&ngsp;<span class="num">{{ store.totalAmount() }}</span>
+          <span>Total {{ invoice().currency }}</span
+          >&ngsp;<span class="num">{{ store.totalAmount() }}</span>
         </span>
       </app-zone-button>
-      <app-zone-button key="notes" name="Editar notas">
-        <span class="label">Notas</span>&ngsp;
-        <span class="text">{{ invoice().notes }}</span>&ngsp;
+      <app-zone-button key="notes" (activated)="sheets.open('notes')" name="Editar notas">
+        <span class="label">Notas</span>&ngsp; <span class="text">{{ invoice().notes }}</span
+        >&ngsp;
         @if (invoice().notes === '') {
           <span class="hint">Toca para añadir notas</span>
         }
       </app-zone-button>
-      <app-zone-button key="terms" [name]="termsName()">
-        <span class="label">{{ termsTitle() }}</span>&ngsp;
-        <span class="text">{{ invoice().terms }}</span>&ngsp;
+      <app-zone-button key="terms" (activated)="sheets.open('terms')" [name]="termsName()">
+        <span class="label">{{ termsTitle() }}</span
+        >&ngsp; <span class="text">{{ invoice().terms }}</span
+        >&ngsp;
         @if (invoice().terms === '') {
           <span class="hint">Toca para añadir condiciones de pago</span>
         }
       </app-zone-button>
       @if (settings.showCarrier()) {
-        <app-zone-button key="carrier" name="Editar transportista" [note]="notes().get('carrier')">
+        <app-zone-button
+          key="carrier"
+          (activated)="sheets.open('carrier')"
+          name="Editar transportista"
+          [note]="notes().get('carrier')"
+        >
           <span class="label">Transportista</span>&ngsp;
           <span class="text">{{ carrierLine() }}</span>
         </app-zone-button>
       }
       @if (settings.showSignatures()) {
-        <app-zone-button key="signatures" name="Editar firmas" [note]="notes().get('signatures')">
+        <app-zone-button
+          key="signatures"
+          (activated)="sheets.open('signatures')"
+          name="Editar firmas"
+          [note]="notes().get('signatures')"
+        >
           <span class="label">Firmas</span>&ngsp;
           <span class="text">{{ signaturesLine() }}</span>
         </app-zone-button>
       }
     </article>
+    <!-- The sheets are a chunk of their own, fetched the first time a zone opens. -->
+    @defer (when sheets.current() !== null) {
+      <app-zone-sheet />
+    }
   `,
   styles: `
     :host {
@@ -293,6 +364,7 @@ function joined(...parts: string[]): string {
 export class PhoneDocument {
   protected readonly store = inject(InvoiceStore);
   protected readonly settings = inject(SettingsStore);
+  protected readonly sheets = inject(ZoneSheets);
   private readonly images = inject(ImagesStore);
 
   protected readonly invoice = this.store.invoice;

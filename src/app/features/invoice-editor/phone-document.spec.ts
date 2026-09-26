@@ -142,6 +142,81 @@ describe('PhoneDocument', () => {
     expect(visibleText(zone('Editar notas'))).toBe('Notas Toca para añadir notas');
   });
 
+  /** The open bottom sheet. */
+  function sheet(): HTMLElement | null {
+    return element.querySelector<HTMLElement>('[role="dialog"]');
+  }
+
+  /** The sheet control whose visible label reads `label`. */
+  function field(label: string): HTMLInputElement | null {
+    const labels = Array.from(sheet()?.querySelectorAll('label') ?? []);
+    const match = labels.find((candidate) => visibleText(candidate) === label);
+    return match ? (document.getElementById(match.htmlFor) as HTMLInputElement | null) : null;
+  }
+
+  async function type(label: string, text: string): Promise<void> {
+    const control = field(label);
+    if (!control) {
+      throw new Error(`No sheet field labelled ${label}`);
+    }
+    control.value = text;
+    control.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+  }
+
+  async function openZone(name: string): Promise<HTMLButtonElement> {
+    const button = zone(name) as HTMLButtonElement;
+    button.focus();
+    button.click();
+    await fixture.whenStable();
+    return button;
+  }
+
+  it('opens the buyer sheet from its zone, with a visible label on every field', async () => {
+    await openZone('Editar comprador');
+
+    expect(sheet()?.getAttribute('aria-modal')).toBe('true');
+    expect(visibleText(sheet()?.querySelector('h2'))).toBe('Comprador');
+    expect(Array.from(sheet()?.querySelectorAll('label') ?? []).map(visibleText)).toEqual([
+      'Nombre o razón social',
+      'NIT',
+      'Carné de identidad',
+      'Dirección',
+      'Registro comercial',
+      'Cuenta bancaria',
+      'Sucursal bancaria',
+    ]);
+    expect(field('NIT')?.getAttribute('inputmode')).toBe('numeric');
+    expect(field('Carné de identidad')?.getAttribute('inputmode')).toBe('numeric');
+    expect(field('Nombre o razón social')?.hasAttribute('inputmode')).toBe(false);
+  });
+
+  it('writes a sheet edit straight to the invoice, so the summary and the note follow at once', async () => {
+    store.load(sample());
+    await fixture.whenStable();
+    await openZone('Editar comprador');
+    expect(field('Nombre o razón social')?.value).toBe('Cafetería Los Pinos');
+
+    await type('NIT', '01234567891');
+    await type('Dirección', 'Calle 5');
+
+    expect(store.invoice().buyer).toMatchObject({ nit: '01234567891', address: 'Calle 5' });
+    expect(visibleText(zone('Editar comprador'))).toContain('NIT 01234567891 · Calle 5');
+    expect(zone('Editar comprador')?.querySelector('.pending')).toBeNull();
+  });
+
+  it('closes on Listo and gives focus back to the zone that opened it', async () => {
+    const opener = await openZone('Editar comprador');
+
+    Array.from(sheet()?.querySelectorAll('button') ?? [])
+      .find((button) => visibleText(button) === 'Listo')
+      ?.click();
+    await fixture.whenStable();
+
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('leaves out the zones of the sections turned off in Ajustes', async () => {
     const settings = TestBed.inject(SettingsStore);
     settings.setSection('showCarrier', false);

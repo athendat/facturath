@@ -375,6 +375,13 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/shared/ui/bottom-sheet.ts|.close:focus-visible|outline': nonText(SHEET),
   'src/app/shared/ui/bottom-sheet.ts|.done:focus-visible|outline': nonText(SHEET),
 
+  // --- a full-size field in a white bottom sheet (#64).
+  'src/app/shared/ui/sheet-field.ts|.label|color': text(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control|border': nonText(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control|background': surface,
+  'src/app/shared/ui/sheet-field.ts|.control:focus|border-color': nonText(SHEET),
+  'src/app/shared/ui/sheet-field.ts|.control:focus|box-shadow': nonText(SHEET),
+
   // --- a zone of the phone document (#64): the pressed state, the amber note and the pencil.
   'src/app/shared/ui/zone-button.ts|.zone:active|background': surface,
   'src/app/shared/ui/zone-button.ts|.zone:focus-visible|outline': nonText(ZONE),
