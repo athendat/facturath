@@ -184,6 +184,34 @@ describe('App accessible names', () => {
     expect(duplicateIds()).toEqual([]);
   });
 
+  // Every zone of the phone document (#64), then its bottom sheet: jsdom has no media queries,
+  // so the zones and the inline sheet are both in the page, as they are while a sheet is open.
+  it('names every zone and every control of each zone sheet, with no id twice', async () => {
+    const zones = Array.from(
+      compiled.querySelectorAll<HTMLButtonElement>('app-phone-document app-zone-button button'),
+    );
+    expect(zones.map((zone) => zone.getAttribute('aria-label'))).toContain('Editar comprador');
+    expect(zones.length).toBeGreaterThanOrEqual(10);
+    const openers = [...zones, findButton(compiled, 'Añadir renglón') as HTMLButtonElement];
+
+    for (const opener of openers) {
+      const name = accessibleName(opener);
+      opener.focus();
+      opener.click();
+      await fixture.whenStable();
+      expect(compiled.querySelector('[role="dialog"]'), name).not.toBeNull();
+
+      expect(unnamed(), name).toEqual([]);
+      expect(duplicateIds(), name).toEqual([]);
+
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+      expect(compiled.querySelector('[role="dialog"]'), name).toBeNull();
+    }
+  });
+
   it('names every control of the compliance panel', async () => {
     compiled.querySelector<HTMLButtonElement>('app-compliance-seal button')?.click();
     await fixture.whenStable();

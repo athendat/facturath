@@ -39,6 +39,8 @@ export interface ComplianceEntry {
   state: ComplianceState;
   /** The first field still missing; null unless the entry is pending. */
   focusField: FieldId | null;
+  /** Every field still missing, in the order `focusField` takes them; empty unless pending. */
+  missing: readonly FieldId[];
 }
 
 export interface ComplianceOptions {
@@ -55,9 +57,9 @@ function filled(text: string): boolean {
   return text.trim() !== '';
 }
 
-/** The first of `fields` that is empty, as the focus target, or null when all are filled. */
-function firstMissing<T extends FieldId>(fields: readonly [T, string][]): T | null {
-  return fields.find(([, value]) => !filled(value))?.[0] ?? null;
+/** Each of `fields` that is empty, in order; the first is the focus target. */
+function allMissing(fields: readonly [FieldId, string][]): FieldId[] {
+  return fields.filter(([, value]) => !filled(value)).map(([field]) => field);
 }
 
 function partyFields(role: 'seller' | 'buyer', party: Party, keys: readonly (keyof Party)[]) {
@@ -80,15 +82,15 @@ const CARRIER_WHERE = 'Sección Transportista (opcional)';
 /** The 13 entries, always in the resolution's order and with stable ids. */
 export function checkCompliance(invoice: Invoice, options: ComplianceOptions): ComplianceEntry[] {
   const { seller, buyer, carrier, lines, tax, signatures } = invoice;
-  const buyerIdentity = filled(buyer.nit) || filled(buyer.identityCard) ? null : ('buyer.nit' as const);
+  const buyerIdentity: FieldId[] = filled(buyer.nit) || filled(buyer.identityCard) ? [] : ['buyer.nit'];
 
   return [
-    entry('issue-date', 'Fecha de emisión.', 'Encabezado · fecha', firstMissing([['issueDate', invoice.issueDate]])),
+    entry('issue-date', 'Fecha de emisión.', 'Encabezado · fecha', allMissing([['issueDate', invoice.issueDate]])),
     entry(
       'seller',
       'Nombre, dirección, REEUP/ONEI, cuenta y sucursal bancaria, NIT y registro comercial del proveedor.',
       'Encabezado · tus datos',
-      firstMissing(
+      allMissing(
         partyFields('seller', seller, ['name', 'address', 'nit', 'commercialRegistry', 'bankAccount', 'bankBranch']),
       ),
     ),
@@ -96,20 +98,20 @@ export function checkCompliance(invoice: Invoice, options: ComplianceOptions): C
       'buyer',
       'Los mismos datos del comprador; personas naturales, número de identidad permanente.',
       'Bloque Comprador',
-      firstMissing(partyFields('buyer', buyer, ['name', 'address'])) ?? buyerIdentity,
+      [...allMissing(partyFields('buyer', buyer, ['name', 'address'])), ...buyerIdentity],
     ),
     entry(
       'concept',
       'Espacio para especificar el concepto de las operaciones.',
       'Bloque Concepto de la operación',
-      firstMissing([['concept', invoice.concept]]),
+      allMissing([['concept', invoice.concept]]),
     ),
     options.showCarrier
       ? entry(
           'carrier',
           CARRIER_LABEL,
           CARRIER_WHERE,
-          firstMissing([
+          allMissing([
             ['carrier.name', carrier.name],
             ['carrier.identityCard', carrier.identityCard],
             ['carrier.plate', carrier.plate],
@@ -120,13 +122,13 @@ export function checkCompliance(invoice: Invoice, options: ComplianceOptions): C
       'lines',
       'Código, descripción, unidad de medida, cantidad, precio unitario e importe.',
       'Tabla de líneas',
-      firstMissingLineField(lines),
+      missingLineFields(lines),
     ),
     entry(
       'tax',
       'Tipo impositivo y porciento.',
       'Totales · impuesto',
-      firstMissing([
+      allMissing([
         ['tax.name', tax.name],
         ['tax.percent', tax.percent],
       ]),
@@ -135,18 +137,18 @@ export function checkCompliance(invoice: Invoice, options: ComplianceOptions): C
       'total',
       'Importe total, subtotal cuando corresponda y moneda de pago.',
       'Totales y selector de moneda',
-      computeTotals(invoice).total > 0 ? null : 'lines.0.unitPrice',
+      computeTotals(invoice).total > 0 ? [] : ['lines.0.unitPrice'],
     ),
     ...SIGNATURES.map(({ id, label, field }) =>
       options.showSignatures
-        ? entry(id, label, SIGNATURES_WHERE, firstMissing([[`signatures.${field}`, signatures[field]]]))
+        ? entry(id, label, SIGNATURES_WHERE, allMissing([[`signatures.${field}`, signatures[field]]]))
         : notApplicable(id, label, SIGNATURES_WHERE),
     ),
     entry(
       'number',
       'Número consecutivo del modelo.',
       'Encabezado · serie y número',
-      firstMissing([
+      allMissing([
         ['series', invoice.series],
         ['number', invoice.number],
       ]),
@@ -155,30 +157,28 @@ export function checkCompliance(invoice: Invoice, options: ComplianceOptions): C
 }
 
 /** Every line needs a description, a unit, a quantity above zero and a unit price; the code is optional. */
-function firstMissingLineField(lines: Invoice['lines']): FieldId | null {
-  for (const [index, line] of lines.entries()) {
-    if (!filled(line.description)) {
-      return `lines.${index}.description`;
-    }
-    if (!filled(line.unit)) {
-      return `lines.${index}.unit`;
-    }
-    if (!isPositiveNumber(line.quantity)) {
-      return `lines.${index}.quantity`;
-    }
-    if (!filled(line.unitPrice)) {
-      return `lines.${index}.unitPrice`;
-    }
-  }
-  return null;
+function missingLineFields(lines: Invoice['lines']): FieldId[] {
+  return lines.flatMap((line, index): FieldId[] => [
+    ...(filled(line.description) ? [] : [`lines.${index}.description` as const]),
+    ...(filled(line.unit) ? [] : [`lines.${index}.unit` as const]),
+    ...(isPositiveNumber(line.quantity) ? [] : [`lines.${index}.quantity` as const]),
+    ...(filled(line.unitPrice) ? [] : [`lines.${index}.unitPrice` as const]),
+  ]);
 }
 
-function entry(id: string, label: string, where: string, missing: FieldId | null): ComplianceEntry {
-  return { id, label, where, state: missing === null ? 'fulfilled' : 'pending', focusField: missing };
+function entry(id: string, label: string, where: string, missing: FieldId[]): ComplianceEntry {
+  return {
+    id,
+    label,
+    where,
+    state: missing.length === 0 ? 'fulfilled' : 'pending',
+    focusField: missing[0] ?? null,
+    missing,
+  };
 }
 
 function notApplicable(id: string, label: string, where: string): ComplianceEntry {
-  return { id, label, where, state: 'not-applicable', focusField: null };
+  return { id, label, where, state: 'not-applicable', focusField: null, missing: [] };
 }
 
 export function countPending(entries: readonly ComplianceEntry[]): number {

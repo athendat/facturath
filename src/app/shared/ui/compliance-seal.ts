@@ -28,9 +28,10 @@ import { Icon } from './icon';
           {{ pending() }}
         }
       </span>
-      {{ status() }}
+      <!-- One flex item, so the seal's gap does not open between the two parts. -->
+      <span>{{ status() }}<span class="rest">{{ rest() }}</span></span>
       @if (row()) {
-        <span class="go">Ver</span>
+        &ngsp;<span class="go">Ver</span>
       }
     </button>
   `,
@@ -105,6 +106,19 @@ import { Icon } from './icon';
       font-size: var(--fs-14);
     }
 
+    /* The compact chip of a phone header (#64): taller to tap, without the words after the
+       count, which the accessible name still carries. */
+    @media (max-width: 639.98px) {
+      :host(:not(.row)) .seal {
+        min-height: 36px;
+        font-size: 13px;
+      }
+
+      :host(:not(.row)) .rest {
+        display: none;
+      }
+    }
+
     .go {
       margin-left: auto;
       font-weight: var(--fw-medium);
@@ -119,13 +133,17 @@ export class ComplianceSeal {
   readonly row = input(false);
   readonly activated = output<void>();
 
-  /** What the seal shows, and where its accessible name starts. */
+  /** What the seal shows, and where its accessible name starts; a phone header shows only this. */
   protected readonly status = computed(() =>
-    this.pending() === 0 ? 'Res. 55 completa' : `Res. 55 · ${this.pending()} pendientes`,
+    this.pending() === 0 ? 'Res. 55' : `Res. 55 · ${this.pending()}`,
   );
 
+  /** The words after the count, which the compact chip of a phone header leaves out (#64). */
+  protected readonly rest = computed(() => (this.pending() === 0 ? ' completa' : ' pendientes'));
+
   protected readonly name = computed(() => {
-    const name = this.pending() === 0 ? this.status() : `${this.status()}, datos obligatorios`;
+    const shown = this.status() + this.rest();
+    const name = this.pending() === 0 ? shown : `${shown}, datos obligatorios`;
     return this.row() ? `${name}. Ver` : name;
   });
 }

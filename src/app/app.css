@@ -33,6 +33,11 @@
   display: none;
 }
 
+/* The reference and the seal show on a phone (#64) and from 960px, not in between. */
+.phone-and-wide {
+  display: none;
+}
+
 /* The " / Imprimir" half of the print label, inline so its leading space stays. */
 .print-rest {
   display: none;
@@ -148,7 +153,8 @@
 
 /* After the button rules so it wins over their display. */
 @media (min-width: 960px) {
-  .wide-only {
+  .wide-only,
+  .phone-and-wide {
     display: inline-flex;
   }
 
@@ -213,6 +219,75 @@
   color: var(--fg-2);
   font-size: var(--fs-12);
   text-align: center;
+}
+
+/* The action bar only shows on a phone (#64). */
+app-action-bar {
+  display: none;
+}
+
+/* A phone (#64): wordmark over the reference on the left, then the seal as a compact chip and
+   the hamburger; Guardar and PDF live in the action bar fixed to the bottom once it has
+   loaded, and the footer leaves room for it so the BALANC line is never hidden behind it. */
+@media screen and (max-width: 639.98px) {
+  .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--sp-2);
+    row-gap: 0;
+    padding: var(--sp-2) 6px var(--sp-2) var(--sp-4);
+  }
+
+  .wordmark {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+  }
+
+  .reference {
+    grid-row: 2;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .actions {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+
+  .phone-and-wide {
+    display: inline-flex;
+  }
+
+  .badge,
+  :host:has(app-action-bar) .not-phone {
+    display: none;
+  }
+
+  .icon-button {
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .app-main {
+    padding: var(--sp-3) 10px;
+  }
+
+  app-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 15;
+    display: flex;
+  }
+
+  .app-footer {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
 }
 
 @media print {

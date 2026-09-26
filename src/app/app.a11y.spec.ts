@@ -61,9 +61,16 @@ describe('App accessibility', () => {
 
   // axe only reports page-has-heading-one against a whole document, which the jsdom run
   // above cannot do; a real-browser run on the built app found the page had no h1 (#15).
-  it('names the page with exactly one level-one heading', () => {
-    const headings = (fixture.nativeElement as HTMLElement).querySelectorAll('h1');
-    expect(Array.from(headings).map((heading) => heading.textContent?.trim())).toEqual(['Factura']);
+  // The sheet and the phone document (#64) each carry one; the screen shows one of the two
+  // (the phone document below 640px, the sheet from 640px), which jsdom cannot see as it has
+  // no media queries, so this checks each layout on its own.
+  it('names the page with exactly one level-one heading in each layout', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const texts = (root: ParentNode | null) =>
+      Array.from(root?.querySelectorAll('h1') ?? []).map((heading) => heading.textContent?.trim());
+    expect(texts(compiled.querySelector('article.sheet'))).toEqual(['Factura']);
+    expect(texts(compiled.querySelector('app-phone-document'))).toEqual(['Factura']);
+    expect(compiled.querySelectorAll('h1')).toHaveLength(2);
   });
 
   it('passes axe with the saving-disabled notice shown', async () => {
@@ -127,13 +134,53 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, AXE_TIMEOUT);
 
+  it('passes axe with a zone sheet of the phone document open', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    compiled.querySelector<HTMLButtonElement>('button[aria-label="Editar comprador"]')?.click();
+    await fixture.whenStable();
+    expect(compiled.querySelector('[role="dialog"] h2')?.textContent?.trim()).toBe('Comprador');
+
+    await expect(violations()).resolves.toEqual([]);
+  }, AXE_TIMEOUT);
+
+  // The whole page with one sheet open is checked above; each sheet on its own here, which is
+  // what changes from one to the next, keeps the run short.
+  it('passes axe inside every zone sheet', async () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const openers = [
+      ...Array.from(compiled.querySelectorAll<HTMLButtonElement>('app-zone-button button')),
+      findButton(compiled, 'Añadir renglón') as HTMLButtonElement,
+    ];
+    const found: string[] = [];
+    for (const opener of openers) {
+      opener.click();
+      await fixture.whenStable();
+      const sheet = compiled.querySelector<HTMLElement>('[role="dialog"]');
+      expect(sheet).not.toBeNull();
+      const results = await axe.run(sheet as HTMLElement, {
+        rules: { 'color-contrast': { enabled: false } },
+      });
+      found.push(
+        ...results.violations.map(
+          (violation) => `${sheet?.getAttribute('aria-label')}: ${violation.id}: ${violation.help}`,
+        ),
+      );
+      sheet?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await fixture.whenStable();
+    }
+    expect(openers.length).toBeGreaterThanOrEqual(11);
+    expect(found).toEqual([]);
+  }, AXE_TIMEOUT);
+
   it('passes axe with the logo and both payment QR codes set', async () => {
     const images = TestBed.inject(ImagesStore);
     for (const kind of IMAGE_KINDS) {
       await images.set(kind, new Blob(['png'], { type: 'image/png' }));
     }
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelectorAll('img').length).toBe(3);
+    expect(fixture.nativeElement.querySelectorAll('article.sheet img').length).toBe(3);
+    // The phone document shows the logo too (#64).
+    expect(fixture.nativeElement.querySelectorAll('app-phone-document img').length).toBe(1);
 
     await expect(violations()).resolves.toEqual([]);
   }, AXE_TIMEOUT);

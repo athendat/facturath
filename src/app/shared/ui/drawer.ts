@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   afterEveryRender,
+  computed,
   effect,
   inject,
   input,
@@ -23,11 +24,12 @@ let nextId = 0;
   selector: 'app-drawer',
   template: `
     @if (open()) {
-      <div class="backdrop" (click)="close()"></div>
+      <div class="backdrop" [class.bottom]="bottom()" (click)="close()"></div>
       <section
         #panel
         class="panel"
         [class.bare]="bare()"
+        [class.bottom]="bottom()"
         [style.--drawer-width]="width()"
         role="dialog"
         aria-modal="true"
@@ -118,6 +120,31 @@ let nextId = 0;
       padding: 0;
     }
 
+    /* A bottom sheet: full width, rising from the bottom edge, never taller than 88% (#64). */
+    .backdrop.bottom {
+      background: rgba(17, 24, 39, 0.45);
+    }
+
+    .panel.bottom {
+      top: auto;
+      left: 0;
+      width: 100%;
+      max-height: 88%;
+      padding-bottom: env(safe-area-inset-bottom);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      animation-name: rise;
+      animation-duration: var(--dur-2);
+    }
+
+    @keyframes rise {
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: none;
+      }
+    }
+
     @keyframes slide-in {
       from {
         transform: translateX(100%);
@@ -128,7 +155,8 @@ let nextId = 0;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .panel {
+      .panel,
+      .panel.bottom {
         animation: none;
       }
     }
@@ -145,6 +173,10 @@ export class Drawer {
   readonly bare = input(false);
   /** How wide the panel is; it never grows past the screen. */
   readonly width = input('400px');
+  /** Where the panel sits: at the end of the screen (a side panel) or at its bottom (a sheet). */
+  readonly side = input<'end' | 'bottom'>('end');
+
+  protected readonly bottom = computed(() => this.side() === 'bottom');
 
   protected readonly titleId = `drawer-title-${nextId++}`;
   private readonly document = inject(DOCUMENT);

@@ -5,6 +5,7 @@ import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
 import { ObjectUrls } from './core/object-urls';
+import { PhoneLayout } from './core/phone-layout';
 import { SettingsStore } from './core/settings-store';
 import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-store';
 import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
@@ -17,6 +18,7 @@ import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
 import { createInvoice, type Invoice } from './domain/invoice';
 import { createEmptyProfile } from './domain/seller-profile';
+import { DRAFT_DELAY_MS } from './features/invoice-editor/draft-autosave';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
 import { SavedInvoicesStore } from './features/saved-invoices/saved-invoices-store';
 
@@ -280,6 +282,38 @@ describe('App', () => {
       expect(visibleText(seal())).toBe('Res. 55 completa');
       expect(seal()?.classList.contains('complete')).toBe(true);
       expect(seal()?.getAttribute('aria-label')).toBe('Res. 55 completa');
+    });
+  });
+
+  describe('phone action bar', () => {
+    function bar(): HTMLElement | null {
+      return compiled.querySelector<HTMLElement>('app-action-bar');
+    }
+
+    it('shows the total with its currency, an icon-only Guardar and PDF, kept off paper', async () => {
+      expect(bar()?.hasAttribute('data-print-hide')).toBe(true);
+      expect(visibleText(bar()?.querySelector('.total'))).toBe('Total CUP 0.00');
+      const save = bar()?.querySelector<HTMLButtonElement>('button[aria-label="Guardar"]');
+      expect(visibleText(save)).toBe('');
+      expect(findButton(bar() as HTMLElement, 'PDF')?.classList.contains('primary')).toBe(true);
+
+      TestBed.inject(InvoiceStore).load(completeInvoice());
+      await fixture.whenStable();
+      expect(visibleText(bar()?.querySelector('.total'))).toBe('Total CUP 22.00');
+    });
+
+    it('saves and prints from the bar', async () => {
+      bar()?.querySelector<HTMLButtonElement>('button[aria-label="Guardar"]')?.click();
+      await fixture.whenStable();
+      expect(statusText()).toBe('Factura A-0001 guardada.');
+
+      findButton(bar() as HTMLElement, 'PDF')?.click();
+      expect(print).toHaveBeenCalledOnce();
+    });
+
+    it('follows the document, so its buttons come after the zones in the tab order', () => {
+      const main = compiled.querySelector('main');
+      expect(main?.nextElementSibling).toBe(bar());
     });
   });
 
@@ -865,3 +899,92 @@ describe('App with storage provided', () => {
     expect(notices(fixture.nativeElement as HTMLElement)).toHaveLength(1);
   });
 });
+
+describe('App on a phone', () => {
+  let fixture: ComponentFixture<App>;
+  let compiled: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        { provide: SwUpdate, useValue: new FakeSwUpdate() },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+        // jsdom has no media queries: this stands in for a screen below 640px.
+        { provide: PhoneLayout, useValue: { active: () => true } },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(App);
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  });
+
+  function dialog(): HTMLElement | null {
+    return compiled.querySelector<HTMLElement>('[role="dialog"]');
+  }
+
+  function ids(): string[] {
+    return Array.from(compiled.querySelectorAll('[id]')).map((element) => element.id);
+  }
+
+  it('jumps from the compliance panel into the sheet that owns the field, and back to its zone', async () => {
+    const seal = compiled.querySelector<HTMLButtonElement>('.app-header app-compliance-seal button');
+    seal?.focus();
+    seal?.click();
+    await fixture.whenStable();
+
+    const buyer = Array.from(dialog()?.querySelectorAll('li') ?? []).find((item) =>
+      item.textContent?.includes('Los mismos datos del comprador'),
+    );
+    findButton(buyer as HTMLElement, 'Ir al campo')?.click();
+    await fixture.whenStable();
+
+    expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Comprador');
+    expect(document.activeElement?.id).toBe('sheet-field-buyer-name');
+    expect(new Set(ids()).size).toBe(ids().length);
+
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    await fixture.whenStable();
+
+    expect(dialog()).toBeNull();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Editar comprador');
+  });
+
+  it('keeps a sheet edit in the draft, so it survives a reload', async () => {
+    compiled.querySelector<HTMLButtonElement>('button[aria-label="Editar comprador"]')?.click();
+    await fixture.whenStable();
+    const name = document.getElementById('sheet-field-buyer-name') as HTMLInputElement;
+    name.value = 'Cafetería Los Pinos';
+    name.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+
+    await new Promise((resolve) => setTimeout(resolve, DRAFT_DELAY_MS + 50));
+    await fixture.whenStable();
+
+    await expect(TestBed.inject(INVOICE_REPOSITORY).getDraft()).resolves.toMatchObject({
+      buyer: { name: 'Cafetería Los Pinos' },
+    });
+  });
+
+  it('opens the line sheet for a line field', async () => {
+    const store = TestBed.inject(InvoiceStore);
+    store.load(completeInvoiceWithout('unit'));
+    await fixture.whenStable();
+    compiled.querySelector<HTMLButtonElement>('.app-header app-compliance-seal button')?.click();
+    await fixture.whenStable();
+
+    findButton(dialog() as HTMLElement, 'Ir al campo')?.click();
+    await fixture.whenStable();
+
+    expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Renglón 1');
+    expect(document.activeElement?.id).toBe('sheet-field-lines-0-unit');
+  });
+});
+
+/** A complete invoice whose only line lacks `field`, so that is the one pending data point. */
+function completeInvoiceWithout(field: 'unit'): Invoice {
+  const invoice = completeInvoice();
+  return { ...invoice, lines: [{ ...invoice.lines[0], [field]: '' }] };
+}
