@@ -263,8 +263,8 @@ describe('PhoneDocument', () => {
     [
       'Editar condiciones y QR',
       'Condiciones y QR',
-      ['Términos'],
-      ['Términos', 'Pago a 30 días', (i) => i.terms],
+      ['Condiciones'],
+      ['Condiciones', 'Pago a 30 días', (i) => i.terms],
     ],
     [
       'Editar transportista',

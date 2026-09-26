@@ -26,7 +26,13 @@ import { SheetField } from '../../shared/ui/sheet-field';
 import { InvoiceStore } from './invoice-store';
 import { PaymentQrControls } from './payment-qr-controls';
 import { ZoneSheets } from './zone-sheets';
-import { sheetFieldId, type ZoneKey } from './zones';
+import {
+  ADD_LINE_ELEMENT_ID,
+  sheetFieldId,
+  termsTitle,
+  zoneElementId,
+  type ZoneKey,
+} from './zones';
 
 /** One field of a sheet: what it shows and where an edit goes. */
 interface SheetFieldSpec extends FieldOptions {
@@ -123,21 +129,17 @@ const SIGNATURE_LABELS: [keyof Signatures, string][] = [
             (valueChange)="field.set($event)"
           />
         }
-        @if (lineIndex(); as index) {
+        @if (lineIndex() !== null) {
           <p class="amount">
-            <span>Importe</span>&ngsp;<span class="value">{{
-              store.lineAmounts()[index - 1]
-            }}</span>
+            <span>Importe</span>&ngsp;<span class="value">{{ lineAmount() }}</span>
           </p>
         }
         @if (zone() === 'terms' && settings.showPaymentQr()) {
           <app-payment-qr-controls />
         }
       </div>
-      @if (lineIndex(); as index) {
-        <button type="button" class="remove" sheetAction (click)="removeLine(index - 1)">
-          Eliminar
-        </button>
+      @if (lineIndex() !== null) {
+        <button type="button" class="remove" sheetAction (click)="removeLine()">Eliminar</button>
       }
     </app-bottom-sheet>
   `,
@@ -207,20 +209,25 @@ export class ZoneSheet {
     afterEveryRender(() => this.sheets.focusRequested());
   }
 
-  /** The open line, counted from 1 so it is truthy in the template; null for any other zone. */
+  /** The index of the open line; null for any other zone. */
   protected readonly lineIndex = computed(() => {
     const match = /^line-(\d+)$/.exec(this.zone() ?? '');
-    return match ? Number(match[1]) + 1 : null;
+    return match ? Number(match[1]) : null;
+  });
+
+  protected readonly lineAmount = computed(() => {
+    const index = this.lineIndex();
+    return index === null ? '' : this.store.lineAmounts()[index];
   });
 
   protected readonly heading = computed(() => {
     const zone = this.zone();
-    const line = this.lineIndex();
-    if (line !== null) {
-      return `Renglón ${line}`;
+    const index = this.lineIndex();
+    if (index !== null) {
+      return `Renglón ${index + 1}`;
     }
     if (zone === 'terms') {
-      return this.settings.showPaymentQr() ? 'Condiciones y QR' : 'Condiciones';
+      return termsTitle(this.settings.showPaymentQr());
     }
     return zone === null ? '' : (HEADINGS[zone] ?? '');
   });
@@ -241,7 +248,7 @@ export class ZoneSheet {
       case 'notes':
         return [this.text('notes', 'Notas', invoice)];
       case 'terms':
-        return [this.text('terms', 'Términos', invoice)];
+        return [this.text('terms', 'Condiciones', invoice)];
       case 'carrier':
         return CARRIER_LABELS.map(([key, label, inputMode]) =>
           this.field(`carrier.${key}`, label, invoice.carrier[key], { inputMode }, (value) =>
@@ -270,21 +277,25 @@ export class ZoneSheet {
    * to Añadir renglón when it was the last; it runs after the drawer hands focus back to
    * the opener, which may be the zone of the line just removed.
    */
-  protected removeLine(index: number): void {
+  protected removeLine(): void {
+    const index = this.lineIndex();
+    if (index === null) {
+      return;
+    }
     this.store.removeLine(index);
     this.sheets.close();
-    const target = index < this.invoice().lines.length ? `zone-line-${index}` : 'add-line';
+    const target =
+      index < this.invoice().lines.length ? zoneElementId(`line-${index}`) : ADD_LINE_ELEMENT_ID;
     afterNextRender(() => this.document.getElementById(target)?.focus(), {
       injector: this.injector,
     });
   }
 
   private lineFields(invoice: Invoice): SheetFieldSpec[] {
-    const line = this.lineIndex();
-    if (line === null) {
+    const index = this.lineIndex();
+    if (index === null) {
       return [];
     }
-    const index = line - 1;
     return LINE_LABELS.map(([key, label, inputMode]) => ({
       id:
         key === 'code' || key === 'detail'
