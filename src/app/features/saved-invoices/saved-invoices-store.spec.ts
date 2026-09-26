@@ -29,7 +29,7 @@ describe('SavedInvoicesStore', () => {
   });
 
   it('saves the invoice, lists it and confirms with its reference', async () => {
-    await store.save(invoice({ series: 'A', number: '0001' }));
+    await expect(store.save(invoice({ series: 'A', number: '0001' }))).resolves.toBe(true);
 
     expect(toasts.current()?.message).toBe('Factura A-0001 guardada.');
     expect(store.count()).toBe(1);
@@ -142,7 +142,7 @@ describe('SavedInvoicesStore when the repository cannot write', () => {
   it('tells the user storage is full and stops there', async () => {
     const store = configure(new DOMException('Quota exceeded', 'QuotaExceededError'));
 
-    await store.save(invoice());
+    await expect(store.save(invoice())).resolves.toBe(false);
 
     expect(TestBed.inject(ToastService).current()?.message).toBe(
       'No hay espacio para guardar. Exporta y elimina facturas antiguas.',
@@ -153,7 +153,7 @@ describe('SavedInvoicesStore when the repository cannot write', () => {
   it('shows a generic failure for any other error', async () => {
     const store = configure(new Error('boom'));
 
-    await store.save(invoice());
+    await expect(store.save(invoice())).resolves.toBe(false);
 
     expect(TestBed.inject(ToastService).current()?.message).toBe('No se pudo guardar la factura.');
   });

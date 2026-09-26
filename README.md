@@ -1,8 +1,10 @@
 # FACTURATH
 
 Free, open-source, offline-first invoice generator for Cuban businesses.
-No login, no server: the app is a static site that runs entirely in the
-browser and keeps your data on your device.
+No login and no invoice ever leaves the device: the app is a static site
+that runs entirely in the browser and keeps your data there. The only
+thing sent anywhere is a set of anonymous usage counters (see below),
+which the user can turn off.
 
 ## Commands
 
@@ -43,6 +45,55 @@ the same Cloudflare account and the API token scoped to it. The
 `workers.dev` and preview URLs are turned off so search engines only
 see one copy of the site; a path that is not a file gets
 `public/404.html` with a 404 status.
+
+## Usage counters
+
+To know how many devices use FACTURATH and how many invoices it issues,
+the app counts, per local day and with no identifier (#76):
+
+| Event          | Counted                                          |
+| -------------- | ------------------------------------------------ |
+| `install`      | first open in a browser                          |
+| `active-day`   | first open of the day                            |
+| `active-month` | first open of the month                          |
+| `invoice`      | first print of each invoice (reprints not counted) |
+| `save`         | each successful Guardar                          |
+
+`core/usage-stats.ts` keeps the counts in localStorage (key
+`facturath.usage`) until `POST /api/usage` accepts them, so offline use
+is counted too. The invoice ids that stop reprints from counting stay on
+the device. The setting "Enviar estadísticas anónimas de uso" in Ajustes
+turns it off; it starts off when the browser sends Global Privacy
+Control. The rules both sides share live in `domain/usage.ts`.
+
+The only server code is `src/worker/`: wrangler's `run_worker_first`
+sends it `/api/*` alone, it checks the request is a small same-origin
+POST, and it adds the counts to the `counts` table of the
+`facturath-stats` D1 database: one row per day and event, never one per
+device. It reads no IP, and Worker observability is off so no request
+log exists.
+
+The table is created by the migration in `migrations/`:
+
+```bash
+npx wrangler d1 migrations apply facturath-stats --remote
+```
+
+To read the totals:
+
+```bash
+# Devices active per month and invoices issued per month
+npx wrangler d1 execute facturath-stats --remote --command "SELECT substr(day, 1, 7) AS month, event, SUM(n) AS total FROM counts WHERE event IN ('active-month', 'invoice', 'install') GROUP BY month, event ORDER BY month, event"
+
+# Daily active devices over the last 30 days
+npx wrangler d1 execute facturath-stats --remote --command "SELECT day, n FROM counts WHERE event = 'active-day' AND day >= date('now', '-30 days') ORDER BY day"
+```
+
+Counts are per browser, not per person: one person on a phone and a
+computer counts twice, and clearing site data counts as a new install.
+Anyone can post made-up counts; the Worker caps each day and event per
+report, and a Cloudflare rate-limiting rule on `/api/usage` limits the
+rest.
 
 ## Search engines
 
