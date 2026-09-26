@@ -30,7 +30,7 @@ function joined(...parts: string[]): string {
   imports: [Icon, ZoneButton, ZoneSheet],
   template: `
     <article class="doc" aria-labelledby="phone-document-title">
-      <h1 id="phone-document-title" class="sr-only">Factura</h1>
+      <h2 id="phone-document-title" class="sr-only">Factura</h2>
       <app-zone-button
         [elementId]="zoneId('seller')"
         (activated)="sheets.open('seller')"
@@ -228,7 +228,7 @@ function joined(...parts: string[]): string {
       border-top: 1px solid var(--border-1);
     }
 
-    .doc > h1 + * {
+    .doc > h2 + * {
       border-top: 0;
     }
 

@@ -59,18 +59,18 @@ describe('App accessibility', () => {
     await expect(violations()).resolves.toEqual([]);
   }, AXE_TIMEOUT);
 
-  // axe only reports page-has-heading-one against a whole document, which the jsdom run
-  // above cannot do; a real-browser run on the built app found the page had no h1 (#15).
-  // The sheet and the phone document (#64) each carry one; the screen shows one of the two
-  // (the phone document below 640px, the sheet from 640px), which jsdom cannot see as it has
-  // no media queries, so this checks each layout on its own.
-  it('names the page with exactly one level-one heading in each layout', () => {
+  // The page's h1 is the About section of index.html, outside the app (#72; the check that
+  // there is exactly one lives in index-html.spec.ts). The sheet and the phone document (#64)
+  // each title the invoice with an h2; the screen shows one of the two (the phone document
+  // below 640px, the sheet from 640px), which jsdom cannot see as it has no media queries,
+  // so this checks each layout on its own.
+  it('titles the invoice with one second-level heading in each layout and adds no h1', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const texts = (root: ParentNode | null) =>
-      Array.from(root?.querySelectorAll('h1') ?? []).map((heading) => heading.textContent?.trim());
+      Array.from(root?.querySelectorAll('h2') ?? []).map((heading) => heading.textContent?.trim());
     expect(texts(compiled.querySelector('article.sheet'))).toEqual(['Factura']);
     expect(texts(compiled.querySelector('app-phone-document'))).toEqual(['Factura']);
-    expect(compiled.querySelectorAll('h1')).toHaveLength(2);
+    expect(compiled.querySelectorAll('h1')).toHaveLength(0);
   });
 
   it('passes axe with the saving-disabled notice shown', async () => {

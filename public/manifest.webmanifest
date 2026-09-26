@@ -2,6 +2,8 @@
   "id": "/",
   "name": "FACTURATH",
   "short_name": "FACTURATH",
+  "description": "Generador de facturas gratis para Cuba, conforme a la Resolución 55/2021. Sin registro y sin conexión.",
+  "categories": ["business", "finance", "productivity"],
   "lang": "es",
   "start_url": "/",
   "scope": "/",

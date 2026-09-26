@@ -2,10 +2,18 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "facturath",
   "compatibility_date": "2026-09-01",
+  // The public domain (#72, #25). The athendat.site zone must be on the same
+  // Cloudflare account; wrangler creates the DNS record and the certificate.
+  "routes": [{ "pattern": "facturath.athendat.site", "custom_domain": true }],
+  // No second copy of the site on facturath.<account>.workers.dev for search
+  // engines to index next to the custom domain.
+  "workers_dev": false,
+  "preview_urls": false,
   // Static assets only: no Worker script, no assets binding.
-  // Requests that do not match a file are answered with index.html (200).
+  // A path that matches no file gets public/404.html with a 404 status, so
+  // typos and old links are not indexed as copies of the home page.
   "assets": {
     "directory": "./dist/facturath/browser",
-    "not_found_handling": "single-page-application",
+    "not_found_handling": "404-page",
   },
 }

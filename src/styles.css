@@ -63,3 +63,65 @@ a:hover {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* About: the static section after <app-root> in index.html that says what FACTURATH is,
+   for people and for search engines (#72). It is the last thing on the page, so on a phone
+   it leaves the room the fixed action bar covers. */
+.about {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-4) var(--sp-12);
+  border-top: 1px solid var(--border-1);
+  color: var(--fg-1);
+  font-size: var(--fs-16);
+  line-height: var(--lh-relaxed);
+}
+
+.about h1 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-24);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tr-snug);
+}
+
+.about h2 {
+  margin: var(--sp-8) 0 var(--sp-2);
+  font-size: var(--fs-18);
+  line-height: var(--lh-snug);
+}
+
+.about h3 {
+  margin: var(--sp-4) 0 var(--sp-1);
+  font-size: var(--fs-16);
+  line-height: var(--lh-snug);
+}
+
+.about p,
+.about ol,
+.about ul {
+  margin: 0 0 var(--sp-2);
+}
+
+.about ol,
+.about ul {
+  padding-left: var(--sp-6);
+}
+
+.about li + li {
+  margin-top: var(--sp-1);
+}
+
+.about-lead {
+  font-size: var(--fs-18);
+}
+
+.about-norm {
+  font-size: var(--fs-14);
+}
+
+/* The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
+@media screen and (max-width: 639.98px) {
+  .about {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

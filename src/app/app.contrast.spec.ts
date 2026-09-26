@@ -137,6 +137,9 @@ const PAINTED: Record<string, Requirement> = {
   'src/styles.css|a|color': text(PAGE),
   'src/styles.css|a:hover|color': text(PAGE),
   'src/styles.css|.eyebrow|color': text(SHEET),
+  // The About section after the app in index.html (#72) sits on the page background.
+  'src/styles.css|.about|color': text(PAGE),
+  'src/styles.css|.about|border-top': SEPARATOR,
 
   // --- src/app/app.css: the sticky header, its buttons and the footer line.
   'src/app/app.css|.app-top|background': surface,

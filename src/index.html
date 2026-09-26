@@ -2,14 +2,150 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>FACTURATH</title>
+  <title>Generador de facturas gratis para Cuba | FACTURATH</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crea facturas conforme a la Resolución 55/2021 gratis, sin registro y sin internet. Tus datos se quedan en tu dispositivo. Imprime o guarda en PDF.">
+  <link rel="canonical" href="https://facturath.athendat.site/">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#3A0CA3">
+
+  <!-- Link previews (WhatsApp, Telegram, Facebook, X). -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="FACTURATH">
+  <meta property="og:locale" content="es_LA">
+  <meta property="og:url" content="https://facturath.athendat.site/">
+  <meta property="og:title" content="Generador de facturas gratis para Cuba | FACTURATH">
+  <meta property="og:description" content="Facturas con los datos de la Resolución 55/2021, gratis, sin registro y sin internet. Imprime o guarda en PDF.">
+  <meta property="og:image" content="https://facturath.athendat.site/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="FACTURATH, generador de facturas gratis para Cuba">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- The FAQ answers must match the visible "Preguntas frecuentes" below word for word;
+       src/app/index-html.spec.ts checks it. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://facturath.athendat.site/#app",
+        "name": "FACTURATH",
+        "url": "https://facturath.athendat.site/",
+        "description": "Generador de facturas gratis para Cuba con los datos que exige la Resolución 55/2021. Sin registro, sin servidor y funciona sin conexión.",
+        "image": "https://facturath.athendat.site/og-image.png",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": "es",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CUP" },
+        "publisher": { "@type": "Organization", "name": "ATHENDAT" }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://facturath.athendat.site/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "¿FACTURATH es gratis?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Sí. Es gratis y de código abierto, sin registro, sin anuncios y sin límite de facturas." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Dónde se guardan mis facturas?",
+            "acceptedAnswer": { "@type": "Answer", "text": "En el navegador de tu dispositivo. FACTURATH no tiene servidor, así que nadie más ve tus datos. Si borras los datos del navegador se pierden: guarda una copia de seguridad desde Exportar / importar, en el menú." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Funciona sin internet?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Sí. Después de la primera visita la aplicación queda guardada en el dispositivo y puedes crear, guardar e imprimir facturas sin conexión." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Cómo guardo la factura en PDF?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Pulsa PDF / Imprimir y, en el diálogo del navegador, elige Guardar como PDF como destino." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Quién puede usarla?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Cualquier negocio que emita facturas en Cuba: mipymes, cooperativas, trabajadores por cuenta propia o empresas estatales. FACTURATH te ayuda a incluir los datos de la Resolución 55/2021; revisar que cada factura sea correcta sigue siendo tu responsabilidad." }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <app-root></app-root>
+  <!-- What the tool is, for people and search engines. Plain HTML outside the app: Angular
+       leaves it as written, so it costs no JavaScript and is in the prerendered page (#72).
+       Styled by the "About" block in styles.css; never printed. -->
+  <section class="about" aria-labelledby="about-title" data-print-hide>
+    <h1 id="about-title">Generador de facturas gratis para Cuba</h1>
+    <p class="about-lead">
+      FACTURATH crea facturas con los datos que exige la Resolución 55/2021 del Ministerio de
+      Finanzas y Precios. Es gratis, no pide registro y funciona sin conexión: tus facturas se
+      guardan en tu dispositivo, nunca en un servidor.
+    </p>
+
+    <h2>Cómo hacer una factura</h2>
+    <ol>
+      <li>Escribe tus datos de emisor una sola vez. FACTURATH los recuerda para la próxima factura.</li>
+      <li>Completa el comprador, el concepto y las líneas de productos o servicios. Los importes, el impuesto y el total se calculan solos.</li>
+      <li>Pulsa <strong>PDF / Imprimir</strong> y elige Guardar como PDF en el diálogo del navegador, o imprímela en papel.</li>
+    </ol>
+
+    <h2>Datos obligatorios según la Resolución 55/2021</h2>
+    <p>El indicador Res. 55 de la barra superior te avisa de lo que falta. Una factura lleva:</p>
+    <!-- The labels of checkCompliance in src/app/domain/compliance.ts, in its order;
+         src/app/index-html.spec.ts keeps the two in step. -->
+    <ol class="about-norm">
+      <li>Fecha de emisión.</li>
+      <li>Nombre, dirección, REEUP/ONEI, cuenta y sucursal bancaria, NIT y registro comercial del proveedor.</li>
+      <li>Los mismos datos del comprador; personas naturales, número de identidad permanente.</li>
+      <li>Espacio para especificar el concepto de las operaciones.</li>
+      <li>Nombre, identidad, matrícula, carta de porte y casilla del ferrocarril del transportista.</li>
+      <li>Código, descripción, unidad de medida, cantidad, precio unitario e importe.</li>
+      <li>Tipo impositivo y porciento.</li>
+      <li>Importe total, subtotal cuando corresponda y moneda de pago.</li>
+      <li>Nombre y firma de quien entrega y fecha de la entrega.</li>
+      <li>Nombre y firma de quien recibe y fecha de recepción.</li>
+      <li>Nombre y firma del transportador y fecha de recepción.</li>
+      <li>Nombre y firma de quien contabiliza la factura.</li>
+      <li>Número consecutivo del modelo.</li>
+    </ol>
+    <p>Si tu operación no lleva transportista o firmas, oculta esas secciones desde Ajustes, en el menú.</p>
+
+    <h2>Qué incluye</h2>
+    <ul>
+      <li>Facturas en CUP, MLC, USD o EUR, con el equivalente en CUP según la tasa de cambio que indiques.</li>
+      <li>Numeración consecutiva por serie: A-0001, A-0002 y así.</li>
+      <li>Tu logo y los códigos QR de Transfermóvil y EnZona en la factura.</li>
+      <li>Historial de facturas guardadas para abrirlas de nuevo.</li>
+      <li>Copia de seguridad en un archivo que puedes importar en otro equipo.</li>
+      <li>Se instala como aplicación en el teléfono o la computadora.</li>
+      <li>Código abierto en <a href="https://github.com/athendat/facturath">GitHub</a>.</li>
+    </ul>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="about-faq">
+      <h3>¿FACTURATH es gratis?</h3>
+      <p>Sí. Es gratis y de código abierto, sin registro, sin anuncios y sin límite de facturas.</p>
+      <h3>¿Dónde se guardan mis facturas?</h3>
+      <p>En el navegador de tu dispositivo. FACTURATH no tiene servidor, así que nadie más ve tus datos. Si borras los datos del navegador se pierden: guarda una copia de seguridad desde Exportar / importar, en el menú.</p>
+      <h3>¿Funciona sin internet?</h3>
+      <p>Sí. Después de la primera visita la aplicación queda guardada en el dispositivo y puedes crear, guardar e imprimir facturas sin conexión.</p>
+      <h3>¿Cómo guardo la factura en PDF?</h3>
+      <p>Pulsa PDF / Imprimir y, en el diálogo del navegador, elige Guardar como PDF como destino.</p>
+      <h3>¿Quién puede usarla?</h3>
+      <p>Cualquier negocio que emita facturas en Cuba: mipymes, cooperativas, trabajadores por cuenta propia o empresas estatales. FACTURATH te ayuda a incluir los datos de la Resolución 55/2021; revisar que cada factura sea correcta sigue siendo tu responsabilidad.</p>
+    </div>
+  </section>
 </body>
 </html>

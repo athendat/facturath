@@ -100,8 +100,8 @@ describe('PhoneDocument', () => {
     }
   });
 
-  it('names the page with a level-one heading of its own and is kept off paper', () => {
-    expect(visibleText(element.querySelector('h1'))).toBe('Factura');
+  it('titles the document with a heading of its own and is kept off paper', () => {
+    expect(visibleText(element.querySelector('h2'))).toBe('Factura');
     expect(element.hasAttribute('data-print-hide')).toBe(true);
   });
 

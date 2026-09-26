@@ -227,8 +227,8 @@ app-action-bar {
 }
 
 /* A phone (#64): wordmark over the reference on the left, then the seal as a compact chip and
-   the hamburger; Guardar and PDF live in the action bar fixed to the bottom, and the footer
-   leaves room for it so the BALANC line is never hidden behind it.
+   the hamburger; Guardar and PDF live in the action bar fixed to the bottom. The room the bar
+   covers is left by the About section that follows the app in index.html (styles.css, #72).
    The phone breakpoint, as PHONE_MEDIA_QUERY in core/phone-layout.ts. */
 @media screen and (max-width: 639.98px) {
   .app-header {
@@ -286,9 +286,6 @@ app-action-bar {
     display: flex;
   }
 
-  .app-footer {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  }
 }
 
 @media print {
