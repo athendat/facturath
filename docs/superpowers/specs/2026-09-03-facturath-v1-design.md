@@ -134,7 +134,7 @@ Distribution is free: static files on Cloudflare Workers, deployed from GitHub A
 - Angular 22, zoneless, standalone components, signals for all state. No NgRx, no Material, no Tailwind, no PDF library.
 - The scaffold's server-side rendering runtime is removed. Build output is static with the single route prerendered at build time. Express and the server entry are deleted; `@angular/ssr` stays only as a build-time prerender dependency.
 - Browser-only work (reading storage, creating object URLs) runs after first render so the prerendered HTML never diverges from the client DOM.
-- Size budgets tightened: initial bundle warns at 250 kB and fails at 300 kB uncompressed.
+- Size budgets: initial bundle warns at 300 kB and fails at 330 kB uncompressed. The thresholds started at 250 / 300 kB and were raised on purpose as features landed (#13, #61, #69).
 - No custom fonts are shipped. The Helvetica Neue LT Std OTF files in the design are commercially licensed and are excluded. The font stack is Helvetica Neue, Helvetica, Arial, system-ui, sans-serif.
 - Styling is plain CSS using the ATHENDAT design-system tokens (gem indigo primary, cool grays, 2 px radius, 1 px gray-200 borders). Design-time inline styles are ported to component styles.
 - UI copy is Spanish only, kept in templates. No i18n framework. Code, identifiers, comments, docs, and commits are in English.
