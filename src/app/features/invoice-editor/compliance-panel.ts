@@ -1,8 +1,8 @@
 import { Component, Injector, afterNextRender, inject, model } from '@angular/core';
-import { FieldFocus } from '../../core/field-focus';
 import type { ComplianceEntry, ComplianceState } from '../../domain/compliance';
 import { Drawer } from '../../shared/ui/drawer';
 import { InvoiceStore } from './invoice-store';
+import { ZoneSheets } from './zone-sheets';
 
 const STATE_LABELS: Record<ComplianceState, string> = {
   fulfilled: 'Completo',
@@ -178,7 +178,7 @@ const STATE_LABELS: Record<ComplianceState, string> = {
 })
 export class CompliancePanel {
   protected readonly store = inject(InvoiceStore);
-  private readonly fieldFocus = inject(FieldFocus);
+  private readonly sheets = inject(ZoneSheets);
   private readonly injector = inject(Injector);
 
   readonly open = model(false);
@@ -186,9 +186,10 @@ export class CompliancePanel {
   protected readonly stateLabels = STATE_LABELS;
 
   /**
-   * Closes the panel and focuses the entry's missing field. The drawer gives focus back to
-   * its opener in its own after-render hook, registered before this one, so the field focus
-   * runs after that restore in the same render and wins.
+   * Closes the panel and focuses the entry's missing field, which on a phone opens the sheet
+   * that owns it. The drawer gives focus back to its opener in its own after-render hook,
+   * registered before this one, so the field focus runs after that restore in the same
+   * render and wins.
    */
   protected goTo(entry: ComplianceEntry): void {
     const field = entry.focusField;
@@ -196,6 +197,6 @@ export class CompliancePanel {
       return;
     }
     this.open.set(false);
-    afterNextRender(() => this.fieldFocus.focus(field), { injector: this.injector });
+    afterNextRender(() => this.sheets.reveal(field), { injector: this.injector });
   }
 }

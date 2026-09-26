@@ -5,6 +5,7 @@ import { App, SAVING_DISABLED_NOTICE } from './app';
 import { PageReloader } from './core/page-reloader';
 import { Printer } from './core/printer';
 import { ObjectUrls } from './core/object-urls';
+import { PhoneLayout } from './core/phone-layout';
 import { SettingsStore } from './core/settings-store';
 import { InMemoryPreferencesStore } from './core/storage/in-memory-preferences-store';
 import { ASSET_STORE, INVOICE_REPOSITORY, PREFERENCES_STORE } from './core/storage/ports';
@@ -865,3 +866,76 @@ describe('App with storage provided', () => {
     expect(notices(fixture.nativeElement as HTMLElement)).toHaveLength(1);
   });
 });
+
+describe('App on a phone', () => {
+  let fixture: ComponentFixture<App>;
+  let compiled: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        { provide: SwUpdate, useValue: new FakeSwUpdate() },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+        // jsdom has no media queries: this stands in for a screen below 640px.
+        { provide: PhoneLayout, useValue: { active: () => true } },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(App);
+    compiled = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+  });
+
+  function dialog(): HTMLElement | null {
+    return compiled.querySelector<HTMLElement>('[role="dialog"]');
+  }
+
+  function ids(): string[] {
+    return Array.from(compiled.querySelectorAll('[id]')).map((element) => element.id);
+  }
+
+  it('jumps from the compliance panel into the sheet that owns the field, and back to its zone', async () => {
+    const seal = compiled.querySelector<HTMLButtonElement>('.app-header app-compliance-seal button');
+    seal?.focus();
+    seal?.click();
+    await fixture.whenStable();
+
+    const buyer = Array.from(dialog()?.querySelectorAll('li') ?? []).find((item) =>
+      item.textContent?.includes('Los mismos datos del comprador'),
+    );
+    findButton(buyer as HTMLElement, 'Ir al campo')?.click();
+    await fixture.whenStable();
+
+    expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Comprador');
+    expect(document.activeElement?.id).toBe('sheet-field-buyer-name');
+    expect(new Set(ids()).size).toBe(ids().length);
+
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    await fixture.whenStable();
+
+    expect(dialog()).toBeNull();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Editar comprador');
+  });
+
+  it('opens the line sheet for a line field', async () => {
+    const store = TestBed.inject(InvoiceStore);
+    store.load(completeInvoiceWithout('unit'));
+    await fixture.whenStable();
+    compiled.querySelector<HTMLButtonElement>('.app-header app-compliance-seal button')?.click();
+    await fixture.whenStable();
+
+    findButton(dialog() as HTMLElement, 'Ir al campo')?.click();
+    await fixture.whenStable();
+
+    expect(dialog()?.querySelector('h2')?.textContent?.trim()).toBe('Renglón 1');
+    expect(document.activeElement?.id).toBe('sheet-field-lines-0-unit');
+  });
+});
+
+/** A complete invoice whose only line lacks `field`, so that is the one pending data point. */
+function completeInvoiceWithout(field: 'unit'): Invoice {
+  const invoice = completeInvoice();
+  return { ...invoice, lines: [{ ...invoice.lines[0], [field]: '' }] };
+}

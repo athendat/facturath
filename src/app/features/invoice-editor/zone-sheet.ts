@@ -1,4 +1,12 @@
-import { Component, DOCUMENT, Injector, afterNextRender, computed, inject } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  Injector,
+  afterEveryRender,
+  afterNextRender,
+  computed,
+  inject,
+} from '@angular/core';
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
 import type { FieldId } from '../../domain/compliance';
@@ -192,6 +200,12 @@ export class ZoneSheet {
 
   protected readonly zone = this.sheets.current;
   protected readonly invoice = this.store.invoice;
+
+  constructor() {
+    // A sheet opened to show a field (`ZoneSheets.reveal`) focuses it once it has rendered;
+    // the drawer leaves focus alone while it is inside the sheet.
+    afterEveryRender(() => this.sheets.focusRequested());
+  }
 
   /** The open line, counted from 1 so it is truthy in the template; null for any other zone. */
   protected readonly lineIndex = computed(() => {
