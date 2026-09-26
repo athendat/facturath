@@ -16,7 +16,9 @@ import { FakeObjectUrls } from './core/testing/fake-object-urls';
 import { provideNoIndexedDb } from './core/testing/fake-storage';
 import { FakeSwUpdate, versionReady } from './core/testing/fake-sw-update';
 import { ToastService } from './core/toast';
+import { USAGE_KEY, USAGE_TRANSPORT } from './core/usage-stats';
 import { createInvoice, type Invoice } from './domain/invoice';
+import type { UsageReport } from './domain/usage';
 import { createEmptyProfile } from './domain/seller-profile';
 import { DRAFT_DELAY_MS } from './features/invoice-editor/draft-autosave';
 import { InvoiceStore } from './features/invoice-editor/invoice-store';
@@ -1010,5 +1012,70 @@ describe('App before any lazy chunk loads', () => {
     ).not.toBeNull();
     expect(compiled.querySelector('app-action-bar button[aria-label="Guardar"]')).not.toBeNull();
     expect(compiled.querySelector('app-zone-sheet')).toBeNull();
+  });
+});
+
+describe('App usage counters', () => {
+  let fixture: ComponentFixture<App>;
+  let sent: UsageReport[];
+
+  /** Every event counted so far, summed over the reports the app sent. */
+  function totals(): Record<string, number> {
+    const sum: Record<string, number> = {};
+    for (const { days } of sent) {
+      for (const { counts } of days) {
+        for (const [event, n] of Object.entries(counts)) {
+          sum[event] = (sum[event] ?? 0) + (n ?? 0);
+        }
+      }
+    }
+    return sum;
+  }
+
+  beforeEach(async () => {
+    // The real window is shared by every App test in this file; start from a browser that
+    // has never counted anything.
+    localStorage.removeItem(USAGE_KEY);
+    sent = [];
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        { provide: SwUpdate, useValue: new FakeSwUpdate() },
+        { provide: Printer, useValue: { print: vi.fn() } },
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+        {
+          provide: USAGE_TRANSPORT,
+          useValue: (report: UsageReport) => {
+            sent.push(structuredClone(report));
+            return Promise.resolve('sent' as const);
+          },
+        },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+  });
+
+  afterEach(() => localStorage.removeItem(USAGE_KEY));
+
+  it('counts the open at startup', () => {
+    expect(totals()).toEqual({ install: 1, 'active-day': 1, 'active-month': 1 });
+  });
+
+  it('counts the open invoice once when it is printed, however often', async () => {
+    window.dispatchEvent(new Event('beforeprint'));
+    window.dispatchEvent(new Event('beforeprint'));
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(totals()['invoice']).toBe(1);
+  });
+
+  it('counts a save that went through', async () => {
+    findButton(fixture.nativeElement as HTMLElement, 'Guardar')?.click();
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(totals()['save']).toBe(1);
   });
 });

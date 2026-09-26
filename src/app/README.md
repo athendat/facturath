@@ -40,3 +40,11 @@ diverge from the first client render, so any code that touches `window`,
 `document`, `localStorage`, or `indexedDB` must run inside `afterNextRender`
 (or an equivalent browser-only hook), never in constructors, field
 initializers, or the template of the first render.
+
+## Outside the app: `src/worker/`
+
+The Cloudflare Worker behind `POST /api/usage` (#76). It is not part of the
+Angular build (`tsconfig.app.json` excludes it; wrangler bundles it from
+`wrangler.jsonc`) and may import only from `domain/`, which it shares with
+the app so both sides apply the same usage rules.
+

@@ -1,8 +1,10 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImagesStore } from '../../core/images-store';
 import { ObjectUrls } from '../../core/object-urls';
 import { SettingsStore } from '../../core/settings-store';
 import { FakeObjectUrls } from '../../core/testing/fake-object-urls';
+import { UsageStats } from '../../core/usage-stats';
 import { PROFILE_TEXT_FIELDS } from '../../domain/seller-profile';
 import { SettingsPanel } from './settings-panel';
 
@@ -25,11 +27,18 @@ describe('SettingsPanel', () => {
   let fixture: ComponentFixture<SettingsPanel>;
   let element: HTMLElement;
   let settings: SettingsStore;
+  const usageEnabled = signal(true);
+  const usage = { enabled: usageEnabled.asReadonly(), setEnabled: vi.fn((on: boolean) => usageEnabled.set(on)) };
 
   beforeEach(async () => {
+    usageEnabled.set(true);
+    usage.setEnabled.mockClear();
     await TestBed.configureTestingModule({
       imports: [SettingsPanel],
-      providers: [{ provide: ObjectUrls, useValue: new FakeObjectUrls() }],
+      providers: [
+        { provide: ObjectUrls, useValue: new FakeObjectUrls() },
+        { provide: UsageStats, useValue: usage },
+      ],
     }).compileComponents();
     settings = TestBed.inject(SettingsStore);
     fixture = TestBed.createComponent(SettingsPanel);
@@ -62,7 +71,7 @@ describe('SettingsPanel', () => {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  it('is a dialog named Ajustes with the three sections, kept off paper', () => {
+  it('is a dialog named Ajustes with its four sections, kept off paper', () => {
     const dialog = element.querySelector('[role="dialog"]');
 
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
@@ -71,6 +80,7 @@ describe('SettingsPanel', () => {
       'Datos del emisor',
       'Imágenes',
       'Diseño',
+      'Privacidad',
     ]);
     expect(element.hasAttribute('data-print-hide')).toBe(true);
   });
@@ -154,6 +164,37 @@ describe('SettingsPanel', () => {
       await fixture.whenStable();
 
       expect(control('Compacta').checked).toBe(true);
+    });
+  });
+
+  describe('privacy', () => {
+    const LABEL = 'Enviar estadísticas anónimas de uso';
+
+    it('shows the anonymous usage counters as a checkbox explained by the text below it', () => {
+      const box = control(LABEL);
+      const hint = element.querySelector(`#${box.getAttribute('aria-describedby')}`);
+
+      expect(box.type).toBe('checkbox');
+      expect(box.checked).toBe(true);
+      expect(hint?.textContent).toContain('nunca el contenido de tus facturas');
+    });
+
+    it('turns the counters off and on from the checkbox', async () => {
+      check(LABEL, false);
+      await fixture.whenStable();
+      expect(usage.setEnabled).toHaveBeenLastCalledWith(false);
+      expect(control(LABEL).checked).toBe(false);
+
+      check(LABEL, true);
+      await fixture.whenStable();
+      expect(usage.setEnabled).toHaveBeenLastCalledWith(true);
+    });
+
+    it('shows the counters off when they are off, as with Global Privacy Control', async () => {
+      usageEnabled.set(false);
+      await fixture.whenStable();
+
+      expect(control(LABEL).checked).toBe(false);
     });
   });
 });

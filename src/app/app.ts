@@ -13,6 +13,7 @@ import { Printer } from './core/printer';
 import { StorageStatus } from './core/storage/storage-status';
 import { ToastService, type Toast } from './core/toast';
 import { UpdateNotifier } from './core/update-notifier';
+import { UsageStats } from './core/usage-stats';
 import { formatReference } from './domain/format';
 import { FilePanel } from './features/import-export/file-panel';
 import type { ImportResult } from './features/import-export/import-export-store';
@@ -65,6 +66,7 @@ export class App {
   private readonly storage = inject(StorageStatus);
   private readonly updateNotifier = inject(UpdateNotifier);
   private readonly autosave = inject(DraftAutosave);
+  private readonly usage = inject(UsageStats);
   private readonly pendingTasks = inject(PendingTasks);
   private readonly injector = inject(Injector);
   private readonly hamburger = viewChild.required<ElementRef<HTMLButtonElement>>('hamburger');
@@ -130,6 +132,8 @@ export class App {
     // stable until the open invoice is settled.
     afterNextRender(async () => {
       this.updateNotifier.start();
+      // Anonymous counters (#76): this open, then each print of the open invoice.
+      this.usage.start({ currentInvoiceId: () => this.store.invoice().id });
       const done = this.pendingTasks.add();
       try {
         await this.saved.load();
@@ -181,7 +185,9 @@ export class App {
 
   /** Saves into history; the draft slot follows so it never lags behind. */
   protected async save(): Promise<void> {
-    await this.saved.save(this.store.invoice());
+    if (await this.saved.save(this.store.invoice())) {
+      this.usage.invoiceSaved();
+    }
     await this.autosave.writeNow();
   }
 

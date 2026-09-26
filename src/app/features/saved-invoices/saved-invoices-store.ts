@@ -40,16 +40,17 @@ export class SavedInvoicesStore {
     }
   }
 
-  /** Stores the invoice and confirms with its reference. */
-  async save(invoice: Invoice): Promise<void> {
+  /** Stores the invoice and confirms with its reference; false when it could not be stored. */
+  async save(invoice: Invoice): Promise<boolean> {
     try {
       await this.repository.save(invoice);
     } catch (error) {
       this.toasts.show(isQuotaExceeded(error) ? QUOTA_FULL_MESSAGE : SAVE_FAILED_MESSAGE);
-      return;
+      return false;
     }
     await this.load();
     this.toasts.show(`Factura ${formatReference(invoice.series, invoice.number)} guardada.`);
+    return true;
   }
 
   get(id: string): Promise<Invoice | null> {

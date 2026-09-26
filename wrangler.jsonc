@@ -9,11 +9,25 @@
   // engines to index next to the custom domain.
   "workers_dev": false,
   "preview_urls": false,
-  // Static assets only: no Worker script, no assets binding.
-  // A path that matches no file gets public/404.html with a 404 status, so
-  // typos and old links are not indexed as copies of the home page.
+  // Only POST /api/usage, the anonymous usage counters (#76). The Worker never
+  // sees any other request: run_worker_first sends it /api/* alone.
+  "main": "src/worker/index.ts",
+  // Invocation logs would record who called /api/usage; the counters promise not to.
+  "observability": { "enabled": false },
+  "d1_databases": [
+    {
+      "binding": "STATS",
+      "database_name": "facturath-stats",
+      "database_id": "590585ff-f48a-4465-9e63-f263829c7b86",
+      "migrations_dir": "migrations",
+    },
+  ],
+  // Everything else is static. A path that matches no file gets public/404.html
+  // with a 404 status, so typos and old links are not indexed as copies of the
+  // home page.
   "assets": {
     "directory": "./dist/facturath/browser",
     "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"],
   },
 }

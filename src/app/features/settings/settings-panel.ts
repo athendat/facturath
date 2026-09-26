@@ -1,6 +1,7 @@
 import { Component, inject, model } from '@angular/core';
 import { ImagesStore } from '../../core/images-store';
 import { SettingsStore } from '../../core/settings-store';
+import { UsageStats } from '../../core/usage-stats';
 import type { ImageKind } from '../../domain/invoice';
 import type { Density, SectionFlag } from '../../domain/preferences';
 import type { ProfileTextField } from '../../domain/seller-profile';
@@ -42,7 +43,7 @@ let nextId = 0;
 
 /**
  * Everything about the seller in one side panel: the profile fields, the
- * images and the layout preferences. A shortcut: the document stays editable
+ * images, the layout preferences and the anonymous usage counters (#76). A shortcut: the document stays editable
  * and the two follow each other through the settings store.
  */
 @Component({
@@ -115,6 +116,23 @@ let nextId = 0;
             </label>
           }
         </fieldset>
+      </section>
+
+      <section class="group" [attr.aria-labelledby]="id + '-privacy'">
+        <h3 class="title" [id]="id + '-privacy'">Privacidad</h3>
+        <label class="choice">
+          <input
+            type="checkbox"
+            [attr.aria-describedby]="id + '-usage-hint'"
+            [checked]="usage.enabled()"
+            (change)="onUsageChange($event)"
+          />
+          Enviar estadísticas anónimas de uso
+        </label>
+        <p class="hint" [id]="id + '-usage-hint'">
+          Solo números: cuántas veces se abre la app y cuántas facturas se emiten y guardan. Sin
+          cookies ni identificadores, y nunca el contenido de tus facturas.
+        </p>
       </section>
     </app-drawer>
   `,
@@ -207,6 +225,13 @@ let nextId = 0;
       accent-color: var(--gem-900);
     }
 
+    .hint {
+      margin: var(--sp-1) 0 0;
+      color: var(--fg-2);
+      font-size: var(--fs-12);
+      line-height: var(--lh-normal);
+    }
+
     .choice input:focus-visible {
       outline: 2px solid var(--gem-900);
       outline-offset: 2px;
@@ -217,6 +242,7 @@ let nextId = 0;
 export class SettingsPanel {
   protected readonly settings = inject(SettingsStore);
   protected readonly imagesStore = inject(ImagesStore);
+  protected readonly usage = inject(UsageStats);
 
   readonly open = model(false);
 
@@ -228,6 +254,10 @@ export class SettingsPanel {
 
   protected onProfileInput(field: ProfileTextField, event: Event): void {
     this.settings.updateProfile(field, (event.target as HTMLInputElement).value);
+  }
+
+  protected onUsageChange(event: Event): void {
+    this.usage.setEnabled((event.target as HTMLInputElement).checked);
   }
 
   protected onSectionChange(flag: SectionFlag, event: Event): void {

@@ -311,6 +311,7 @@ const PAINTED: Record<string, Requirement> = {
   'src/app/features/settings/settings-panel.ts|.input:focus|border-color': nonText(SHEET),
   'src/app/features/settings/settings-panel.ts|.input:focus|box-shadow': nonText(SHEET),
   'src/app/features/settings/settings-panel.ts|.legend|color': text(SHEET),
+  'src/app/features/settings/settings-panel.ts|.hint|color': text(SHEET),
   'src/app/features/settings/settings-panel.ts|.choice input|accent-color': nonText(SHEET),
   'src/app/features/settings/settings-panel.ts|.choice input:focus-visible|outline': nonText(SHEET),
 
