@@ -304,3 +304,54 @@ describe('UsageStats', () => {
     expect(window.storage.getItem(USAGE_KEY)).toBeNull();
   });
 });
+
+describe('USAGE_TRANSPORT', () => {
+  const report: UsageReport = { days: [{ day: '2026-09-26', counts: { save: 1 } }] };
+
+  function transportAnswering(answer: () => Promise<Response>) {
+    const fetch = vi.fn(answer);
+    TestBed.configureTestingModule({
+      providers: [{ provide: DOCUMENT, useValue: { defaultView: { fetch } } }],
+    });
+    return { transport: TestBed.inject(USAGE_TRANSPORT), fetch };
+  }
+
+  it('posts the report as JSON to the same origin, without credentials', async () => {
+    const { transport, fetch } = transportAnswering(() =>
+      Promise.resolve(new Response(null, { status: 204 })),
+    );
+
+    await expect(transport(report)).resolves.toBe('sent');
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/usage',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(report),
+        credentials: 'omit',
+      }),
+    );
+  });
+
+  it.each([400, 413])('drops a report the server judges bad (%i)', async (status) => {
+    const { transport } = transportAnswering(() => Promise.resolve(new Response(null, { status })));
+
+    await expect(transport(report)).resolves.toBe('rejected');
+  });
+
+  // 403 and 404 can come from something in front of the Worker, such as a firewall rule that
+  // blocks every request (#80): the counts wait for the configuration to be fixed.
+  it.each([403, 404, 429, 500, 503])('keeps the counts for later on %i', async (status) => {
+    const { transport } = transportAnswering(() => Promise.resolve(new Response(null, { status })));
+
+    await expect(transport(report)).resolves.toBe('failed');
+  });
+
+  it('keeps the counts for later when the network fails', async () => {
+    const { transport } = transportAnswering(() =>
+      Promise.reject(new TypeError('Failed to fetch')),
+    );
+
+    await expect(transport(report)).resolves.toBe('failed');
+  });
+});

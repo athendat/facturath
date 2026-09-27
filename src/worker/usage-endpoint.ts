@@ -2,8 +2,9 @@ import { parseUsageReport } from '../app/domain/usage';
 
 /**
  * `POST /api/usage` (#76): adds a device's anonymous day counts to the `counts` table.
- * Reads nothing about the sender: no IP, no header beyond Origin and Content-Length, no
- * logging. The table holds only `(day, event, n)` totals, never a row per device.
+ * Keeps nothing about the sender: no logging, and the table holds only `(day, event, n)`
+ * totals, never a row per device. The client IP is read for one purpose only, as the key of
+ * the per-IP rate limiter (#80), in memory; it is never stored or written anywhere.
  *
  * A daily write budget (#78) keeps the endpoint from spending the account's D1 row-write
  * quota, which on the Free plan is shared by every database of the account: past the budget it
@@ -22,6 +23,14 @@ export interface CountsDatabase {
   prepare(query: string): { bind(...values: unknown[]): CountsStatement };
   batch(statements: CountsStatement[]): Promise<unknown>;
 }
+
+/** The Workers rate-limiting binding (`ratelimits` in wrangler.jsonc); the real one matches it. */
+export interface UsageLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
+/** The period of the per-IP limit, in seconds, as configured in wrangler.jsonc. */
+export const RATE_LIMIT_PERIOD_SECONDS = 10;
 
 /** A bound statement: batched, or read on its own for the first row. */
 export interface CountsStatement {
@@ -61,6 +70,7 @@ export async function handleUsage(
   db: CountsDatabase,
   now: Date,
   budget = DEFAULT_DAILY_ROW_BUDGET,
+  limiter?: UsageLimiter,
 ): Promise<Response> {
   if (request.method !== 'POST') {
     return reply(405, { allow: 'POST' });
@@ -68,6 +78,14 @@ export async function handleUsage(
   // Browsers send Origin on every POST; the app only ever posts to its own origin.
   if (request.headers.get('origin') !== new URL(request.url).origin) {
     return reply(403);
+  }
+  // Before the body is read or D1 is touched, so a flood costs as little as possible. The IP
+  // is the limiter's key and nothing else: it is not kept once this call returns.
+  if (limiter !== undefined) {
+    const key = request.headers.get('cf-connecting-ip') ?? 'unknown';
+    if (!(await limiter.limit({ key })).success) {
+      return reply(429, { 'retry-after': String(RATE_LIMIT_PERIOD_SECONDS) });
+    }
   }
   // Checked before reading, when declared; the length of what arrives is checked again below.
   if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {

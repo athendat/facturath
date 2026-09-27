@@ -61,7 +61,9 @@ the app counts, per local day and with no identifier (#76):
 
 `core/usage-stats.ts` keeps the counts in localStorage (key
 `facturath.usage`) until `POST /api/usage` accepts them, so offline use
-is counted too. The invoice ids that stop reprints from counting stay on
+is counted too. Only a verdict on the report itself (`400`, `413`)
+drops them; any other answer, a `403` from a firewall rule included,
+keeps them for a later try within the 60-day window. The invoice ids that stop reprints from counting stay on
 the device. The setting "Enviar estadísticas anónimas de uso" in Ajustes
 turns it off; it starts off when the browser sends Global Privacy
 Control. The rules both sides share live in `domain/usage.ts`.
@@ -70,7 +72,9 @@ The only server code is `src/worker/`: wrangler's `run_worker_first`
 sends it `/api/*` alone, it checks the request is a small same-origin
 POST, and it adds the counts to the `counts` table of the
 `facturath-stats` D1 database: one row per day and event, never one per
-device. It reads no IP, and Worker observability is off so no request
+device. It reads the client IP only as the in-memory key of its rate
+limiter (see below) and never stores it, and Worker observability is off
+so no request
 log exists.
 
 The tables are created by the migrations in `migrations/`:
@@ -102,13 +106,14 @@ midnight UTC. Three layers keep `/api/usage` from getting there (#78):
 
 1. **Per report**: same-origin POST only, body under 8 KB, each day and
    event capped (`USAGE_DAILY_CAPS` in `domain/usage.ts`).
-2. **Per IP, at the edge**: a rate-limiting rule set by hand in the
-   Cloudflare dashboard (zone `athendat.site` → Security rules → Create
-   rule → Rate limiting rule), matching
-   `(http.host eq "facturath.athendat.site" and http.request.uri.path eq "/api/usage" and http.request.method eq "POST")`,
-   5 requests per 10 seconds per IP, action Block for 10 seconds (the
-   Free plan allows one rule, IP only, 10-second period and block). The
-   app treats the 429 as a temporary failure and keeps its counts.
+2. **Per IP, in the Worker** (#80): the Workers rate-limiting binding
+   (`ratelimits` in `wrangler.jsonc`) allows 5 reports per 10 seconds
+   per client IP, checked before the body is read or D1 is touched.
+   Past it the answer is `429` with `Retry-After`, and the app keeps its
+   counts for later. The IP is the limiter's key and nothing else: it is
+   not logged, stored or written to D1. (A dashboard rate-limiting rule
+   was not available on this account's plan. **Never** add a custom WAF
+   rule that blocks `/api/usage`: it stops every count.)
 3. **Per day, in the Worker**: `daily_intake` records the reports and
    rows accepted per UTC day. A report that would pass
    `USAGE_DAILY_ROW_BUDGET` (`vars` in `wrangler.jsonc`, 20 000) writes
