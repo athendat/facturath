@@ -1,6 +1,7 @@
 import {
   DEFAULT_DAILY_ROW_BUDGET,
   MAX_BODY_BYTES,
+  RATE_LIMIT_PERIOD_SECONDS,
   READ_INTAKE,
   UPSERT_COUNT,
   UPSERT_INTAKE,
@@ -8,6 +9,7 @@ import {
   handleUsage,
   type CountsDatabase,
   type CountsStatement,
+  type UsageLimiter,
 } from './usage-endpoint';
 
 const ORIGIN = 'https://facturath.athendat.site';
@@ -263,6 +265,70 @@ describe('POST /api/usage', () => {
       await handleUsage(post(oneDay), spied, NOW);
 
       expect(prepared).toContain(READ_INTAKE);
+    });
+  });
+
+  describe('per-IP rate limit', () => {
+    const oneDay = report([{ day: '2026-09-26', counts: { save: 1 } }]);
+
+    /** A limiter that lets `allowed` calls through, recording the keys it is asked about. */
+    function fakeLimiter(allowed: number) {
+      const keys: string[] = [];
+      const limiter: UsageLimiter = {
+        limit: ({ key }) => {
+          keys.push(key);
+          return Promise.resolve({ success: keys.length <= allowed });
+        },
+      };
+      return { limiter, keys };
+    }
+
+    const fromIp = (ip: string) => post(oneDay, { 'cf-connecting-ip': ip });
+
+    it('counts reports per client IP and takes them while under the limit', async () => {
+      const { db, rows } = fakeDatabase(0);
+      const { limiter, keys } = fakeLimiter(5);
+
+      const response = await handleUsage(fromIp('203.0.113.7'), db, NOW, undefined, limiter);
+
+      expect(response.status).toBe(204);
+      expect(keys).toEqual(['203.0.113.7']);
+      expect(rows).toHaveLength(1);
+    });
+
+    it('answers 429 past the limit, before reading the body or touching the database', async () => {
+      const { db, rows, intake, reads } = fakeDatabase(0);
+      const { limiter } = fakeLimiter(0);
+      const request = fromIp('203.0.113.7');
+
+      const response = await handleUsage(request, db, NOW, undefined, limiter);
+
+      expect(response.status).toBe(429);
+      expect(response.headers.get('retry-after')).toBe(String(RATE_LIMIT_PERIOD_SECONDS));
+      expect(request.bodyUsed).toBe(false);
+      expect([rows, intake, reads]).toEqual([[], [], []]);
+    });
+
+    it('leaves requests the endpoint refuses anyway out of the count', async () => {
+      const { db } = fakeDatabase(0);
+      const { limiter, keys } = fakeLimiter(5);
+
+      await handleUsage(
+        new Request(`${ORIGIN}/api/usage`, { headers: { origin: ORIGIN } }),
+        db,
+        NOW,
+        undefined,
+        limiter,
+      );
+      await handleUsage(
+        post(oneDay, { origin: 'https://example.com' }),
+        db,
+        NOW,
+        undefined,
+        limiter,
+      );
+
+      expect(keys).toEqual([]);
     });
   });
 });

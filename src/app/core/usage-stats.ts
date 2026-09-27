@@ -18,13 +18,17 @@ export const USAGE_KEY = 'facturath.usage';
 export const USAGE_ENDPOINT = '/api/usage';
 
 /**
- * How a report went: `sent` when the server took it, `rejected` when it refused it for good
- * (the counts are dropped so a bad report is never retried forever), `failed` when it may
- * work later (offline, server error, rate limit).
+ * How a report went: `sent` when the server took it, `rejected` when it judged the report
+ * itself bad (400, 413: the counts are dropped so a bad report is never retried forever),
+ * `failed` for anything that may work later: offline, 5xx, 429, and also a 403 or 404 from
+ * something in front of the Worker, such as a misconfigured firewall rule (#80).
  */
 export type UsageSendResult = 'sent' | 'rejected' | 'failed';
 
 export type UsageTransport = (report: UsageReport) => Promise<UsageSendResult>;
+
+/** The answers that condemn the report itself: malformed, or too large. */
+const REJECTED_STATUSES = new Set([400, 413]);
 
 /** Posts a report to the app's own origin. Replaced by a fake in tests. */
 export const USAGE_TRANSPORT = new InjectionToken<UsageTransport>('USAGE_TRANSPORT', {
@@ -46,9 +50,7 @@ export const USAGE_TRANSPORT = new InjectionToken<UsageTransport>('USAGE_TRANSPO
         if (response.ok) {
           return 'sent';
         }
-        return response.status >= 400 && response.status < 500 && response.status !== 429
-          ? 'rejected'
-          : 'failed';
+        return REJECTED_STATUSES.has(response.status) ? 'rejected' : 'failed';
       } catch {
         return 'failed';
       }
