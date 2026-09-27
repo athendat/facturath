@@ -14,6 +14,10 @@
   "main": "src/worker/index.ts",
   // Invocation logs would record who called /api/usage; the counters promise not to.
   "observability": { "enabled": false },
+  // Rows /api/usage may write per UTC day (#78). On the Free plan the D1 write
+  // quota is shared by every database of the account; past this budget the
+  // endpoint answers 503 and the app keeps its counts for another day.
+  "vars": { "USAGE_DAILY_ROW_BUDGET": "20000" },
   "d1_databases": [
     {
       "binding": "STATS",

@@ -1,4 +1,4 @@
-import { handleUsage, type CountsDatabase } from './usage-endpoint';
+import { dailyRowBudget, handleUsage, type CountsDatabase } from './usage-endpoint';
 
 /**
  * The Worker in front of the static site (#76). `run_worker_first` in wrangler.jsonc sends only
@@ -8,12 +8,19 @@ import { handleUsage, type CountsDatabase } from './usage-endpoint';
 
 interface Env {
   STATS: CountsDatabase;
+  /** Rows the endpoint may write per UTC day (`vars` in wrangler.jsonc, #78). */
+  USAGE_DAILY_ROW_BUDGET?: string;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (new URL(request.url).pathname === '/api/usage') {
-      return handleUsage(request, env.STATS, new Date());
+      return handleUsage(
+        request,
+        env.STATS,
+        new Date(),
+        dailyRowBudget(env.USAGE_DAILY_ROW_BUDGET),
+      );
     }
     return new Response(null, { status: 404, headers: { 'cache-control': 'no-store' } });
   },

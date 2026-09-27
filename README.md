@@ -73,7 +73,7 @@ POST, and it adds the counts to the `counts` table of the
 device. It reads no IP, and Worker observability is off so no request
 log exists.
 
-The table is created by the migration in `migrations/`:
+The tables are created by the migrations in `migrations/`:
 
 ```bash
 npx wrangler d1 migrations apply facturath-stats --remote
@@ -91,9 +91,41 @@ npx wrangler d1 execute facturath-stats --remote --command "SELECT day, n FROM c
 
 Counts are per browser, not per person: one person on a phone and a
 computer counts twice, and clearing site data counts as a new install.
-Anyone can post made-up counts; the Worker caps each day and event per
-report, and a Cloudflare rate-limiting rule on `/api/usage` limits the
-rest.
+
+### Protecting the counters
+
+The endpoint is anonymous by design, so anyone can post made-up counts.
+The table holds no personal data and has no read endpoint; the risk is
+quota. On the Workers Free plan D1 stops **every** database of the
+account once the account passes its daily row-write limit, until
+midnight UTC. Three layers keep `/api/usage` from getting there (#78):
+
+1. **Per report**: same-origin POST only, body under 8 KB, each day and
+   event capped (`USAGE_DAILY_CAPS` in `domain/usage.ts`).
+2. **Per IP, at the edge**: a rate-limiting rule set by hand in the
+   Cloudflare dashboard (zone `athendat.site` → Security rules → Create
+   rule → Rate limiting rule), matching
+   `(http.host eq "facturath.athendat.site" and http.request.uri.path eq "/api/usage" and http.request.method eq "POST")`,
+   5 requests per 10 seconds per IP, action Block for 10 seconds (the
+   Free plan allows one rule, IP only, 10-second period and block). The
+   app treats the 429 as a temporary failure and keeps its counts.
+3. **Per day, in the Worker**: `daily_intake` records the reports and
+   rows accepted per UTC day. A report that would pass
+   `USAGE_DAILY_ROW_BUDGET` (`vars` in `wrangler.jsonc`, 20 000) writes
+   nothing and gets `503` with `Retry-After`; devices keep their counts
+   and send them another day, within the 60-day window.
+
+To spot made-up traffic, compare reports with what they carried:
+
+```bash
+npx wrangler d1 execute facturath-stats --remote --command "SELECT i.day, i.reports, i.rows, SUM(CASE WHEN c.event = 'install' THEN c.n END) AS installs, SUM(CASE WHEN c.event = 'invoice' THEN c.n END) AS invoices FROM daily_intake i LEFT JOIN counts c ON c.day = i.day GROUP BY i.day ORDER BY i.day DESC LIMIT 30"
+```
+
+`daily_intake` is keyed by the UTC day the server received the reports;
+`counts` by the local day on the device, so the join is a rough guide.
+A day with far more reports or installs than usual, or installs with no
+invoices, is worth a look. Back the table up now and then with
+`npx wrangler d1 export facturath-stats --remote --output stats.sql`.
 
 ## Search engines
 

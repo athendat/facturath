@@ -1,25 +1,55 @@
-import { MAX_BODY_BYTES, UPSERT_COUNT, handleUsage, type CountsDatabase } from './usage-endpoint';
+import {
+  DEFAULT_DAILY_ROW_BUDGET,
+  MAX_BODY_BYTES,
+  READ_INTAKE,
+  UPSERT_COUNT,
+  UPSERT_INTAKE,
+  dailyRowBudget,
+  handleUsage,
+  type CountsDatabase,
+  type CountsStatement,
+} from './usage-endpoint';
 
 const ORIGIN = 'https://facturath.athendat.site';
 const NOW = new Date('2026-09-26T12:00:00Z');
 
-/** Records the upserts the endpoint batches, as `[day, event, n]`. */
-function fakeDatabase() {
+interface Bound extends CountsStatement {
+  query: string;
+  values: unknown[];
+}
+
+/**
+ * A D1 stand-in. `rows` collects the count upserts the endpoint batches, as `[day, event, n]`;
+ * `intake` the daily intake upserts, as `[day, rows]`; `reads` the budget reads. `writtenToday`
+ * is what the intake row already holds for today, null when there is no row yet.
+ */
+function fakeDatabase(writtenToday: number | null = null) {
   const rows: unknown[][] = [];
+  const intake: unknown[][] = [];
+  const reads: unknown[][] = [];
   const queries: string[] = [];
   const db: CountsDatabase = {
     prepare: (query) => ({
-      bind: (...values) => {
-        queries.push(query);
-        return { values };
-      },
+      bind: (...values): Bound => ({
+        query,
+        values,
+        first: <T>() => {
+          reads.push(values);
+          return Promise.resolve(
+            (writtenToday === null ? null : { rows: writtenToday }) as T | null,
+          );
+        },
+      }),
     }),
     batch: (statements) => {
-      rows.push(...statements.map((statement) => (statement as { values: unknown[] }).values));
+      for (const { query, values } of statements as Bound[]) {
+        queries.push(query);
+        (query === UPSERT_INTAKE ? intake : rows).push(values);
+      }
       return Promise.resolve([]);
     },
   };
-  return { db, rows, queries };
+  return { db, rows, intake, reads, queries };
 }
 
 function post(body: string, headers: Record<string, string> = {}): Request {
@@ -56,7 +86,7 @@ describe('POST /api/usage', () => {
       ['2026-09-26', 'active-day', 1],
       ['2026-09-26', 'active-month', 1],
     ]);
-    expect(new Set(queries)).toEqual(new Set([UPSERT_COUNT]));
+    expect(new Set(queries)).toEqual(new Set([UPSERT_COUNT, UPSERT_INTAKE]));
   });
 
   it('cuts counts to the daily caps and ignores unknown events and non-positive counts', async () => {
@@ -157,5 +187,82 @@ describe('POST /api/usage', () => {
 
     expect(response.status).toBe(413);
     expect(rows).toEqual([]);
+  });
+
+  describe('daily write budget', () => {
+    const oneDay = report([{ day: '2026-09-26', counts: { invoice: 1, save: 2 } }]);
+
+    it('counts the report and the rows it writes for the UTC day, in the same batch', async () => {
+      const { db, intake, reads } = fakeDatabase(40);
+
+      const response = await handleUsage(post(oneDay), db, NOW);
+
+      expect(response.status).toBe(204);
+      expect(reads).toEqual([['2026-09-26']]);
+      // Two counts and the intake row itself.
+      expect(intake).toEqual([['2026-09-26', 3]]);
+    });
+
+    it('starts the day at zero when nothing has been written yet', async () => {
+      const { db, rows } = fakeDatabase(null);
+
+      const response = await handleUsage(post(oneDay), db, NOW, 3);
+
+      expect(response.status).toBe(204);
+      expect(rows).toHaveLength(2);
+    });
+
+    it('writes nothing past the budget and asks to come back after midnight UTC', async () => {
+      const { db, rows, intake } = fakeDatabase(98);
+
+      const response = await handleUsage(post(oneDay), db, NOW, 100);
+
+      expect(response.status).toBe(503);
+      expect(response.headers.get('retry-after')).toBe(String(12 * 60 * 60));
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect([rows, intake]).toEqual([[], []]);
+    });
+
+    it('takes a report that fits the budget exactly', async () => {
+      const { db, rows } = fakeDatabase(97);
+
+      const response = await handleUsage(post(oneDay), db, NOW, 100);
+
+      expect(response.status).toBe(204);
+      expect(rows).toHaveLength(2);
+    });
+
+    it('neither reads nor writes for a report left empty once out-of-window days are dropped', async () => {
+      const { db, rows, intake, reads } = fakeDatabase(0);
+
+      const response = await handleUsage(
+        post(report([{ day: '2026-01-01', counts: { save: 1 } }])),
+        db,
+        NOW,
+      );
+
+      expect(response.status).toBe(204);
+      expect([rows, intake, reads]).toEqual([[], [], []]);
+    });
+
+    it('reads the budget from the setting, falling back to the default when it is not usable', () => {
+      expect(dailyRowBudget('5000')).toBe(5000);
+      for (const setting of [undefined, '', 'mucho', '0', '-3', '2.5']) {
+        expect(dailyRowBudget(setting)).toBe(DEFAULT_DAILY_ROW_BUDGET);
+      }
+    });
+
+    it('reads today with the intake query', async () => {
+      const { db } = fakeDatabase(0);
+      const prepared: string[] = [];
+      const spied: CountsDatabase = {
+        ...db,
+        prepare: (query) => (prepared.push(query), db.prepare(query)),
+      };
+
+      await handleUsage(post(oneDay), spied, NOW);
+
+      expect(prepared).toContain(READ_INTAKE);
+    });
   });
 });
