@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  // facturath.athendat.cu only redirects to the .site domain. The app keeps its
+  // invoices in browser storage, scoped by origin: serving it on both hostnames
+  // would give each user two separate invoice lists.
+  "name": "facturath-cu-redirect",
+  "main": "index.js",
+  "compatibility_date": "2026-09-01",
+  "routes": [{ "pattern": "facturath.athendat.cu", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+}

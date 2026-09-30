@@ -46,18 +46,25 @@ the same Cloudflare account and the API token scoped to it. The
 see one copy of the site; a path that is not a file gets
 `public/404.html` with a 404 status.
 
+**https://facturath.athendat.cu** answers a 301 to the same path and
+query on `.site`. It is a separate Worker, `facturath-cu-redirect`, in
+`redirect-cu/`: the app keeps invoices in browser storage, which is
+scoped by origin, so serving it on both hostnames would give each user
+two separate invoice lists. CI does not deploy it; after a change run
+`npx wrangler deploy -c redirect-cu/wrangler.jsonc`.
+
 ## Usage counters
 
 To know how many devices use FACTURATH and how many invoices it issues,
 the app counts, per local day and with no identifier (#76):
 
-| Event          | Counted                                          |
-| -------------- | ------------------------------------------------ |
-| `install`      | first open in a browser                          |
-| `active-day`   | first open of the day                            |
-| `active-month` | first open of the month                          |
+| Event          | Counted                                            |
+| -------------- | -------------------------------------------------- |
+| `install`      | first open in a browser                            |
+| `active-day`   | first open of the day                              |
+| `active-month` | first open of the month                            |
 | `invoice`      | first print of each invoice (reprints not counted) |
-| `save`         | each successful Guardar                          |
+| `save`         | each successful Guardar                            |
 
 `core/usage-stats.ts` keeps the counts in localStorage (key
 `facturath.usage`) until `POST /api/usage` accepts them, so offline use
