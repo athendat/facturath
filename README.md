@@ -46,6 +46,12 @@ the same Cloudflare account and the API token scoped to it. The
 see one copy of the site; a path that is not a file gets
 `public/404.html` with a 404 status.
 
+**https://facturath.cu** is served by the same Worker (a second custom
+domain in `routes`). It is a different origin, so it starts with an
+empty invoice list; `.site` keeps being served instead of redirecting,
+because a redirect would leave the invoices already saved there out of
+reach of their users.
+
 **https://facturath.athendat.cu** answers a 301 to the same path and
 query on `.site`. It is a separate Worker, `facturath-cu-redirect`, in
 `redirect-cu/`: the app keeps invoices in browser storage, which is
