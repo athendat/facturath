@@ -2,9 +2,15 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "facturath",
   "compatibility_date": "2026-09-01",
-  // The public domain (#72, #25). The athendat.site zone must be on the same
-  // Cloudflare account; wrangler creates the DNS record and the certificate.
-  "routes": [{ "pattern": "facturath.athendat.site", "custom_domain": true }],
+  // The public domains (#72, #25). Both zones must be on the same Cloudflare
+  // account; wrangler creates the DNS records and the certificates.
+  // facturath.cu is the new home. facturath.athendat.site stays served, not
+  // redirected: invoices live in browser storage scoped by origin, so a
+  // redirect would hide every invoice saved there from its user.
+  "routes": [
+    { "pattern": "facturath.athendat.site", "custom_domain": true },
+    { "pattern": "facturath.cu", "custom_domain": true },
+  ],
   // No second copy of the site on facturath.<account>.workers.dev for search
   // engines to index next to the custom domain.
   "workers_dev": false,
